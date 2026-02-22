@@ -2,114 +2,156 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Blood Strike Neon - Ultra Performance</title>
+    <title>Blood Strike Ultra - High Perf</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         #instructions {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: cyan; display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; cursor: pointer; text-align: center;
+            background: radial-gradient(circle, rgba(0,40,0,0.4) 0%, rgba(0,0,0,0.9) 100%);
+            color: #0f0; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 10; cursor: pointer; text-shadow: 0 0 10px #0f0;
         }
         #hud {
-            position: absolute; bottom: 30px; left: 30px; color: #0ff; 
-            font-size: 20px; text-shadow: 0 0 10px cyan; pointer-events: none;
+            position: absolute; bottom: 30px; left: 30px; color: #fff; 
+            font-size: 14px; letter-spacing: 1px; pointer-events: none;
+            background: rgba(0,0,0,0.5); padding: 15px; border-left: 4px solid #0f0;
         }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 15px; height: 15px;
-            border: 2px solid cyan; border-radius: 50%; transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+            background: #0f0; border-radius: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px #0f0; pointer-events: none;
         }
+        #reloading-bar {
+            position: absolute; bottom: 30px; right: 30px; width: 150px; height: 5px;
+            background: #222; display: none;
+        }
+        #reloading-progress { width: 0%; height: 100%; background: #0f0; }
     </style>
 </head>
 <body>
 
     <div id="instructions">
-        <h1 style="font-size: 40px;">BLOOD STRIKE <span style="color:magenta">NEON</span></h1>
-        <p>TECLAS: WASD (Mover) | ESPACIO (Saltar) | R (Recargar)</p>
-        <p style="color: yellow;">[ CLICK PARA INICIAR DESPLIEGUE ]</p>
+        <h1 style="font-size: 60px; margin: 0;">BLOOD <span style="color: #fff;">STRIKE</span></h1>
+        <p>L-CLICK: Fuego | R-CLICK: Apuntar | R: Recargar | Espacio: Salto</p>
+        <p style="color: white; border: 1px solid #0f0; padding: 10px;">INICIAR OPERACIÓN</p>
     </div>
     
     <div id="crosshair"></div>
+    <div id="reloading-bar"><div id="reloading-progress"></div></div>
     
     <div id="hud">
-        ESTADO: INFILTRANDO... <br>
-        MUNICIÓN: <span id="ammo">30</span>/30 <br>
-        ACCIÓN: <span id="action">LISTO</span>
+        OPERATIVO: ASALTO <br>
+        AMMO: <span id="ammo" style="font-size: 24px;">30</span>/30 <br>
+        ALT: <span id="alt">250</span>m
     </div>
 
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
         import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/PointerLockControls.js';
 
-        // --- Escena y Renderer ---
+        // --- Configuración Escena ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.01);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        scene.background = new THREE.Color(0x020502);
+        scene.fog = new THREE.FogExp2(0x020502, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
         // --- Iluminación ---
-        const ambient = new THREE.AmbientLight(0x404040, 0.5);
-        scene.add(ambient);
+        const hemiLight = new THREE.HemisphereLight(0x00ff00, 0x002200, 0.6);
+        scene.add(hemiLight);
 
-        // --- Suelo de Luces de Colores ---
-        const floorSize = 1000;
-        const grid = new THREE.GridHelper(floorSize, 40, 0xff00ff, 0x00ffff);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // --- Suelo Verde Realista ---
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x0a220a, 
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const grid = new THREE.GridHelper(2000, 100, 0x00ff00, 0x002200);
+        grid.position.y = 0.05;
         scene.add(grid);
 
-        // Agregar luces puntuales de colores en el suelo
-        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
-        for(let i = 0; i < 15; i++) {
-            const pLight = new THREE.PointLight(colors[i % colors.length], 2, 50);
-            pLight.position.set(Math.random()*400-200, 1, Math.random()*400-200);
-            scene.add(pLight);
-            
-            // Cubo brillante bajo la luz
-            const box = new THREE.Mesh(
-                new THREE.BoxGeometry(2, 0.5, 2),
-                new THREE.MeshBasicMaterial({ color: colors[i % colors.length] })
-            );
-            box.position.copy(pLight.position);
-            box.position.y = 0.2;
+        // --- Edificios de Colores ---
+        const colors = [0xff3333, 0x33ff33, 0x3333ff, 0xffff33, 0xff33ff];
+        for(let i = 0; i < 120; i++) {
+            const h = Math.random() * 50 + 10;
+            const boxGeo = new THREE.BoxGeometry(12, h, 12);
+            const boxMat = new THREE.MeshStandardMaterial({ 
+                color: colors[i % colors.length],
+                emissive: colors[i % colors.length],
+                emissiveIntensity: 0.1
+            });
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.position.set(Math.random() * 1000 - 500, h/2, Math.random() * 1000 - 500);
+            box.castShadow = true;
+            box.receiveShadow = true;
             scene.add(box);
         }
 
-        // --- Arma con Animación ---
-        const weapon = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), new THREE.MeshStandardMaterial({color: 0x111111}));
-        weapon.add(body);
-        camera.add(weapon);
+        // --- Sistema de Arma Procedimental ---
+        const weaponPivot = new THREE.Group();
+        const weaponBody = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.18, 0.7), 
+            new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 1, roughness: 0.1 })
+        );
+        weaponPivot.add(weaponBody);
+        camera.add(weaponPivot);
         scene.add(camera);
-        weapon.position.set(0.4, -0.4, -0.7);
 
-        // --- Lógica de Juego ---
+        const hipPos = new THREE.Vector3(0.4, -0.35, -0.6);
+        const adsPos = new THREE.Vector3(0, -0.18, -0.45);
+        weaponPivot.position.copy(hipPos);
+
+        // --- Lógica y Animación ---
         const controls = new PointerLockControls(camera, document.body);
         document.getElementById('instructions').addEventListener('click', () => controls.lock());
         controls.addEventListener('lock', () => document.getElementById('instructions').style.display = 'none');
-        controls.addEventListener('unlock', () => document.getElementById('instructions').style.display = 'flex');
 
         let move = { f: false, b: false, l: false, r: false };
-        let velocity = new THREE.Vector3();
-        let canJump = false;
+        let vel = new THREE.Vector3();
+        let isAiming = false, isReloading = false, canJump = false;
         let ammo = 30;
-        let isReloading = false;
 
-        camera.position.y = 150; // Altura inicial
+        camera.position.y = 250; // Caída inicial
 
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('mousedown', e => {
+            if(!controls.isLocked || isReloading) return;
+            if(e.button === 2) isAiming = true;
+            if(e.button === 0 && ammo > 0) {
+                ammo--;
+                document.getElementById('ammo').innerText = ammo;
+                weaponPivot.position.z += 0.08; // Retroceso
+                camera.rotation.x += 0.01; // Patada de cámara
+            }
+        });
+        document.addEventListener('mouseup', e => { if(e.button === 2) isAiming = false; });
+        document.addEventListener('keydown', e => {
             if(e.code === 'KeyW') move.f = true;
             if(e.code === 'KeyS') move.b = true;
             if(e.code === 'KeyA') move.l = true;
             if(e.code === 'KeyD') move.r = true;
-            if(e.code === 'Space' && canJump) {
-                velocity.y += 10;
-                canJump = false;
-            }
-            if(e.code === 'KeyR' && !isReloading) reload();
+            if(e.code === 'KeyR' && !isReloading && ammo < 30) reload();
+            if(e.code === 'Space' && canJump) { vel.y += 12; canJump = false; }
         });
-        document.addEventListener('keyup', (e) => {
+        document.addEventListener('keyup', e => {
             if(e.code === 'KeyW') move.f = false;
             if(e.code === 'KeyS') move.b = false;
             if(e.code === 'KeyA') move.l = false;
@@ -118,47 +160,64 @@
 
         function reload() {
             isReloading = true;
-            document.getElementById('action').innerText = "RECARGANDO...";
-            document.getElementById('action').style.color = "yellow";
-            
-            // Animación de rotación del arma
-            weapon.rotation.x = Math.PI / 4;
-            
-            setTimeout(() => {
-                ammo = 30;
-                isReloading = false;
-                weapon.rotation.x = 0;
-                document.getElementById('ammo').innerText = ammo;
-                document.getElementById('action').innerText = "LISTO";
-                document.getElementById('action').style.color = "#0ff";
-            }, 1500);
+            document.getElementById('reloading-bar').style.display = 'block';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                document.getElementById('reloading-progress').style.width = progress + '%';
+                weaponPivot.rotation.z += 0.15;
+                if(progress >= 100) {
+                    clearInterval(interval);
+                    ammo = 30;
+                    document.getElementById('ammo').innerText = ammo;
+                    isReloading = false;
+                    document.getElementById('reloading-bar').style.display = 'none';
+                    weaponPivot.rotation.z = 0;
+                }
+            }, 30);
         }
 
         function animate() {
             requestAnimationFrame(animate);
             if (controls.isLocked) {
-                const delta = 0.1;
-                
-                // Gravedad y Fricción
-                velocity.x -= velocity.x * 10.0 * 0.016;
-                velocity.z -= velocity.z * 10.0 * 0.016;
-                velocity.y -= 9.8 * 2.5 * 0.016; // Gravedad
+                const time = Date.now() * 0.005;
+                const delta = 0.016;
 
-                if (move.f) velocity.z -= 150.0 * 0.016;
-                if (move.b) velocity.z += 150.0 * 0.016;
-                if (move.l) velocity.x -= 150.0 * 0.016;
-                if (move.r) velocity.x += 150.0 * 0.016;
+                // ADS y Zoom
+                const targetPos = isAiming ? adsPos : hipPos;
+                const targetFov = isAiming ? 40 : 75;
+                weaponPivot.position.lerp(targetPos, 0.15);
+                camera.fov += (targetFov - camera.fov) * 0.15;
+                camera.updateProjectionMatrix();
 
-                controls.moveRight(-velocity.x * 0.016);
-                controls.moveForward(-velocity.z * 0.016);
-                camera.position.y += (velocity.y * 0.016);
+                // Movimiento y Física
+                vel.x -= vel.x * 10 * delta;
+                vel.z -= vel.z * 10 * delta;
+                if(camera.position.y > 1.8) vel.y -= 25 * delta; // Gravedad
 
-                // Colisión Suelo
-                if (camera.position.y < 1.8) {
-                    velocity.y = 0;
+                if (move.f) vel.z -= 180 * delta;
+                if (move.b) vel.z += 180 * delta;
+                if (move.l) vel.x -= 180 * delta;
+                if (move.r) vel.x += 180 * delta;
+
+                controls.moveRight(-vel.x * delta);
+                controls.moveForward(-vel.z * delta);
+                camera.position.y += (vel.y * delta);
+
+                if (camera.position.y <= 1.8) {
                     camera.position.y = 1.8;
+                    vel.y = 0;
                     canJump = true;
                 }
+
+                // Balanceo realista del arma (procedimental)
+                if (!isAiming && canJump) {
+                    const speed = (move.f || move.b || move.l || move.r) ? 1 : 0.2;
+                    weaponPivot.position.y += Math.sin(time) * 0.001 * speed;
+                    weaponPivot.position.x += Math.cos(time * 0.5) * 0.001 * speed;
+                }
+                
+                document.getElementById('alt').innerText = Math.floor(camera.position.y);
             }
             renderer.render(scene, camera);
         }
