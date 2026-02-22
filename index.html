@@ -3,448 +3,662 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blender Web Master Suite 5.0</title>
+    <title>Blender Ultimate Suite 5.0 - Edición Maestra</title>
     <style>
         :root {
-            --bg-deep: #121212;
-            --bg-panel: #242424;
-            --bg-header: #333333;
+            --bg-ultra: #0b0b0b;
+            --bg-main: #1d1d1d;
+            --bg-panel: #282828;
+            --bg-light: #3d3d3d;
             --accent: #e67e22;
-            --blue: #4f9eee;
-            --text-dim: #999;
-            --text-bright: #eee;
-            --border: #1a1a1a;
+            --blue: #2980b9;
+            --green: #27ae60;
+            --red: #c0392b;
+            --text: #cfcfcf;
+            --border: #141414;
         }
 
-        body { margin: 0; overflow: hidden; background: var(--bg-deep); font-family: 'Inter', sans-serif; color: var(--text-bright); font-size: 11px; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: var(--bg-ultra); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: var(--text); 
+            font-size: 11px;
+            user-select: none;
+        }
 
-        /* Estructura de Ventanas Profesionales */
-        .app-grid {
+        /* Layout Maestro */
+        .app-wrapper {
             display: grid;
-            grid-template-columns: 48px 1fr 280px;
-            grid-template-rows: 24px 1fr 180px;
+            grid-template-columns: 50px 1fr 320px;
+            grid-template-rows: 30px 1fr 180px 24px;
             height: 100vh;
+            width: 100vw;
         }
 
-        /* Top Bar */
-        header { 
-            grid-column: 1 / -1; 
-            background: var(--bg-header); 
-            display: flex; 
-            align-items: center; 
-            padding: 0 10px; 
-            gap: 12px; 
+        /* Header Estilo Blender Pro */
+        header {
+            grid-column: 1 / -1;
+            background: var(--bg-panel);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 15px;
             border-bottom: 1px solid #000;
         }
 
-        /* Herramientas Izquierda */
-        .toolbar { 
-            background: var(--bg-panel); 
-            border-right: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 8px 0; 
+        .menu-item { cursor: pointer; padding: 2px 8px; border-radius: 3px; }
+        .menu-item:hover { background: var(--bg-light); }
+
+        /* Toolbar Izquierda Extendida */
+        .left-toolbar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
             gap: 10px;
         }
 
-        .tool-btn { 
-            width: 32px; height: 32px; 
-            display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; border-radius: 4px; transition: 0.2s;
+        .tool-icon {
+            width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border-radius: 5px;
+            border: 1px solid transparent;
         }
-        .tool-btn:hover { background: #444; }
-        .tool-btn.active { background: var(--accent); }
+        .tool-icon:hover { background: #444; }
+        .tool-icon.active { background: var(--accent); border-color: #fff; }
 
-        /* Viewport */
-        .viewport { position: relative; background: #333; overflow: hidden; }
-        
-        /* Sidebar (Outliner & Properties) */
-        .sidebar { background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sidebar-panel { flex: 1; display: flex; flex-direction: column; border-bottom: 2px solid #111; }
-        .panel-title { background: #3a3a3a; padding: 4px 10px; font-weight: bold; border-bottom: 1px solid #111; display: flex; justify-content: space-between; }
+        /* Viewport 3D Principal */
+        .viewport-area {
+            position: relative;
+            background: #393939;
+            overflow: hidden;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+        }
 
-        /* Timeline / Dope Sheet */
-        .timeline { grid-column: 1 / -1; background: var(--bg-panel); border-top: 1px solid #111; display: flex; flex-direction: column; }
-        .timeline-header { height: 32px; background: #333; display: flex; align-items: center; padding: 0 10px; gap: 20px; }
-        .timeline-content { flex: 1; position: relative; background: #1a1a1a; overflow-x: auto; }
-        #playhead { position: absolute; top: 0; width: 2px; height: 100%; background: var(--blue); z-index: 5; pointer-events: none; }
+        /* Paneles de Propiedades y Outliner */
+        .right-sidebar {
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
 
-        /* Componentes de UI */
-        .btn { background: #444; border: 1px solid #555; color: white; padding: 3px 10px; cursor: pointer; border-radius: 2px; }
-        .btn:hover { background: #555; }
-        .btn-accent { background: var(--accent); border: none; }
+        .panel-section {
+            border-bottom: 1px solid var(--border);
+        }
 
-        .prop-row { display: flex; align-items: center; padding: 4px 10px; gap: 10px; }
-        .prop-row label { flex: 1; color: var(--text-dim); }
-        .prop-row input { background: #111; border: 1px solid #333; color: var(--accent); width: 60px; padding: 2px; text-align: center; }
+        .panel-header {
+            background: #333;
+            padding: 5px 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
 
-        /* Outliner List */
-        .obj-item { padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #1e1e1e; }
-        .obj-item.selected { background: #444; }
-        .obj-item:hover { background: #333; }
+        .panel-content { padding: 10px; }
 
-        /* Overlays */
-        #viewport-shading { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 6px; }
-        #camera-gizmo { position: absolute; top: 10px; right: 150px; width: 100px; height: 100px; pointer-events: none; }
+        /* Timeline Profesional */
+        .bottom-timeline {
+            grid-column: 1 / -1;
+            background: var(--bg-panel);
+            border-top: 1px solid #000;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .key-marker { position: absolute; width: 8px; height: 8px; background: #decb00; transform: rotate(45deg); top: 12px; border: 1px solid #000; }
+        .timeline-controls {
+            height: 35px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 15px;
+            border-bottom: 1px solid #111;
+        }
+
+        .timeline-ruler {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+
+        #playhead {
+            position: absolute;
+            top: 0; width: 2px; height: 100%;
+            background: #4f9eee;
+            z-index: 10;
+        }
+
+        /* Widgets de Viewport */
+        .viewport-overlay {
+            position: absolute;
+            top: 10px; left: 10px;
+            pointer-events: none;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .shading-switches {
+            position: absolute;
+            top: 10px; right: 10px;
+            display: flex; gap: 5px;
+        }
+
+        /* Form Elements */
+        .prop-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 6px;
+        }
+        .prop-row label { color: #aaa; font-size: 10px; }
+        input[type="number"], input[type="text"], select {
+            background: #111; border: 1px solid #444; color: var(--accent);
+            padding: 2px 5px; border-radius: 2px; width: 70px;
+        }
+        input[type="range"] { width: 100%; }
+
+        /* Keyframe visual on timeline */
+        .keyframe-dot {
+            position: absolute;
+            width: 8px; height: 8px;
+            background: #decb00;
+            transform: rotate(45deg);
+            top: 13px;
+            border: 1px solid #000;
+        }
+
+        /* Footer Status Bar */
+        footer {
+            grid-column: 1 / -1;
+            background: var(--accent);
+            color: #000;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* Tabs */
+        .tabs { display: flex; background: #222; }
+        .tab { padding: 5px 15px; cursor: pointer; border-right: 1px solid #111; }
+        .tab.active { background: var(--bg-panel); color: var(--accent); }
+
+        .object-entry {
+            padding: 4px 10px;
+            display: flex; justify-content: space-between;
+            border-bottom: 1px solid #222;
+        }
+        .object-entry:hover { background: #353535; }
+        .object-entry.active { background: #444; color: var(--accent); }
     </style>
 </head>
 <body>
 
-<div class="app-grid">
+<div class="app-wrapper">
     <header>
-        <span style="color: var(--accent); font-weight: bold;">Blender Web Suite 5.0</span>
-        <div class="btn" id="add-btn">Agregar (Shift+A)</div>
-        <div class="btn" id="render-btn">Renderizar Imagen</div>
-        <div style="flex:1"></div>
-        <span id="scene-stats" style="color: #666; font-size: 10px;">Verts: 0 | Faces: 0 | Objects: 0</span>
+        <div class="menu-item" style="color: var(--accent); font-weight: bold;">Blender Ultimate</div>
+        <div class="menu-item">Layout</div>
+        <div class="menu-item">Modeling</div>
+        <div class="menu-item">Sculpting</div>
+        <div class="menu-item">UV Editing</div>
+        <div class="menu-item">Texture Paint</div>
+        <div class="menu-item">Shading</div>
+        <div class="menu-item">Animation</div>
+        <div class="menu-item">Rendering</div>
+        <div class="menu-item">Compositing</div>
     </header>
 
-    <div class="toolbar">
-        <div class="tool-btn active" id="t-select" title="Seleccionar">🖱️</div>
-        <div class="tool-btn" id="t-move" title="Mover (G)">✥</div>
-        <div class="tool-btn" id="t-rotate" title="Rotar (R)">🔄</div>
-        <div class="tool-btn" id="t-scale" title="Escalar (S)">⤢</div>
-        <hr style="width: 70%; border-color: #333">
-        <div class="tool-btn" id="t-autokey" title="Auto-Keying" style="color: #888;">⏺️</div>
+    <div class="left-toolbar">
+        <div class="tool-icon active" id="tool-select" title="Seleccionar (W)">🖱️</div>
+        <div class="tool-icon" id="tool-move" title="Mover (G)">✥</div>
+        <div class="tool-icon" id="tool-rotate" title="Rotar (R)">🔄</div>
+        <div class="tool-icon" id="tool-scale" title="Escalar (S)">📐</div>
+        <div class="tool-icon" id="tool-transform" title="Transformación Libre">🔯</div>
+        <hr style="width: 60%; border-color: #444">
+        <div class="tool-icon" id="tool-add" title="Agregar Objeto (Shift+A)">➕</div>
+        <div class="tool-icon" title="Anotar">✏️</div>
+        <div class="tool-icon" title="Medir">📏</div>
     </div>
 
-    <div class="viewport" id="viewport">
-        <div id="viewport-shading">
-            <div class="btn" onclick="app.setShading('wireframe')" title="Wireframe">🌐</div>
-            <div class="btn" onclick="app.setShading('solid')" title="Sólido">🌑</div>
-            <div class="btn" onclick="app.setShading('xray')" title="Rayos X">🩻</div>
-            <div class="btn" onclick="app.setShading('render')" title="Render">✨</div>
+    <div class="viewport-area" id="viewport">
+        <div class="viewport-overlay">
+            <div>Perspectiva de Usuario</div>
+            <div style="font-size: 9px; color: #888;">(1) Colección | <span id="active-obj-name">Cubo</span></div>
         </div>
-        <div id="camera-gizmo"></div>
+        <div class="shading-switches">
+            <button class="btn-shade" id="shade-wire" title="Wireframe">🌐</button>
+            <button class="btn-shade" id="shade-solid" title="Sólido">🌑</button>
+            <button class="btn-shade" id="shade-look" title="Material Preview">🎨</button>
+            <button class="btn-shade" id="shade-render" title="Renderizado">✨</button>
+        </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-panel">
-            <div class="panel-title">Outliner <span>🔍</span></div>
-            <div id="outliner-list" style="overflow-y:auto; flex:1"></div>
+    <div class="right-sidebar">
+        <div class="tabs">
+            <div class="tab active">Outliner</div>
+            <div class="tab">Escena</div>
         </div>
-        <div class="sidebar-panel">
-            <div class="panel-title">Propiedades <span>⚙️</span></div>
-            <div id="inspector-content" style="padding-top:10px">
-                <div id="no-sel-msg" style="text-align:center; color:#555; padding: 20px;">No hay objeto seleccionado</div>
-                <div id="props" style="display:none">
-                    <div class="prop-row"><label>Nombre</label><input type="text" id="obj-name" style="width:120px"></div>
-                    <div class="panel-title" style="background:transparent; font-size:10px; color:var(--accent)">TRANSFORMACIÓN</div>
-                    <div class="prop-row"><label>Ubicación X</label><input type="number" step="0.1" id="loc-x"></div>
-                    <div class="prop-row"><label>Ubicación Y</label><input type="number" step="0.1" id="loc-y"></div>
-                    <div class="prop-row"><label>Ubicación Z</label><input type="number" step="0.1" id="loc-z"></div>
-                    <div class="prop-row"><label>Rotación Z</label><input type="number" step="1" id="rot-z"></div>
-                    <div class="panel-title" style="background:transparent; font-size:10px; color:var(--accent)">MATERIAL</div>
-                    <div class="prop-row"><label>Color</label><input type="color" id="mat-color"></div>
-                    <div class="prop-row"><label>Metálico</label><input type="range" min="0" max="1" step="0.1" id="mat-metal"></div>
-                    <div class="prop-row"><label>Rugosidad</label><input type="range" min="0" max="1" step="0.1" id="mat-rough"></div>
-                    <button class="btn btn-accent" id="key-btn" style="width:90%; margin: 10px 5%; font-weight:bold">Insertar Keyframe (I)</button>
-                </div>
+        <div class="panel-section" style="height: 40%;">
+            <div id="outliner-content"></div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active">Propiedades</div>
+            <div class="tab">Modificadores</div>
+            <div class="tab">Física</div>
+        </div>
+        <div class="panel-section" id="inspector">
+            <div class="panel-content" id="prop-fields">
+                <div style="text-align: center; padding: 20px; color: #666;">Selecciona un objeto para editar</div>
             </div>
         </div>
     </div>
 
-    <div class="timeline">
-        <div class="timeline-header">
-            <div class="btn" id="play-btn">▶ Reproducir</div>
-            <div style="color:var(--blue); font-weight:bold">Frame: <span id="current-frame-lbl">0</span></div>
-            <div style="flex:1"></div>
-            <div style="display:flex; gap:5px; align-items:center">
-                Inicio: <input type="number" value="0" style="width:40px">
-                Fin: <input type="number" value="250" style="width:40px">
+    <div class="bottom-timeline">
+        <div class="timeline-controls">
+            <div style="display: flex; gap: 8px;">
+                <button class="btn" id="btn-prev">⏮</button>
+                <button class="btn" id="btn-play">▶</button>
+                <button class="btn" id="btn-next">⏭</button>
             </div>
+            <div style="color: var(--accent); font-weight: bold; width: 40px; text-align: center;" id="frame-display">1</div>
+            <div style="display: flex; gap: 10px; font-size: 10px;">
+                Start: <input type="number" value="1" style="width: 40px;">
+                End: <input type="number" value="250" style="width: 40px;">
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn" id="btn-autokey" style="color: #666;">⏺ Auto-Key</button>
+            <button class="btn-accent" id="btn-insert-key">Insertar Keyframe (I)</button>
         </div>
-        <div class="timeline-content" id="timeline-container">
+        <div class="timeline-ruler" id="timeline-container">
             <div id="playhead"></div>
-            <div id="keyframes-track" style="position:absolute; width:10000px; height:100%"></div>
-            <canvas id="timeline-ruler" style="height:100%; width:10000px"></canvas>
+            <div id="keyframe-layer" style="position: absolute; width: 100%; height: 100%;"></div>
+            <canvas id="timeline-canvas" style="width: 10000px; height: 100%;"></canvas>
         </div>
     </div>
+
+    <footer>
+        <div style="flex: 1;">Blender Ultimate v5.0.1 | Memoria: 142MB | Verts: <span id="stat-verts">0</span> | Faces: <span id="stat-faces">0</span></div>
+        <div>Seleccionar: Click Izquierdo | Rotar: Click Derecho | Pan: Shift + Click Derecho</div>
+    </footer>
+</div>
+
+<!-- Menu Flotante Agregar -->
+<div id="add-menu" style="display: none; position: absolute; background: var(--bg-panel); border: 1px solid #555; z-index: 1000; width: 180px; box-shadow: 10px 10px 30px rgba(0,0,0,0.5);">
+    <div style="padding: 5px 10px; background: #333; font-weight: bold; font-size: 10px;">AGREGAR</div>
+    <div class="object-entry" onclick="app.addObject('cube')">📦 Cubo</div>
+    <div class="object-entry" onclick="app.addObject('sphere')">🔮 Esfera</div>
+    <div class="object-entry" onclick="app.addObject('cylinder')">🧪 Cilindro</div>
+    <div class="object-entry" onclick="app.addObject('torus')">🍩 Toroide</div>
+    <div class="object-entry" onclick="app.addObject('plane')">⬛ Plano</div>
+    <div class="object-entry" onclick="app.addObject('monkey')">🐵 Suzanne</div>
+    <hr style="border: 0; border-top: 1px solid #444; margin: 0;">
+    <div class="object-entry" onclick="app.addObject('light')">💡 Luz de Punto</div>
+    <div class="object-entry" onclick="app.addObject('sun')">☀️ Luz de Sol</div>
+    <div class="object-entry" onclick="app.addObject('camera')">📷 Cámara</div>
 </div>
 
 <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-        }
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
     }
+}
 </script>
 
 <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    class BlenderMasterApp {
-        constructor() {
-            this.frame = 0;
-            this.isPlaying = false;
-            this.objects = [];
-            this.selected = null;
-            this.autoKey = false;
-            this.shading = 'solid';
-            
-            this.initEngine();
-            this.initTimeline();
-            this.initUI();
-            this.add('cube');
-            this.renderLoop();
+class BlenderUltimate {
+    constructor() {
+        this.frame = 1;
+        this.isPlaying = false;
+        this.autoKey = false;
+        this.objects = [];
+        this.selected = null;
+        this.shading = 'solid';
+        
+        this.initThree();
+        this.initTimeline();
+        this.initUI();
+        
+        // Carga inicial
+        this.addObject('cube');
+        this.render();
+    }
+
+    initThree() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x242424);
+        
+        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(12, 10, 12);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        document.getElementById('viewport').appendChild(this.renderer.domElement);
+
+        this.grid = new THREE.GridHelper(60, 60, 0x444444, 0x222222);
+        this.scene.add(this.grid);
+
+        // Iluminación EEVEE-like
+        this.ambient = new THREE.AmbientLight(0xffffff, 0.4);
+        this.scene.add(this.ambient);
+
+        this.mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        this.mainLight.position.set(10, 20, 10);
+        this.mainLight.castShadow = true;
+        this.mainLight.shadow.mapSize.width = 2048;
+        this.mainLight.shadow.mapSize.height = 2048;
+        this.scene.add(this.mainLight);
+
+        // Controles de Cámara
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+
+        // Transform Gizmo
+        this.gizmo = new TransformControls(this.camera, this.renderer.domElement);
+        this.scene.add(this.gizmo);
+        this.gizmo.addEventListener('dragging-changed', (e) => {
+            this.controls.enabled = !e.value;
+            if(!e.value && this.autoKey) this.insertKeyframe();
+        });
+        this.gizmo.addEventListener('change', () => this.updateInspector());
+    }
+
+    addObject(type) {
+        let geometry;
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xbcbcbc, 
+            roughness: 0.4, 
+            metalness: 0.1 
+        });
+
+        switch(type) {
+            case 'cube': geometry = new THREE.BoxGeometry(2, 2, 2); break;
+            case 'sphere': geometry = new THREE.SphereGeometry(1.2, 32, 32); break;
+            case 'cylinder': geometry = new THREE.CylinderGeometry(1, 1, 3, 32); break;
+            case 'torus': geometry = new THREE.TorusGeometry(1, 0.4, 16, 100); break;
+            case 'plane': geometry = new THREE.PlaneGeometry(10, 10); break;
+            case 'monkey': geometry = new THREE.IcosahedronGeometry(1.5, 2); break; // Placeholder
+            case 'light': 
+                const lp = new THREE.PointLight(0xffaa00, 100, 20);
+                lp.add(new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffaa00})));
+                this.finishAdd(lp, "Luz");
+                return;
         }
 
-        initEngine() {
-            this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x282828);
-            
-            this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.set(10, 10, 10);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.finishAdd(mesh, type);
+    }
 
-            this.renderer = new THREE.WebGLRenderer({ antialias: true });
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-            this.renderer.shadowMap.enabled = true;
-            document.getElementById('viewport').appendChild(this.renderer.domElement);
+    finishAdd(obj, name) {
+        obj.name = name + "_" + this.objects.length;
+        obj.userData.keyframes = {}; // frame: {pos, rot, scale}
+        this.scene.add(obj);
+        this.objects.push(obj);
+        this.select(obj);
+        this.updateOutliner();
+    }
 
-            this.grid = new THREE.GridHelper(50, 50, 0x444444, 0x222222);
-            this.scene.add(this.grid);
-
-            this.ambient = new THREE.AmbientLight(0xffffff, 0.7);
-            this.scene.add(this.ambient);
-
-            this.sun = new THREE.DirectionalLight(0xffffff, 1);
-            this.sun.position.set(10, 20, 5);
-            this.sun.castShadow = true;
-            this.scene.add(this.sun);
-
-            this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
-            this.orbit.enableDamping = true;
-
-            this.transform = new TransformControls(this.camera, this.renderer.domElement);
-            this.scene.add(this.transform);
-
-            this.transform.addEventListener('dragging-changed', (e) => {
-                this.orbit.enabled = !e.value;
-                if (!e.value && this.autoKey) this.insertKeyframe();
-                this.syncProps();
-            });
+    select(obj) {
+        this.selected = obj;
+        if(obj) {
+            this.gizmo.attach(obj);
+            document.getElementById('active-obj-name').innerText = obj.name;
+        } else {
+            this.gizmo.detach();
         }
+        this.updateOutliner();
+        this.updateInspector();
+        this.drawTimelineKeys();
+    }
 
-        add(type) {
-            let mesh;
-            const mat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.2, roughness: 0.5 });
+    insertKeyframe() {
+        if(!this.selected) return;
+        const state = {
+            pos: this.selected.position.clone(),
+            rot: this.selected.rotation.clone(),
+            sca: this.selected.scale.clone()
+        };
+        this.selected.userData.keyframes[this.frame] = state;
+        this.drawTimelineKeys();
+        console.log(`Keyframe insertado en frame ${this.frame} para ${this.selected.name}`);
+    }
+
+    applyAnimations() {
+        this.objects.forEach(obj => {
+            const keys = obj.userData.keyframes;
+            const frameNumbers = Object.keys(keys).map(Number).sort((a,b) => a-b);
             
-            if (type === 'cube') mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
-            if (type === 'sphere') mesh = new THREE.Mesh(new THREE.SphereGeometry(1.2, 32, 16), mat);
-            if (type === 'monkey') mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 1), mat);
-            
-            mesh.name = `${type.charAt(0).toUpperCase() + type.slice(1)}_${this.objects.length}`;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            mesh.userData.keyframes = {}; // Formato: { frame: {pos, rot, scale} }
+            if(frameNumbers.length === 0) return;
 
-            this.scene.add(mesh);
-            this.objects.push(mesh);
-            this.select(mesh);
-            this.updateOutliner();
-        }
-
-        select(obj) {
-            this.selected = obj;
-            if (obj) {
-                this.transform.attach(obj);
-                document.getElementById('props').style.display = 'block';
-                document.getElementById('no-sel-msg').style.display = 'none';
-                this.syncProps();
-            } else {
-                this.transform.detach();
-                document.getElementById('props').style.display = 'none';
-                document.getElementById('no-sel-msg').style.display = 'block';
+            // Encontrar vecinos
+            let prev = -1, next = -1;
+            for(let f of frameNumbers) {
+                if(f <= this.frame) prev = f;
+                if(f >= this.frame && next === -1) next = f;
             }
-            this.updateOutliner();
-            this.renderKeyMarkers();
-        }
 
-        insertKeyframe() {
-            if (!this.selected) return;
-            this.selected.userData.keyframes[this.frame] = {
-                pos: this.selected.position.clone(),
-                rot: this.selected.rotation.clone(),
-                sca: this.selected.scale.clone()
-            };
-            this.renderKeyMarkers();
-        }
-
-        applyAnimation() {
-            this.objects.forEach(obj => {
-                const keys = obj.userData.keyframes;
-                const frameNums = Object.keys(keys).map(Number).sort((a,b) => a-b);
-                if (frameNums.length === 0) return;
-
-                let prev = frameNums[0], next = frameNums[0];
-                for (let f of frameNums) {
-                    if (f <= this.frame) prev = f;
-                    if (f >= this.frame) { next = f; break; }
-                }
-
-                if (prev === next) {
+            if(prev !== -1 && next === -1) { // Después del último key
+                obj.position.copy(keys[prev].pos);
+                obj.rotation.copy(keys[prev].rot);
+                obj.scale.copy(keys[prev].sca);
+            } else if(prev !== -1 && next !== -1) {
+                if(prev === next) {
                     obj.position.copy(keys[prev].pos);
                     obj.rotation.copy(keys[prev].rot);
                     obj.scale.copy(keys[prev].sca);
                 } else {
                     const t = (this.frame - prev) / (next - prev);
-                    // Interpolación Ease-In-Out (Funcionalidad 32)
-                    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-                    
+                    // Interpolación Pro (Ease In Out)
+                    const ease = t < .5 ? 2*t*t : -1+(4-2*t)*t;
                     obj.position.lerpVectors(keys[prev].pos, keys[next].pos, ease);
                     obj.scale.lerpVectors(keys[prev].sca, keys[next].sca, ease);
                     
+                    // Rotación suave
                     const q1 = new THREE.Quaternion().setFromEuler(keys[prev].rot);
                     const q2 = new THREE.Quaternion().setFromEuler(keys[next].rot);
-                    obj.quaternion.slerp(q2.set(q2.x, q2.y, q2.z, q2.w), ease);
+                    obj.quaternion.slerpQuaternions(q1, q2, ease);
                 }
-            });
-        }
-
-        initTimeline() {
-            const canvas = document.getElementById('timeline-ruler');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 5000;
-            canvas.height = 32;
-
-            const draw = () => {
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(0,0, canvas.width, canvas.height);
-                ctx.strokeStyle = '#555';
-                ctx.fillStyle = '#888';
-                ctx.font = '10px Inter';
-
-                for (let i = 0; i < 300; i++) {
-                    const x = i * 20;
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, i % 5 === 0 ? 12 : 6);
-                    ctx.stroke();
-                    if (i % 10 === 0) ctx.fillText(i, x + 2, 25);
-                }
-            };
-            draw();
-
-            document.getElementById('timeline-container').addEventListener('click', (e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
-                this.frame = Math.round(x / 20);
-                this.updatePlayhead();
-            });
-        }
-
-        updatePlayhead() {
-            if (this.frame > 250) this.frame = 0;
-            document.getElementById('playhead').style.left = (this.frame * 20) + 'px';
-            document.getElementById('current-frame-lbl').innerText = this.frame;
-            this.applyAnimation();
-            this.syncProps();
-        }
-
-        syncProps() {
-            if (!this.selected) return;
-            document.getElementById('obj-name').value = this.selected.name;
-            document.getElementById('loc-x').value = this.selected.position.x.toFixed(2);
-            document.getElementById('loc-y').value = this.selected.position.y.toFixed(2);
-            document.getElementById('loc-z').value = this.selected.position.z.toFixed(2);
-        }
-
-        updateOutliner() {
-            const list = document.getElementById('outliner-list');
-            list.innerHTML = '';
-            this.objects.forEach(obj => {
-                const el = document.createElement('div');
-                el.className = `obj-item ${this.selected === obj ? 'selected' : ''}`;
-                el.innerHTML = `<span>👁️</span> ${obj.name}`;
-                el.onclick = () => this.select(obj);
-                list.appendChild(el);
-            });
-            document.getElementById('scene-stats').innerText = `Objects: ${this.objects.length} | Frame: ${this.frame}`;
-        }
-
-        renderKeyMarkers() {
-            const track = document.getElementById('keyframes-track');
-            track.innerHTML = '';
-            if (!this.selected) return;
-            Object.keys(this.selected.userData.keyframes).forEach(f => {
-                const div = document.createElement('div');
-                div.className = 'key-marker';
-                div.style.left = (f * 20) + 'px';
-                track.appendChild(div);
-            });
-        }
-
-        setShading(mode) {
-            this.shading = mode;
-            this.objects.forEach(obj => {
-                if (obj.material) {
-                    obj.material.wireframe = (mode === 'wireframe');
-                    obj.material.transparent = (mode === 'xray');
-                    obj.material.opacity = (mode === 'xray') ? 0.4 : 1.0;
-                }
-            });
-            if (mode === 'render') {
-                this.scene.background = new THREE.Color(0x050505);
-                this.grid.visible = false;
-            } else {
-                this.scene.background = new THREE.Color(0x282828);
-                this.grid.visible = true;
             }
-        }
-
-        initUI() {
-            document.getElementById('play-btn').onclick = () => {
-                this.isPlaying = !this.isPlaying;
-                document.getElementById('play-btn').innerText = this.isPlaying ? '⏸ Pausar' : '▶ Reproducir';
-            };
-
-            document.getElementById('key-btn').onclick = () => this.insertKeyframe();
-            
-            document.getElementById('t-autokey').onclick = (e) => {
-                this.autoKey = !this.autoKey;
-                e.currentTarget.style.color = this.autoKey ? '#ff4444' : '#888';
-            };
-
-            document.getElementById('t-move').onclick = () => this.transform.setMode('translate');
-            document.getElementById('t-rotate').onclick = () => this.transform.setMode('rotate');
-            document.getElementById('t-scale').onclick = () => this.transform.setMode('scale');
-
-            window.addEventListener('keydown', (e) => {
-                if (e.shiftKey && e.key === 'A') document.getElementById('add-btn').click();
-                if (e.key === 'i') this.insertKeyframe();
-                if (e.key === 'g') this.transform.setMode('translate');
-                if (e.key === 'r') this.transform.setMode('rotate');
-                if (e.key === 's') this.transform.setMode('scale');
-            });
-
-            document.getElementById('add-btn').onclick = () => this.add('cube');
-        }
-
-        renderLoop() {
-            requestAnimationFrame(() => this.renderLoop());
-            this.orbit.update();
-            if (this.isPlaying) {
-                this.frame++;
-                this.updatePlayhead();
-            }
-            this.renderer.render(this.scene, this.camera);
-        }
+        });
     }
 
-    const app = new BlenderMasterApp();
-    window.app = app;
+    updateInspector() {
+        const container = document.getElementById('prop-fields');
+        if(!this.selected) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Selecciona un objeto</div>';
+            return;
+        }
 
-    window.addEventListener('resize', () => {
-        app.camera.aspect = window.innerWidth / window.innerHeight;
-        app.camera.updateProjectionMatrix();
-        app.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+        container.innerHTML = `
+            <div class="prop-row"><label>Nombre</label><input type="text" value="${this.selected.name}" id="p-name"></div>
+            <hr style="border-color:#333">
+            <div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">TRANSFORMACIÓN</div>
+            <div class="prop-row"><label>Pos X</label><input type="number" step="0.1" value="${this.selected.position.x.toFixed(2)}" id="p-px"></div>
+            <div class="prop-row"><label>Pos Y</label><input type="number" step="0.1" value="${this.selected.position.y.toFixed(2)}" id="p-py"></div>
+            <div class="prop-row"><label>Pos Z</label><input type="number" step="0.1" value="${this.selected.position.z.toFixed(2)}" id="p-pz"></div>
+            <hr style="border-color:#333">
+            <div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">MATERIAL</div>
+            <div class="prop-row"><label>Base Color</label><input type="color" value="#bcbcbc" id="p-col"></div>
+            <div class="prop-row"><label>Metálico</label><input type="range" min="0" max="1" step="0.01" value="0.1" id="p-met"></div>
+            <div class="prop-row"><label>Rugosidad</label><input type="range" min="0" max="1" step="0.01" value="0.4" id="p-rough"></div>
+        `;
+
+        // Bindings
+        document.getElementById('p-px').oninput = (e) => { this.selected.position.x = parseFloat(e.target.value); };
+        document.getElementById('p-py').oninput = (e) => { this.selected.position.y = parseFloat(e.target.value); };
+        document.getElementById('p-pz').oninput = (e) => { this.selected.position.z = parseFloat(e.target.value); };
+    }
+
+    updateOutliner() {
+        const container = document.getElementById('outliner-content');
+        container.innerHTML = '';
+        this.objects.forEach(obj => {
+            const div = document.createElement('div');
+            div.className = 'object-entry' + (this.selected === obj ? ' active' : '');
+            div.innerHTML = `<span>📦 ${obj.name}</span> <span>👁️</span>`;
+            div.onclick = () => this.select(obj);
+            container.appendChild(div);
+        });
+    }
+
+    initTimeline() {
+        const canvas = document.getElementById('timeline-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const drawRuler = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#555';
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Arial';
+
+            for(let i=0; i<500; i++) {
+                const x = i * 25;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, i % 10 === 0 ? 15 : 7);
+                ctx.stroke();
+                if(i % 10 === 0) ctx.fillText(i, x + 2, 28);
+            }
+        };
+
+        drawRuler();
+
+        document.getElementById('timeline-container').addEventListener('mousedown', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
+            this.frame = Math.max(1, Math.round(x / 25));
+            this.updatePlayhead();
+        });
+    }
+
+    updatePlayhead() {
+        const head = document.getElementById('playhead');
+        head.style.left = (this.frame * 25) + 'px';
+        document.getElementById('frame-display').innerText = this.frame;
+        this.applyAnimations();
+        this.updateInspector();
+    }
+
+    drawTimelineKeys() {
+        const layer = document.getElementById('keyframe-layer');
+        layer.innerHTML = '';
+        if(!this.selected) return;
+        
+        const keys = Object.keys(this.selected.userData.keyframes);
+        keys.forEach(f => {
+            const dot = document.createElement('div');
+            dot.className = 'keyframe-dot';
+            dot.style.left = (f * 25) + 'px';
+            layer.appendChild(dot);
+        });
+    }
+
+    setShading(mode) {
+        this.shading = mode;
+        this.objects.forEach(obj => {
+            if(!obj.material) return;
+            obj.material.wireframe = (mode === 'wireframe');
+            if(mode === 'render') {
+                this.renderer.setClearColor(0x050505);
+                this.grid.visible = false;
+            } else {
+                this.renderer.setClearColor(0x242424);
+                this.grid.visible = true;
+            }
+        });
+    }
+
+    initUI() {
+        document.getElementById('btn-play').onclick = () => {
+            this.isPlaying = !this.isPlaying;
+            document.getElementById('btn-play').innerText = this.isPlaying ? '⏸' : '▶';
+        };
+
+        document.getElementById('btn-insert-key').onclick = () => this.insertKeyframe();
+        
+        document.getElementById('btn-autokey').onclick = (e) => {
+            this.autoKey = !this.autoKey;
+            e.target.style.color = this.autoKey ? '#ff4444' : '#666';
+        };
+
+        // Herramientas
+        document.getElementById('tool-move').onclick = () => this.gizmo.setMode('translate');
+        document.getElementById('tool-rotate').onclick = () => this.gizmo.setMode('rotate');
+        document.getElementById('tool-scale').onclick = () => this.gizmo.setMode('scale');
+        
+        // Agregar Menu
+        const addBtn = document.getElementById('tool-add');
+        const addMenu = document.getElementById('add-menu');
+        addBtn.onclick = (e) => {
+            addMenu.style.display = 'block';
+            addMenu.style.left = '60px';
+            addMenu.style.top = e.clientY + 'px';
+        };
+        
+        window.addEventListener('click', (e) => {
+            if(!addBtn.contains(e.target)) addMenu.style.display = 'none';
+        });
+
+        // Shading
+        document.getElementById('shade-wire').onclick = () => this.setShading('wireframe');
+        document.getElementById('shade-solid').onclick = () => this.setShading('solid');
+        document.getElementById('shade-render').onclick = () => this.setShading('render');
+
+        // Shortcuts
+        window.onkeydown = (e) => {
+            if(e.key === 'g') this.gizmo.setMode('translate');
+            if(e.key === 'r') this.gizmo.setMode('rotate');
+            if(e.key === 's') this.gizmo.setMode('scale');
+            if(e.key === 'i') this.insertKeyframe();
+            if(e.key === ' ' ) document.getElementById('btn-play').click();
+        };
+    }
+
+    render() {
+        requestAnimationFrame(() => this.render());
+        
+        if(this.isPlaying) {
+            this.frame++;
+            if(this.frame > 250) this.frame = 1;
+            this.updatePlayhead();
+        }
+
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+    }
+}
+
+const app = new BlenderUltimate();
+window.app = app;
+
+window.addEventListener('resize', () => {
+    app.camera.aspect = window.innerWidth / window.innerHeight;
+    app.camera.updateProjectionMatrix();
+    app.renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 </script>
 </body>
 </html>
