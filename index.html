@@ -3,122 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InfinityB3D - Engine Preview</title>
+    <title>Blender Lite 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #ui-overlay { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; }
-        .badge { background: #007bff; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        #controls-guide { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; font-size: 13px; border: 1px solid #333; }
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; color: #ececec; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         canvas { display: block; }
+        .blender-ui { pointer-events: none; position: absolute; inset: 0; display: flex; flex-direction: column; }
+        .blender-ui * { pointer-events: auto; }
+        .panel { background: #2b2b2b; border: 1px solid #181818; }
+        .toolbar-btn { padding: 8px; margin: 2px; border-radius: 4px; transition: background 0.2s; cursor: pointer; }
+        .toolbar-btn:hover { background: #4d4d4d; }
+        .toolbar-btn.active { background: #4772b3; }
+        .timeline { height: 120px; background: #232323; border-top: 2px solid #111; position: relative; }
+        #keyframe-track { position: relative; height: 30px; background: #1d1d1d; border-bottom: 1px solid #333; overflow-x: auto; }
+        .keyframe { position: absolute; width: 8px; height: 8px; background: #e2a126; transform: rotate(45deg); top: 11px; cursor: pointer; }
+        #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff4444; z-index: 10; pointer-events: none; }
+        .input-group { display: flex; align-items: center; gap: 5px; padding: 4px; font-size: 12px; }
+        .input-group label { width: 60px; color: #aaa; }
+        input[type="number"] { background: #1d1d1d; border: 1px solid #333; color: white; width: 60px; padding: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="ui-overlay">
-        <span class="badge">🚀 INFINITY B3D CORE</span>
-        <h1 style="margin: 10px 0 5px 0;">NeuralFlow v1.0</h1>
-        <p style="opacity: 0.7; margin: 0;">Real-time PBR Preview</p>
+<div class="blender-ui">
+    <!-- Top Header -->
+    <div class="panel flex justify-between items-center px-4 py-1 text-xs">
+        <div class="flex gap-4">
+            <span class="font-bold">File</span>
+            <span>Edit</span>
+            <span>Render</span>
+            <span>Window</span>
+            <span>Help</span>
+        </div>
+        <div class="flex gap-4">
+            <span class="text-gray-500">Blender Lite v1.0</span>
+        </div>
     </div>
 
-    <div id="controls-guide">
-        <strong>Controles de Transformación:</strong><br>
-        [ Q ] Ocultar Gizmo | [ W ] Mover | [ E ] Rotar | [ R ] Escalar<br>
-        [ Mouse ] Arrastrar ejes para transformar | [ Click Derecho ] Orbitar cámara
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Toolbar -->
+        <div class="panel w-12 flex flex-col items-center py-4 gap-2">
+            <div id="btn-select" class="toolbar-btn active" title="Select (W)">🖱️</div>
+            <div id="btn-translate" class="toolbar-btn" title="Move (G)">✢</div>
+            <div id="btn-rotate" class="toolbar-btn" title="Rotate (R)">🔄</div>
+            <div id="btn-scale" class="toolbar-btn" title="Scale (S)">⤢</div>
+            <div class="border-b border-gray-600 w-8 my-2"></div>
+            <div id="btn-add-cube" class="toolbar-btn" title="Add Cube">📦</div>
+        </div>
+
+        <!-- Main Viewport -->
+        <div id="viewport" class="flex-1 relative">
+            <div class="absolute top-4 right-4 bg-black/40 p-2 rounded text-[10px] space-y-1">
+                <div>G: Mover | R: Rotar | S: Escalar</div>
+                <div>W: Selección | Del: Borrar</div>
+                <div>Space: Play/Pause | I: Keyframe</div>
+            </div>
+        </div>
+
+        <!-- Right Properties Panel -->
+        <div class="panel w-64 p-4 text-sm overflow-y-auto">
+            <h3 class="font-bold mb-4 border-b border-gray-600 pb-1">Transform</h3>
+            <div id="transform-props">
+                <div class="mb-4">
+                    <p class="text-xs text-gray-400 mb-1">Location</p>
+                    <div class="input-group"><label>X</label><input type="number" id="loc-x" step="0.1"></div>
+                    <div class="input-group"><label>Y</label><input type="number" id="loc-y" step="0.1"></div>
+                    <div class="input-group"><label>Z</label><input type="number" id="loc-z" step="0.1"></div>
+                </div>
+            </div>
+            
+            <h3 class="font-bold mb-4 border-b border-gray-600 pb-1 mt-6">Animation</h3>
+            <button id="btn-keyframe" class="w-full bg-yellow-600 hover:bg-yellow-700 p-2 rounded text-xs mb-2">Insert Keyframe (I)</button>
+            <button id="btn-clear-keys" class="w-full bg-red-900/40 hover:bg-red-900/60 p-2 rounded text-xs">Clear All Keys</button>
+            
+            <div class="mt-8">
+                <p class="text-[10px] text-gray-500 italic">Advanced Animation System: Uses linear interpolation between keyframes for Pos/Rot/Scale.</p>
+            </div>
+        </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Timeline Footer -->
+    <div class="timeline flex flex-col">
+        <div id="keyframe-track">
+            <div id="playhead"></div>
+            <!-- Keyframes will be injected here -->
+        </div>
+        <div class="flex items-center gap-4 px-4 h-full bg-[#333]">
+            <div class="flex gap-2">
+                <button id="btn-prev" class="p-1">⏮</button>
+                <button id="btn-play" class="bg-gray-600 px-4 py-1 rounded">Play</button>
+                <button id="btn-next" class="p-1">⏭</button>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+                <span>Frame:</span>
+                <input type="number" id="current-frame" value="0" class="w-16">
+                <span class="text-gray-400">/ 250</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+<script>
+    // --- Configuración de Escena ---
+    let scene, camera, renderer, controls, transformControls;
+    let cube;
+    let isPlaying = false;
+    let currentFrame = 0;
+    const maxFrames = 250;
+    let animationData = []; // Store keyframes: { frame: 0, pos: Vector3, rot: Euler, scl: Vector3 }
 
-        let camera, scene, renderer, control, orbit;
+    function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
 
-        init();
+        camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 300) / (window.innerHeight - 150), 0.1, 1000);
+        camera.position.set(5, 5, 5);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth - 312, window.innerHeight - 150);
+        document.getElementById('viewport').appendChild(renderer.domElement);
+
+        // Grid y Luces
+        const grid = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
+        scene.add(grid);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // Cubo inicial
+        addCube();
+
+        // Controles de Cámara
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        
+        // Transform Controls (Blender Style)
+        transformControls = new THREE.TransformControls(camera, renderer.domElement);
+        transformControls.addEventListener('change', () => {
+            updateUIFromObject();
+            render();
+        });
+        transformControls.addEventListener('dragging-changed', (event) => {
+            controls.enabled = !event.value;
+        });
+        scene.add(transformControls);
+
+        window.addEventListener('resize', onWindowResize);
+        setupInputs();
         animate();
+    }
 
-        function init() {
-            // 1. Escena y Cámara
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-            scene.fog = new THREE.Fog(0x050505, 5, 15);
+    function addCube() {
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshPhongMaterial({ color: 0x808080 });
+        cube = new THREE.Mesh(geometry, material);
+        cube.position.y = 0.5;
+        scene.add(cube);
+        transformControls.attach(cube);
+    }
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(5, 3, 5);
+    function onWindowResize() {
+        camera.aspect = (window.innerWidth - 312) / (window.innerHeight - 150);
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth - 312, window.innerHeight - 150);
+    }
 
-            // 2. Renderizado
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.toneMapping = THREE.ReinhardToneMapping;
-            document.body.appendChild(renderer.domElement);
+    // --- Sistema de Animación ---
+    function insertKeyframe() {
+        if (!cube) return;
+        
+        // Remove existing keyframe at this frame if exists
+        animationData = animationData.filter(k => k.frame !== currentFrame);
+        
+        animationData.push({
+            frame: currentFrame,
+            pos: cube.position.clone(),
+            rot: cube.rotation.clone(),
+            scl: cube.scale.clone()
+        });
+        
+        animationData.sort((a, b) => a.frame - b.frame);
+        drawKeyframes();
+    }
 
-            // 3. Luces (Simulando Global Illumination)
-            const ambientLight = new THREE.AmbientLight(0x404040, 2);
-            scene.add(ambientLight);
+    function drawKeyframes() {
+        const track = document.getElementById('keyframe-track');
+        // Clear old visual keys
+        const oldKeys = track.querySelectorAll('.keyframe');
+        oldKeys.forEach(k => k.remove());
 
-            const pointLight = new THREE.PointLight(0x007bff, 15, 10);
-            pointLight.position.set(2, 3, 2);
-            scene.add(pointLight);
+        animationData.forEach(k => {
+            const div = document.createElement('div');
+            div.className = 'keyframe';
+            div.style.left = `${(k.frame / maxFrames) * 100}%`;
+            div.onclick = () => { currentFrame = k.frame; updateAnimationState(); };
+            track.appendChild(div);
+        });
+    }
 
-            // 4. El Objeto (Infinity Core)
-            const geometry = new THREE.OctahedronGeometry(1, 0);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0x007bff, 
-                metalness: 0.9, 
-                roughness: 0.1,
-                emissive: 0x001133
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
+    function updateAnimationState() {
+        if (animationData.length === 0) return;
 
-            // Grid de referencia
-            const grid = new THREE.GridHelper(20, 20, 0x222222, 0x111111);
-            scene.add(grid);
+        // Find surrounding keyframes
+        let prev = null;
+        let next = null;
 
-            // 5. Controles de Órbita (Cámara)
-            orbit = new OrbitControls(camera, renderer.domElement);
-            orbit.update();
-
-            // 6. Transform Controls (El Gizmo)
-            control = new TransformControls(camera, renderer.domElement);
-            control.addEventListener('dragging-changed', function (event) {
-                orbit.enabled = !event.value; // Desactiva órbita al usar el gizmo
-            });
-            control.attach(mesh);
-            scene.add(control);
-
-            // 7. Eventos de Teclado
-            window.addEventListener('keydown', function (event) {
-                switch (event.key.toLowerCase()) {
-                    case 'q': control.visible = !control.visible; break; // Toggle visual
-                    case 'w': control.setMode('translate'); break;       // Mover
-                    case 'e': control.setMode('rotate'); break;          // Rotar
-                    case 'r': control.setMode('scale'); break;           // Escalar
-                }
-            });
-
-            window.addEventListener('resize', onWindowResize);
+        for (let i = 0; i < animationData.length; i++) {
+            if (animationData[i].frame <= currentFrame) prev = animationData[i];
+            if (animationData[i].frame > currentFrame && !next) next = animationData[i];
         }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        if (prev && next) {
+            // Interpolate
+            const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
+            cube.position.lerpVectors(prev.pos, next.pos, t);
+            cube.scale.lerpVectors(prev.scl, next.scl, t);
+            
+            // Simple Euler lerp (can be improved with Quaternions)
+            cube.rotation.x = prev.rot.x + (next.rot.x - prev.rot.x) * t;
+            cube.rotation.y = prev.rot.y + (next.rot.y - prev.rot.y) * t;
+            cube.rotation.z = prev.rot.z + (next.rot.z - prev.rot.z) * t;
+        } else if (prev) {
+            cube.position.copy(prev.pos);
+            cube.rotation.copy(prev.rot);
+            cube.scale.copy(prev.scl);
+        }
+        
+        updateUIFromObject();
+    }
+
+    // --- UI e Inputs ---
+    function setupInputs() {
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'g': transformControls.setMode('translate'); updateActiveTool('btn-translate'); break;
+                case 'r': transformControls.setMode('rotate'); updateActiveTool('btn-rotate'); break;
+                case 's': transformControls.setMode('scale'); updateActiveTool('btn-scale'); break;
+                case 'w': transformControls.detach(); updateActiveTool('btn-select'); break;
+                case 'i': insertKeyframe(); break;
+                case ' ': e.preventDefault(); isPlaying = !isPlaying; break;
+                case 'delete': if(cube) { transformControls.detach(); scene.remove(cube); cube = null; } break;
+            }
+        });
+
+        // Toolbar
+        document.getElementById('btn-translate').onclick = () => { transformControls.setMode('translate'); transformControls.attach(cube); updateActiveTool('btn-translate'); };
+        document.getElementById('btn-rotate').onclick = () => { transformControls.setMode('rotate'); transformControls.attach(cube); updateActiveTool('btn-rotate'); };
+        document.getElementById('btn-scale').onclick = () => { transformControls.setMode('scale'); transformControls.attach(cube); updateActiveTool('btn-scale'); };
+        document.getElementById('btn-select').onclick = () => { transformControls.detach(); updateActiveTool('btn-select'); };
+        
+        document.getElementById('btn-play').onclick = () => { isPlaying = !isPlaying; document.getElementById('btn-play').textContent = isPlaying ? "Pause" : "Play"; };
+        document.getElementById('btn-keyframe').onclick = insertKeyframe;
+        document.getElementById('btn-clear-keys').onclick = () => { animationData = []; drawKeyframes(); };
+
+        // Manual property inputs
+        ['loc-x', 'loc-y', 'loc-z'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateObjectFromUI);
+        });
+    }
+
+    function updateActiveTool(id) {
+        document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function updateUIFromObject() {
+        if (!cube) return;
+        document.getElementById('loc-x').value = cube.position.x.toFixed(2);
+        document.getElementById('loc-y').value = cube.position.y.toFixed(2);
+        document.getElementById('loc-z').value = cube.position.z.toFixed(2);
+    }
+
+    function updateObjectFromUI() {
+        if (!cube) return;
+        cube.position.x = parseFloat(document.getElementById('loc-x').value) || 0;
+        cube.position.y = parseFloat(document.getElementById('loc-y').value) || 0;
+        cube.position.z = parseFloat(document.getElementById('loc-z').value) || 0;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        if (isPlaying) {
+            currentFrame++;
+            if (currentFrame > maxFrames) currentFrame = 0;
+            updateAnimationState();
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-    </script>
+        // Sync timeline UI
+        document.getElementById('playhead').style.left = `${(currentFrame / maxFrames) * 100}%`;
+        document.getElementById('current-frame').value = currentFrame;
+
+        render();
+    }
+
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+</script>
 </body>
 </html>
+
