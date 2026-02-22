@@ -3,135 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoxelOS Simulator</title>
+    <title>VoxelOS Pro - Laptop Edition</title>
     <style>
         :root {
-            --bg-color: #1a1a2e;
-            --accent-color: #16213e;
-            --text-color: #e94560;
-            --taskbar-color: rgba(0, 0, 0, 0.8);
+            --bg-grad: linear-gradient(135deg, #1e1e2f 0%, #0f0f1a 100%);
+            --taskbar-bg: rgba(20, 20, 30, 0.85);
+            --window-bg: #2a2a3e;
+            --accent: #00d1ff;
+            --text: #ffffff;
         }
 
-        body, html {
-            margin: 0; padding: 0;
-            height: 100%; overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: black; color: white;
+        body, html { 
+            margin: 0; padding: 0; height: 100%; 
+            overflow: hidden; font-family: 'Segoe UI', sans-serif; 
+            background: #000; color: var(--text);
         }
 
-        /* --- Pantalla de Inicio --- */
+        /* --- ARRANQUE --- */
         #boot-screen {
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            height: 100vh; transition: opacity 1s ease;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; height: 100vh; background: #000;
+            z-index: 1000; position: relative;
         }
-
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--text-color);
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #333;
+            border-top: 5px solid var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
         }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* --- Escritorio --- */
+        /* --- ESCRITORIO --- */
         #desktop {
-            display: none; height: 100vh;
-            background: linear-gradient(45deg, #0f3460, #16213e);
-            position: relative;
+            display: none; height: 100vh; background: var(--bg-grad);
+            position: relative; background-size: cover;
         }
 
-        /* Iconos */
-        .icon-container {
-            display: flex; flex-direction: column;
-            gap: 20px; padding: 20px; width: 100px;
+        .icon-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, 90px);
+            grid-template-rows: repeat(auto-fill, 95px);
+            gap: 15px; padding: 20px;
         }
 
         .icon {
-            text-align: center; cursor: pointer;
-            transition: transform 0.2s;
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; padding: 10px; border-radius: 8px;
+            transition: background 0.3s;
         }
+        .icon:hover { background: rgba(255, 255, 255, 0.1); }
+        .icon img { width: 45px; margin-bottom: 5px; }
+        .icon span { font-size: 12px; text-shadow: 1px 1px 3px #000; text-align: center; }
 
-        .icon:hover { transform: scale(1.1); }
+        /* --- VENTANAS --- */
+        .window {
+            position: absolute; width: 400px; height: 300px;
+            background: var(--window-bg); border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; flex-direction: column; overflow: hidden;
+            resize: both; min-width: 200px; min-height: 150px;
+        }
+        .window-header {
+            background: rgba(0,0,0,0.3); padding: 10px;
+            display: flex; justify-content: space-between; cursor: move;
+        }
+        .window-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
+        .close-btn { color: #ff5f56; cursor: pointer; font-weight: bold; }
 
-        .icon img { width: 50px; height: 50px; display: block; margin: 0 auto; }
-        .icon span { font-size: 12px; margin-top: 5px; display: block; }
-
-        /* Barra de Tareas */
+        /* --- BARRA DE TAREAS --- */
         .taskbar {
-            position: absolute; bottom: 0; width: 100%;
-            height: 45px; background: var(--taskbar-color);
-            display: flex; justify-content: flex-end; align-items: center;
-            padding: 0 15px; box-sizing: border-box;
+            position: absolute; bottom: 0; width: 100%; height: 45px;
+            background: var(--taskbar-bg); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box; z-index: 900;
         }
 
-        .controls { display: flex; align-items: center; gap: 20px; }
+        .system-tray { display: flex; align-items: center; gap: 20px; }
+        .tray-item { font-size: 13px; display: flex; align-items: center; gap: 5px; }
 
-        .control-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        /* --- NOTIFICACIONES --- */
+        #notif {
+            position: fixed; top: 20px; right: -300px;
+            background: var(--accent); color: #000;
+            padding: 15px; border-radius: 5px; transition: 0.5s;
+            z-index: 2000; font-weight: bold;
+        }
 
-        input[type="range"] { accent-color: var(--text-color); width: 80px; }
-
+        /* --- VOXEL STORE --- */
+        .store-item {
+            background: #3a3a52; padding: 10px; margin-bottom: 10px;
+            border-radius: 5px; display: flex; justify-content: space-between;
+        }
+        .install-btn { background: var(--accent); border: none; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <div id="notif">Cargando sistema...</div>
+
     <div id="boot-screen">
-        <h1 id="status-text">Iniciando VoxelOS...</h1>
-        <div class="loader"></div>
+        <div class="spinner"></div>
+        <h2 id="boot-text">Iniciando VoxelOS...</h2>
     </div>
 
     <div id="desktop">
-        <div class="icon-container">
-            <div class="icon" onclick="alert('Abriendo Configuración...')">
-                <img src="https://cdn-icons-png.flaticon.com/512/3953/3953226.png" alt="Config">
+        <div class="icon-grid" id="icon-grid">
+            <div class="icon" onclick="openWin('win-config')">
+                <img src="https://cdn-icons-png.flaticon.com/512/3953/3953226.png">
                 <span>Configuración</span>
             </div>
-            <div class="icon" onclick="alert('Abriendo Voxel Store...')">
-                <img src="https://cdn-icons-png.flaticon.com/512/3306/3306613.png" alt="Store">
+            <div class="icon" onclick="openWin('win-store')">
+                <img src="https://cdn-icons-png.flaticon.com/512/3306/3306613.png">
                 <span>Voxel Store</span>
             </div>
         </div>
 
+        <div id="win-config" class="window" style="top: 100px; left: 100px;">
+            <div class="window-header" onmousedown="dragElement(this.parentElement)">
+                <span>Configuración del Sistema</span>
+                <span class="close-btn" onclick="closeWin('win-config')">✖</span>
+            </div>
+            <div class="window-content">
+                <p>Color de Acento:</p>
+                <input type="color" onchange="document.documentElement.style.setProperty('--accent', this.value)">
+                <hr>
+                <p>Nombre de Usuario:</p>
+                <input type="text" placeholder="Voxel User" id="user-input">
+                <button onclick="notify('Nombre cambiado con éxito')">Guardar</button>
+            </div>
+        </div>
+
+        <div id="win-store" class="window" style="top: 150px; left: 150px;">
+            <div class="window-header" onmousedown="dragElement(this.parentElement)">
+                <span>Voxel Store</span>
+                <span class="close-btn" onclick="closeWin('win-store')">✖</span>
+            </div>
+            <div class="window-content">
+                <h3>Apps Disponibles</h3>
+                <div class="store-item">
+                    <span>Voxel Music</span>
+                    <button class="install-btn" onclick="installApp('Voxel Music', 'https://cdn-icons-png.flaticon.com/512/3844/3844724.png')">Instalar</button>
+                </div>
+                <div class="store-item">
+                    <span>Voxel Editor</span>
+                    <button class="install-btn" onclick="installApp('Voxel Editor', 'https://cdn-icons-png.flaticon.com/512/2919/2919590.png')">Instalar</button>
+                </div>
+            </div>
+        </div>
+
         <div class="taskbar">
-            <div class="controls">
-                <div class="control-item">
-                    <span>📶 WiFi:</span>
-                    <select id="wifi-sim">
-                        <option>Conectado</option>
-                        <option>Buscando...</option>
-                        <option>Desconectado</option>
+            <div class="start-menu" onclick="notify('Menu Inicio en desarrollo...')"><strong>VOXEL</strong></div>
+            
+            <div class="system-tray">
+                <div class="tray-item">📶 WiFi
+                    <select style="background:none; color:white; border:none">
+                        <option>Full Speed</option>
+                        <option>Limitado</option>
                     </select>
                 </div>
-                <div class="control-item">
-                    <span>☀️ Brillo:</span>
-                    <input type="range" min="30" max="100" value="100" oninput="adjustBrightness(this.value)">
+                <div class="tray-item">☀️ Brillo
+                    <input type="range" min="40" max="100" value="100" oninput="document.getElementById('desktop').style.filter = `brightness(${this.value}%)`">
                 </div>
+                <div class="tray-item" id="clock">00:00:00</div>
             </div>
         </div>
     </div>
 
     <script>
-        const statusText = document.getElementById('status-text');
-        const bootScreen = document.getElementById('boot-screen');
-        const desktop = document.getElementById('desktop');
-
-        // Simulación de secuencia de arranque
+        // LÓGICA DE CARGA
         setTimeout(() => {
-            statusText.innerText = "Instalando actualizaciones...";
-            
+            document.getElementById('boot-text').innerText = "Instalando módulos de escritorio...";
             setTimeout(() => {
-                bootScreen.style.opacity = '0';
-                setTimeout(() => {
-                    bootScreen.style.display = 'none';
-                    desktop.style.display = 'block';
-                }, 1000);
-            }, 3000); // 3 segundos de "Instalando"
+                document.getElementById('boot-screen').style.display = 'none';
+                document.getElementById('desktop').style.display = 'block';
+                notify("¡Bienvenido a VoxelOS!");
+            }, 2500);
+        }, 2000);
 
-        }, 2000); // 2 segundos de "Iniciando"
+        // RELOJ REAL
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+        }, 1000);
 
-        function adjustBrightness(val) {
-            document.getElementById('desktop').style.filter = `brightness(${val}%)`;
+        // FUNCIONES DE VENTANA
+        function openWin(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeWin(id) { document.getElementById(id).style.display = 'none'; }
+
+        // NOTIFICACIONES
+        function notify(msg) {
+            const n = document.getElementById('notif');
+            n.innerText = msg;
+            n.style.right = '20px';
+            setTimeout(() => n.style.right = '-300px', 3000);
+        }
+
+        // INSTALADOR DE APPS
+        function installApp(name, iconUrl) {
+            notify(`Instalando ${name}...`);
+            setTimeout(() => {
+                const grid = document.getElementById('icon-grid');
+                const newIcon = document.createElement('div');
+                newIcon.className = 'icon';
+                newIcon.onclick = () => notify(`Abriendo ${name}...`);
+                newIcon.innerHTML = `<img src="${iconUrl}"><span>${name}</span>`;
+                grid.appendChild(newIcon);
+                notify(`${name} se instaló correctamente`);
+            }, 2000);
+        }
+
+        // ARRASTRAR VENTANAS (Draggable)
+        function dragElement(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
         }
     </script>
 </body>
