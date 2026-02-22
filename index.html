@@ -3,457 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blender Ultra Pro - Suite Completa</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Voxel OS</title>
     <style>
         :root {
-            --bg-base: #1d1d1d;
-            --bg-panel: #2b2b2b;
-            --bg-header: #333333;
-            --accent: #e2a126;
-            --blue: #4772b3;
-            --text: #cfcfcf;
+            --primary-bg: #1a1a1a;
+            --accent: #00ffcc;
+            --taskbar-bg: rgba(0, 0, 0, 0.8);
         }
-        body { margin: 0; overflow: hidden; background: var(--bg-base); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 11px; }
-        
-        /* Layout */
-        .app-grid { display: grid; grid-template-rows: 24px 1fr 200px; height: 100vh; }
-        .top-bar { background: var(--bg-header); display: flex; align-items: center; padding: 0 10px; gap: 15px; border-bottom: 1px solid #111; z-index: 100; }
-        .editor-area { display: grid; grid-template-columns: 45px 1fr 300px; overflow: hidden; }
-        
-        /* Toolbar */
-        .toolbar { background: var(--bg-panel); border-right: 1px solid #111; display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 10px; }
-        .t-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
-        .t-btn:hover { background: #444; }
-        .t-btn.active { background: var(--blue); border-color: #77aaff; }
 
-        /* Panels */
-        .side-panel { background: var(--bg-panel); border-left: 1px solid #111; display: flex; flex-direction: column; overflow-y: auto; }
-        .panel-sec { border-bottom: 1px solid #111; padding: 10px; }
-        .p-title { font-weight: bold; margin-bottom: 8px; color: #888; text-transform: uppercase; font-size: 9px; display: flex; justify-content: space-between; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+        }
 
-        /* Dope Sheet */
-        .dope-sheet-area { background: var(--bg-base); border-top: 2px solid #111; display: grid; grid-template-columns: 200px 1fr; }
-        .channels { background: #262626; border-right: 1px solid #111; overflow-y: auto; }
-        .channel-row { height: 24px; display: flex; align-items: center; padding: 0 10px; border-bottom: 1px solid #1d1d1d; }
-        .timeline-view { position: relative; overflow-x: auto; background: #181818; background-image: linear-gradient(90deg, #222 1px, transparent 1px); background-size: 40px 100%; }
-        .frame-num { position: absolute; top: 0; color: #555; font-size: 9px; pointer-events: none; }
-        
-        /* Interactive Elements */
-        .key-diamond { position: absolute; width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); top: 7px; border: 1px solid #000; cursor: pointer; }
-        .key-diamond:hover { filter: brightness(1.2); outline: 1px solid white; }
-        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #5680c1; z-index: 50; pointer-events: none; }
-        .playhead::after { content: ''; position: absolute; top: 0; left: -5px; width: 12px; height: 12px; background: #5680c1; border-radius: 2px; }
+        /* --- Pantalla de Instalación --- */
+        #installer {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: radial-gradient(circle, #222, #000);
+            z-index: 100;
+            position: absolute;
+            width: 100%;
+        }
 
-        input[type="number"], select { background: #111; border: 1px solid #444; color: #fff; border-radius: 2px; padding: 2px; width: 100%; }
-        button { background: #444; border: 1px solid #555; padding: 4px; border-radius: 2px; cursor: pointer; width: 100%; }
-        button:hover { background: #555; }
-        .btn-active { background: var(--accent) !important; color: #000; }
+        .loader {
+            border: 4px solid #333;
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
 
-        .stats-overlay { position: absolute; top: 40px; left: 60px; pointer-events: none; color: #777; line-height: 1.4; text-shadow: 1px 1px 1px #000; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Escritorio --- */
+        #desktop {
+            display: none;
+            height: 100vh;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            position: relative;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #desktop h1 {
+            font-size: 5rem;
+            opacity: 0.2;
+            user-select: none;
+        }
+
+        /* --- Apps en el Escritorio --- */
+        .app-container {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            width: 80px;
+            transition: transform 0.2s;
+        }
+
+        .icon:hover { transform: scale(1.1); }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* --- Barra de Tareas --- */
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 45px;
+            background: var(--taskbar-bg);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            box-sizing: border-box;
+        }
+
+        .system-tray {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            align-items: center;
+        }
+
+        /* --- Ventanas --- */
+        .window {
+            display: none;
+            position: absolute;
+            top: 100px;
+            width: 400px;
+            background: #f0f0f0;
+            color: #333;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .window-header {
+            background: #ddd;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn { cursor: pointer; color: red; font-weight: bold; }
+
+        .window-content { padding: 20px; }
+
+        textarea { width: 100%; height: 150px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="app-grid">
-    <!-- Header -->
-    <div class="top-bar">
-        <span class="text-orange-500 font-bold">BLENDER Web</span>
-        <div class="flex gap-4 ml-4 opacity-70">
-            <span>Archivo</span><span>Editar</span><span>Render</span><span>Escena</span>
-        </div>
-        <div class="flex-1"></div>
-        <div class="text-[10px] text-gray-500">v2.5 Professional Edition</div>
+    <div id="installer">
+        <div class="loader"></div>
+        <h2 id="status-text">Instalando Voxel OS...</h2>
     </div>
 
-    <!-- Main Workspace -->
-    <div class="editor-area">
-        <div class="toolbar">
-            <div id="t-select" class="t-btn active" title="Seleccionar (W)">🖱️</div>
-            <div id="t-move" class="t-btn" title="Mover (G)">✢</div>
-            <div id="t-rotate" class="t-btn" title="Rotar (R)">🔄</div>
-            <div id="t-scale" class="t-btn" title="Escalar (S)">⤢</div>
-            <div class="h-px w-8 bg-gray-700 my-2"></div>
-            <div id="t-wire" class="t-btn" title="Wireframe (Z)">🕸️</div>
-            <div id="t-xray" class="t-btn" title="Rayos X (Alt+Z)">🦴</div>
-            <div id="t-snap" class="t-btn" title="Ajuste a Rejilla">🧲</div>
-        </div>
+    <div id="desktop">
+        <h1>VOXEL OS</h1>
 
-        <div class="relative flex-1">
-            <div id="viewport" class="w-full h-full bg-[#151515]"></div>
-            <div class="stats-overlay">
-                <div>Colección de Escena</div>
-                <div id="stat-objects">Objetos: 1</div>
-                <div id="stat-verts">Vértices: 8</div>
-                <div id="active-tool" class="text-blue-400 mt-2">Herramienta: Selección</div>
+        <div class="app-container">
+            <div class="icon" onclick="openWindow('store')">
+                <div class="icon-box">🛒</div>
+                <span>Store</span>
+            </div>
+            <div class="icon" onclick="openWindow('config')">
+                <div class="icon-box">⚙️</div>
+                <span>Config</span>
+            </div>
+            <div class="icon" onclick="openWindow('bank')">
+                <div class="icon-box">💰</div>
+                <span>Banco</span>
             </div>
         </div>
 
-        <div class="side-panel">
-            <div class="panel-sec">
-                <div class="p-title">Outliner (Escena) <span>👁️</span></div>
-                <div id="outliner-list" class="space-y-1 max-h-40 overflow-y-auto pr-2">
-                    <!-- Dinámico -->
-                </div>
+        <div id="store" class="window">
+            <div class="window-header">
+                <span>Voxel Store</span>
+                <span class="close-btn" onclick="closeWindow('store')">X</span>
             </div>
-
-            <div class="panel-sec">
-                <div class="p-title">Añadir Primitivas <span>➕</span></div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="addObject('cube')">Cubo</button>
-                    <button onclick="addObject('sphere')">Esfera</button>
-                    <button onclick="addObject('cylinder')">Cilindro</button>
-                    <button onclick="addObject('torus')">Toro</button>
-                    <button onclick="addObject('light')" class="text-yellow-400">Luz Punto</button>
-                </div>
+            <div class="window-content">
+                <h3>Aplicaciones Disponibles</h3>
+                <button onclick="openWindow('notes')">Descargar/Abrir Bloc de Notas</button>
             </div>
+        </div>
 
-            <div class="panel-sec">
-                <div class="p-title">Transformación <span>📐</span></div>
-                <div class="space-y-2" id="transform-ui">
-                    <div class="flex gap-2">X <input id="tx" type="number" step="0.1"></div>
-                    <div class="flex gap-2">Y <input id="ty" type="number" step="0.1"></div>
-                    <div class="flex gap-2">Z <input id="tz" type="number" step="0.1"></div>
-                </div>
+        <div id="notes" class="window">
+            <div class="window-header">
+                <span>Bloc de Notas</span>
+                <span class="close-btn" onclick="closeWindow('notes')">X</span>
             </div>
+            <div class="window-content">
+                <textarea placeholder="Escribe algo aquí..."></textarea>
+            </div>
+        </div>
 
-            <div class="panel-sec mt-auto">
-                <div class="p-title">Animación <span>🎞️</span></div>
-                <button id="btn-key" class="btn-active mb-2">Insertar Keyframe (I)</button>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="deleteCurrentKeyframe()">Borrar Key</button>
-                    <button onclick="clearAllAnimation()">Limpiar Todo</button>
-                </div>
+        <div class="taskbar">
+            <div style="font-weight: bold;">VX</div>
+            <div class="system-tray">
+                <span>📶 Wifi</span>
+                <span>🔋 85%</span>
+                <span>🔊</span>
+                <span>🔵 BT</span>
+                <span id="clock">00:00</span>
             </div>
         </div>
     </div>
 
-    <!-- Dope Sheet -->
-    <div class="dope-sheet-area">
-        <div class="channels">
-            <div class="channel-row font-bold bg-[#333]">Dope Sheet</div>
-            <div class="channel-row text-orange-400">🔸 Summary</div>
-            <div class="channel-row pl-6">Transform</div>
-            <div class="channel-row pl-10 text-[9px] opacity-60">Location</div>
-            <div class="channel-row pl-10 text-[9px] opacity-60">Rotation</div>
-        </div>
-        <div id="timeline" class="timeline-view">
-            <div id="playhead" class="playhead"></div>
-            <div id="key-container" class="relative h-full"></div>
-            <!-- Marcadores de frames -->
-            <div id="frame-labels" class="absolute inset-0 pointer-events-none"></div>
-        </div>
-    </div>
-</div>
+    <script>
+        // Simulador de instalación
+        setTimeout(() => {
+            document.getElementById('status-text').innerText = "Iniciando...";
+            setTimeout(() => {
+                document.getElementById('installer').style.display = 'none';
+                document.getElementById('desktop').style.display = 'flex';
+            }, 1500);
+        }, 3000);
 
-<script>
-    let scene, camera, renderer, controls, transformControls;
-    let currentFrame = 0;
-    let isPlaying = false;
-    let selectedObject = null;
-    let objects = [];
-    let isSnap = false;
-    let isXRay = false;
-    let isWireframe = false;
+        // Reloj en tiempo real
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-    // Inicialización
-    function init() {
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
-
-        const v = document.getElementById('viewport');
-        camera = new THREE.PerspectiveCamera(45, v.clientWidth / v.clientHeight, 0.1, 1000);
-        camera.position.set(8, 8, 8);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(v.clientWidth, v.clientHeight);
-        renderer.shadowMap.enabled = true;
-        v.appendChild(renderer.domElement);
-
-        // Grid
-        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x282828);
-        scene.add(grid);
-
-        // Luces
-        const amb = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(amb);
-        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-        sun.position.set(5, 10, 5);
-        scene.add(sun);
-
-        // Controles
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-
-        transformControls = new THREE.TransformControls(camera, renderer.domElement);
-        transformControls.addEventListener('dragging-changed', e => controls.enabled = !e.value);
-        transformControls.addEventListener('change', updateTransformUI);
-        scene.add(transformControls);
-
-        // Primer Cubo
-        addObject('cube');
-        
-        setupTimelineLabels();
-        setupEvents();
-        animate();
-    }
-
-    function addObject(type) {
-        let geometry, material, mesh;
-        material = new THREE.MeshPhongMaterial({ color: 0x909090 });
-
-        switch(type) {
-            case 'cube': geometry = new THREE.BoxGeometry(2,2,2); break;
-            case 'sphere': geometry = new THREE.SphereGeometry(1.2, 32, 32); break;
-            case 'cylinder': geometry = new THREE.CylinderGeometry(1, 1, 2, 32); break;
-            case 'torus': geometry = new THREE.TorusGeometry(1, 0.4, 16, 100); break;
-            case 'light': 
-                const lp = new THREE.PointLight(0xffcc00, 1, 10);
-                const helper = new THREE.PointLightHelper(lp, 0.5);
-                lp.add(helper);
-                lp.isLightObject = true;
-                mesh = lp;
-                break;
+        // Manejo de ventanas
+        function openWindow(id) {
+            document.getElementById(id).style.display = 'block';
         }
 
-        if(!mesh) mesh = new THREE.Mesh(geometry, material);
-        
-        mesh.position.y = 1;
-        mesh.name = `${type}_${objects.length}`;
-        mesh.userData.keyframes = []; // Storage for animation
-        
-        scene.add(mesh);
-        objects.push(mesh);
-        selectObject(mesh);
-        updateOutliner();
-    }
-
-    function selectObject(obj) {
-        selectedObject = obj;
-        transformControls.attach(obj);
-        updateOutliner();
-        updateTransformUI();
-        drawKeyframes();
-    }
-
-    function updateOutliner() {
-        const list = document.getElementById('outliner-list');
-        list.innerHTML = '';
-        objects.forEach(obj => {
-            const item = document.createElement('div');
-            item.className = `p-1 cursor-pointer flex justify-between ${selectedObject === obj ? 'bg-[#4772b3]' : 'hover:bg-[#444]'}`;
-            item.innerHTML = `<span>📦 ${obj.name}</span> <span onclick="event.stopPropagation(); removeObject('${obj.name}')">🗑️</span>`;
-            item.onclick = () => selectObject(obj);
-            list.appendChild(item);
-        });
-        document.getElementById('stat-objects').innerText = `Objetos: ${objects.length}`;
-    }
-
-    function removeObject(name) {
-        const obj = objects.find(o => o.name === name);
-        if(!obj) return;
-        if(selectedObject === obj) transformControls.detach();
-        scene.remove(obj);
-        objects = objects.filter(o => o !== obj);
-        updateOutliner();
-    }
-
-    function setupTimelineLabels() {
-        const container = document.getElementById('frame-labels');
-        for(let i=0; i<=250; i+=10) {
-            const lbl = document.createElement('div');
-            lbl.className = 'frame-num';
-            lbl.style.left = (i * 40 + 5) + 'px';
-            lbl.innerText = i;
-            container.appendChild(lbl);
+        function closeWindow(id) {
+            document.getElementById(id).style.display = 'none';
         }
-    }
-
-    function setupEvents() {
-        window.addEventListener('keydown', e => {
-            if(e.target.tagName === 'INPUT') return;
-            
-            switch(e.key.toLowerCase()) {
-                case 'g': setTransformMode('translate'); break;
-                case 'r': setTransformMode('rotate'); break;
-                case 's': setTransformMode('scale'); break;
-                case 'w': transformControls.detach(); break;
-                case 'i': insertKeyframe(); break;
-                case 'x': 
-                case 'delete': if(selectedObject) removeObject(selectedObject.name); break;
-                case 'z': toggleWireframe(); break;
-                case ' ': e.preventDefault(); togglePlay(); break;
-                case 'd': if(e.shiftKey) duplicateSelected(); break;
-            }
-            if(e.altKey && e.key.toLowerCase() === 'z') toggleXRay();
-        });
-
-        document.getElementById('t-move').onclick = () => setTransformMode('translate');
-        document.getElementById('t-rotate').onclick = () => setTransformMode('rotate');
-        document.getElementById('t-scale').onclick = () => setTransformMode('scale');
-        document.getElementById('t-select').onclick = () => { transformControls.detach(); setActiveTool('t-select', 'Selección'); };
-        document.getElementById('t-wire').onclick = toggleWireframe;
-        document.getElementById('t-xray').onclick = toggleXRay;
-        document.getElementById('btn-key').onclick = insertKeyframe;
-        
-        document.getElementById('timeline').onclick = e => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const frame = Math.round((e.clientX - rect.left + e.currentTarget.scrollLeft) / 40);
-            setFrame(Math.max(0, frame));
-        };
-
-        // UI inputs
-        ['tx', 'ty', 'tz'].forEach(id => {
-            document.getElementById(id).oninput = e => {
-                if(!selectedObject) return;
-                selectedObject.position[id[1]] = parseFloat(e.target.value);
-            };
-        });
-    }
-
-    function setTransformMode(mode) {
-        transformControls.setMode(mode);
-        if(selectedObject) transformControls.attach(selectedObject);
-        const labels = {translate: 'Mover', rotate: 'Rotar', scale: 'Escalar'};
-        setActiveTool('t-' + (mode === 'translate' ? 'move' : mode), labels[mode]);
-    }
-
-    function setActiveTool(id, label) {
-        document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        document.getElementById('active-tool').innerText = `Herramienta: ${label}`;
-    }
-
-    function toggleWireframe() {
-        isWireframe = !isWireframe;
-        objects.forEach(o => { if(o.material) o.material.wireframe = isWireframe; });
-        document.getElementById('t-wire').classList.toggle('active', isWireframe);
-    }
-
-    function toggleXRay() {
-        isXRay = !isXRay;
-        objects.forEach(o => { if(o.material) o.material.opacity = isXRay ? 0.4 : 1.0; o.material.transparent = isXRay; });
-        document.getElementById('t-xray').classList.toggle('active', isXRay);
-    }
-
-    function duplicateSelected() {
-        if(!selectedObject) return;
-        const type = selectedObject.name.split('_')[0];
-        addObject(type);
-        selectedObject.position.copy(transformControls.object.position).addScalar(0.5);
-        updateTransformUI();
-    }
-
-    // --- Animación Engine ---
-
-    function insertKeyframe() {
-        if(!selectedObject) return;
-        const keys = selectedObject.userData.keyframes;
-        const existing = keys.findIndex(k => k.frame === currentFrame);
-        
-        const newKey = {
-            frame: currentFrame,
-            pos: selectedObject.position.clone(),
-            rot: selectedObject.rotation.clone(),
-            scl: selectedObject.scale.clone()
-        };
-
-        if(existing >= 0) keys[existing] = newKey;
-        else keys.push(newKey);
-        
-        keys.sort((a,b) => a.frame - b.frame);
-        drawKeyframes();
-    }
-
-    function deleteCurrentKeyframe() {
-        if(!selectedObject) return;
-        selectedObject.userData.keyframes = selectedObject.userData.keyframes.filter(k => k.frame !== currentFrame);
-        drawKeyframes();
-    }
-
-    function clearAllAnimation() {
-        if(!selectedObject) return;
-        selectedObject.userData.keyframes = [];
-        drawKeyframes();
-    }
-
-    function drawKeyframes() {
-        const container = document.getElementById('key-container');
-        container.innerHTML = '';
-        if(!selectedObject) return;
-
-        selectedObject.userData.keyframes.forEach(k => {
-            const d = document.createElement('div');
-            d.className = 'key-diamond';
-            d.style.left = (k.frame * 40) + 'px';
-            d.onclick = (e) => { e.stopPropagation(); setFrame(k.frame); };
-            container.appendChild(d);
-        });
-    }
-
-    function setFrame(f) {
-        currentFrame = f;
-        document.getElementById('playhead').style.left = (currentFrame * 40) + 'px';
-        applyPose();
-    }
-
-    function applyPose() {
-        objects.forEach(obj => {
-            const keys = obj.userData.keyframes;
-            if(keys.length === 0) return;
-
-            let prev = null, next = null;
-            for(let i=0; i<keys.length; i++) {
-                if(keys[i].frame <= currentFrame) prev = keys[i];
-                if(keys[i].frame > currentFrame && !next) next = keys[i];
-            }
-
-            if(prev && next) {
-                const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
-                obj.position.lerpVectors(prev.pos, next.pos, t);
-                obj.scale.lerpVectors(prev.scl, next.scl, t);
-                
-                const q1 = new THREE.Quaternion().setFromEuler(prev.rot);
-                const q2 = new THREE.Quaternion().setFromEuler(next.rot);
-                obj.quaternion.slerpQuaternions(q1, q2, t);
-            } else if(prev) {
-                obj.position.copy(prev.pos);
-                obj.rotation.copy(prev.rot);
-                obj.scale.copy(prev.scl);
-            }
-        });
-        updateTransformUI();
-    }
-
-    function togglePlay() {
-        isPlaying = !isPlaying;
-        document.getElementById('play-btn-main')?.classList.toggle('bg-blue-600');
-    }
-
-    function updateTransformUI() {
-        if(!selectedObject) return;
-        document.getElementById('tx').value = selectedObject.position.x.toFixed(2);
-        document.getElementById('ty').value = selectedObject.position.y.toFixed(2);
-        document.getElementById('tz').value = selectedObject.position.z.toFixed(2);
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        if(isPlaying) {
-            currentFrame++;
-            if(currentFrame > 250) currentFrame = 0;
-            setFrame(currentFrame);
-        }
-        controls.update();
-        renderer.render(scene, camera);
-    }
-
-    window.onload = init;
-</script>
-
+    </script>
 </body>
 </html>
-
