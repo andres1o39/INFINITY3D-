@@ -2,234 +2,774 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel OS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinity3D - Keyframe Animator</title>
     <style>
-        :root {
-            --primary-bg: #1a1a1a;
-            --accent: #00ffcc;
-            --taskbar-bg: rgba(0, 0, 0, 0.8);
-        }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; touch-action: none; }
+        canvas { display: block; }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            background-color: #000;
-            color: white;
-        }
-
-        /* --- Pantalla de Instalación --- */
-        #installer {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: radial-gradient(circle, #222, #000);
-            z-index: 100;
+        /* Botón flotante para abrir herramientas */
+        #openToolsBtn {
             position: absolute;
-            width: 100%;
-        }
-
-        .loader {
-            border: 4px solid #333;
-            border-top: 4px solid var(--accent);
+            bottom: 80px; /* Elevado para dejar espacio a la línea de tiempo */
+            right: 20px;
+            background: #00ffcc;
+            color: #1a1a1a;
+            border: none;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* --- Escritorio --- */
-        #desktop {
-            display: none;
-            height: 100vh;
-            background: linear-gradient(45deg, #1e3c72, #2a5298);
-            position: relative;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #desktop h1 {
-            font-size: 5rem;
-            opacity: 0.2;
-            user-select: none;
-        }
-
-        /* --- Apps en el Escritorio --- */
-        .app-container {
-            position: absolute;
-            top: 50px;
-            left: 50px;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .icon {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            width: 80px;
-            transition: transform 0.2s;
-        }
-
-        .icon:hover { transform: scale(1.1); }
-
-        .icon-box {
             width: 60px;
             height: 60px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            backdrop-filter: blur(5px);
+            font-size: 2.5em;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 30px;
-            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+            transition: background 0.2s ease-in-out, transform 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #openToolsBtn:hover {
+            background: #00ccaa;
+            transform: translateY(-2px);
+        }
+        #openToolsBtn:active {
+            transform: translateY(0);
         }
 
-        /* --- Barra de Tareas --- */
-        .taskbar {
+        /* Ventana de herramientas (modal) */
+        #toolsModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        #toolsContent {
+            background: rgba(20, 20, 20, 0.95);
+            color: #e0e0e0;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+            width: 90%;
+            max-width: 350px;
+            max-height: 85%;
+            overflow-y: auto;
+            border: 1px solid #00ffcc;
+            position: relative;
+        }
+
+        #toolsContent h1 {
+            margin: 0 0 20px;
+            font-size: 1.8em;
+            color: #00ffcc;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 255, 204, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;
+            color: #00ffcc;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .close-btn:hover {
+            color: #00ccaa;
+        }
+
+        /* Estilos de los controles dentro de la ventana */
+        #toolsContent label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b0b0b0;
+            font-size: 0.9em;
+        }
+        #toolsContent button, #toolsContent input[type="color"], #toolsContent select, #toolsContent input[type="range"] {
+            display: block;
+            margin: 12px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 1em;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #toolsContent button {
+            background: #00ffcc;
+            color: #1a1a1a;
+            font-weight: bold;
+            transition: background 0.2s ease-in-out, transform 0.1s ease;
+        }
+        #toolsContent button:hover {
+            background: #00ccaa;
+            transform: translateY(-1px);
+        }
+        #toolsContent button:active {
+            transform: translateY(0);
+        }
+        #toolsContent input[type="color"] {
+            height: 45px;
+            padding: 5px;
+            background: #333;
+            border: 1px solid #555;
+        }
+        #toolsContent select {
+            background: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23e0e0e0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px top 50%;
+            background-size: 20px auto;
+        }
+        #toolsContent input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            background: #555;
+            outline: none;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        #toolsContent input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ffcc;
+            cursor: pointer;
+            transition: background 0.2s ease-in-out;
+        }
+        #toolsContent input[type="range"]::-webkit-slider-thumb:hover {
+            background: #00ccaa;
+        }
+        #toolsContent .control-group {
+            margin-bottom: 15px;
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        #toolsContent .control-group label {
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 8px;
+        }
+
+        /* Keyframe Animator */
+        #keyframeAnimator {
             position: absolute;
             bottom: 0;
+            left: 0;
             width: 100%;
-            height: 45px;
-            background: var(--taskbar-bg);
-            backdrop-filter: blur(10px);
+            height: 100px; /* Altura de la línea de tiempo */
+            background: rgba(30, 30, 30, 0.9);
+            border-top: 1px solid #00ffcc;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            padding: 0 15px;
+            padding: 10px 0;
             box-sizing: border-box;
+            z-index: 900; /* Debajo del botón flotante */
         }
-
-        .system-tray {
+        #keyframeControls {
             display: flex;
-            gap: 15px;
-            font-size: 14px;
-            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
-
-        /* --- Ventanas --- */
-        .window {
-            display: none;
-            position: absolute;
-            top: 100px;
-            width: 400px;
-            background: #f0f0f0;
-            color: #333;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        #keyframeControls button {
+            background: #00ccaa;
+            color: #1a1a1a;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s ease-in-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #keyframeControls button:hover {
+            background: #009977;
+        }
+        #keyframeControls button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            color: #bbb;
+        }
+        #timelineContainer {
+            width: 90%;
+            max-width: 600px;
+            height: 30px;
+            background: #555;
+            border-radius: 5px;
+            position: relative;
+            cursor: pointer;
             overflow: hidden;
         }
-
-        .window-header {
-            background: #ddd;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        #timelineProgress {
+            height: 100%;
+            width: 0%;
+            background: #00ffcc;
+            border-radius: 5px;
         }
-
-        .close-btn { cursor: pointer; color: red; font-weight: bold; }
-
-        .window-content { padding: 20px; }
-
-        textarea { width: 100%; height: 150px; margin-top: 10px; }
+        .keyframe-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #ff0000;
+            border-left: 1px solid rgba(255, 255, 255, 0.5);
+            border-right: 1px solid rgba(255, 255, 255, 0.5);
+            cursor: grab;
+        }
+        .keyframe-marker:active {
+            cursor: grabbing;
+        }
     </style>
 </head>
 <body>
+    <button id="openToolsBtn">+</button>
 
-    <div id="installer">
-        <div class="loader"></div>
-        <h2 id="status-text">Instalando Voxel OS...</h2>
-    </div>
+    <div id="toolsModal">
+        <div id="toolsContent">
+            <button class="close-btn">&times;</button>
+            <h1>Infinity3D Herramientas</h1>
 
-    <div id="desktop">
-        <h1>VOXEL OS</h1>
+            <div class="control-group">
+                <label for="shapeSelector">Forma:</label>
+                <select id="shapeSelector" title="Seleccionar forma">
+                    <option value="box">Cubo</option>
+                    <option value="sphere">Esfera</option>
+                    <option value="cylinder">Cilindro</option>
+                    <option value="torus">Toroide</option>
+                </select>
+            </div>
 
-        <div class="app-container">
-            <div class="icon" onclick="openWindow('store')">
-                <div class="icon-box">🛒</div>
-                <span>Store</span>
+            <div class="control-group">
+                <label for="colorPicker">Color del Objeto:</label>
+                <input type="color" id="colorPicker" value="#00ffcc" title="Cambiar color del objeto">
             </div>
-            <div class="icon" onclick="openWindow('config')">
-                <div class="icon-box">⚙️</div>
-                <span>Config</span>
-            </div>
-            <div class="icon" onclick="openWindow('bank')">
-                <div class="icon-box">💰</div>
-                <span>Banco</span>
-            </div>
-        </div>
 
-        <div id="store" class="window">
-            <div class="window-header">
-                <span>Voxel Store</span>
-                <span class="close-btn" onclick="closeWindow('store')">X</span>
+            <div class="control-group">
+                <label for="transformMode">Modo de Transformación:</label>
+                <select id="transformMode" title="Modo de transformación">
+                    <option value="translate">Mover</option>
+                    <option value="rotate">Rotar</option>
+                    <option value="scale">Escalar</option>
+                </select>
             </div>
-            <div class="window-content">
-                <h3>Aplicaciones Disponibles</h3>
-                <button onclick="openWindow('notes')">Descargar/Abrir Bloc de Notas</button>
-            </div>
-        </div>
 
-        <div id="notes" class="window">
-            <div class="window-header">
-                <span>Bloc de Notas</span>
-                <span class="close-btn" onclick="closeWindow('notes')">X</span>
+            <div class="control-group">
+                <label for="lightIntensity">Intensidad de Luz Direccional:</label>
+                <input type="range" id="lightIntensity" min="0" max="2" step="0.1" value="0.5" title="Ajustar intensidad de luz direccional">
+                <label for="ambientLightIntensity">Intensidad de Luz Ambiental:</label>
+                <input type="range" id="ambientLightIntensity" min="0" max="2" step="0.1" value="0.6" title="Ajustar intensidad de luz ambiental">
             </div>
-            <div class="window-content">
-                <textarea placeholder="Escribe algo aquí..."></textarea>
-            </div>
-        </div>
-
-        <div class="taskbar">
-            <div style="font-weight: bold;">VX</div>
-            <div class="system-tray">
-                <span>📶 Wifi</span>
-                <span>🔋 85%</span>
-                <span>🔊</span>
-                <span>🔵 BT</span>
-                <span id="clock">00:00</span>
-            </div>
+            
+            <button onclick="resetObject()">Reiniciar Objeto</button>
         </div>
     </div>
+
+    <div id="keyframeAnimator">
+        <div id="keyframeControls">
+            <button id="addKeyframeBtn">Añadir Keyframe</button>
+            <button id="playAnimationBtn">Reproducir</button>
+            <button id="pauseAnimationBtn" disabled>Pausar</button>
+            <button id="stopAnimationBtn" disabled>Detener</button>
+            <button id="clearKeyframesBtn">Borrar Todo</button>
+        </div>
+        <div id="timelineContainer">
+            <div id="timelineProgress"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 
     <script>
-        // Simulador de instalación
-        setTimeout(() => {
-            document.getElementById('status-text').innerText = "Iniciando...";
-            setTimeout(() => {
-                document.getElementById('installer').style.display = 'none';
-                document.getElementById('desktop').style.display = 'flex';
-            }, 1500);
-        }, 3000);
+        // --- Core Three.js Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x1a1a1a, 1);
+        document.body.appendChild(renderer.domElement);
 
-        // Reloj en tiempo real
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+        const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+        scene.add(gridHelper);
 
-        // Manejo de ventanas
-        function openWindow(id) {
-            document.getElementById(id).style.display = 'block';
+        // --- Controls ---
+        const orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+        orbitControls.screenSpacePanning = false;
+        orbitControls.maxPolarAngle = Math.PI / 2;
+
+        const transformControls = new THREE.TransformControls(camera, renderer.domElement);
+        transformControls.setMode('translate');
+        transformControls.enabled = false;
+        scene.add(transformControls);
+
+        transformControls.addEventListener('dragging-changed', (event) => {
+            orbitControls.enabled = !event.value;
+            // Si el objeto se está moviendo con gizmos, el sistema de keyframes debería registrarlo (opcional, para más avanzado)
+            // Por ahora, solo queremos que no interfiera con la reproducción
+        });
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(5, 10, 7.5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const hemisphereLight = new THREE.HemisphereLight(0xb1e1ff, 0xb97a20, 0.3);
+        scene.add(hemisphereLight);
+
+        // --- Object Management ---
+        let currentObject;
+        const material = new THREE.MeshPhongMaterial({ color: 0x00ffcc });
+
+        function createObject(shapeType) {
+            let geometry;
+            switch (shapeType) {
+                case 'box':
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+                    break;
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(0.75, 32, 32);
+                    break;
+                case 'cylinder':
+                    geometry = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32);
+                    break;
+                case 'torus':
+                    geometry = new THREE.TorusGeometry(0.5, 0.2, 16, 100);
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+            }
+
+            if (currentObject) {
+                transformControls.detach();
+                scene.remove(currentObject);
+                currentObject.geometry.dispose();
+                // Al cambiar el objeto, borramos los keyframes existentes para el objeto anterior
+                clearKeyframes();
+            }
+
+            currentObject = new THREE.Mesh(geometry, material);
+            currentObject.castShadow = true;
+            currentObject.receiveShadow = true;
+            scene.add(currentObject);
+            transformControls.attach(currentObject);
+            transformControls.enabled = true;
+            
+            material.color.set(document.getElementById('colorPicker').value);
         }
 
-        function closeWindow(id) {
-            document.getElementById(id).style.display = 'none';
+        createObject('box'); // Initialize with a cube
+
+        // --- UI Interaction (Mobile-first) ---
+        const openToolsBtn = document.getElementById('openToolsBtn');
+        const toolsModal = document.getElementById('toolsModal');
+        const closeBtn = document.querySelector('.close-btn');
+
+        openToolsBtn.addEventListener('click', () => {
+            toolsModal.style.display = 'flex';
+            orbitControls.enabled = false;
+            transformControls.enabled = false;
+        });
+
+        closeBtn.addEventListener('click', () => {
+            toolsModal.style.display = 'none';
+            orbitControls.enabled = true;
+            if (currentObject && transformControls.object === currentObject) {
+                 transformControls.enabled = true;
+            }
+        });
+
+        // Event listeners para los controles de herramientas (dentro del modal)
+        document.getElementById('transformMode').addEventListener('change', (e) => {
+            transformControls.setMode(e.target.value);
+        });
+
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+            material.color.set(e.target.value);
+        });
+
+        document.getElementById('shapeSelector').addEventListener('change', (e) => {
+            createObject(e.target.value);
+        });
+
+        document.getElementById('lightIntensity').addEventListener('input', (e) => {
+            directionalLight.intensity = parseFloat(e.target.value);
+        });
+
+        document.getElementById('ambientLightIntensity').addEventListener('input', (e) => {
+            ambientLight.intensity = parseFloat(e.target.value);
+        });
+
+        // --- Raycaster for object selection (if transform controls are detached) ---
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        function onPointerDown(event) {
+            // Ignorar clics si el modal de herramientas está abierto
+            if (toolsModal.style.display === 'flex') return;
+
+            // Si se está arrastrando un gizmo, no intentamos seleccionar otro objeto
+            if (transformControls.dragging) {
+                // Si estamos en medio de una animación, esto podría ser complejo.
+                // Por ahora, asumimos que no se anima y se usa el gizmo al mismo tiempo.
+                return;
+            }
+
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+
+            pointer.x = (clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(pointer, camera);
+            
+            // Comprobamos si se ha hecho clic en el objeto actual
+            const intersectsObject = raycaster.intersectObject(currentObject);
+
+            if (intersectsObject.length > 0) {
+                if (transformControls.object !== currentObject) {
+                    transformControls.attach(currentObject);
+                    transformControls.enabled = true;
+                }
+            } else {
+                // Comprobamos si se ha hecho clic en un gizmo (si el objeto está adjunto)
+                if (transformControls.object) {
+                    const intersectsGizmo = raycaster.intersectObjects(transformControls.children, true);
+                    if (intersectsGizmo.length === 0) {
+                        transformControls.detach();
+                        transformControls.enabled = false;
+                    }
+                }
+            }
         }
+
+        window.addEventListener('pointerdown', onPointerDown);
+
+        // --- Reset Function ---
+        function resetObject() {
+            if (currentObject) {
+                currentObject.position.set(0, 0, 0);
+                currentObject.rotation.set(0, 0, 0);
+                currentObject.scale.set(1, 1, 1);
+                material.color.set(0x00ffcc);
+                document.getElementById('colorPicker').value = '#00ffcc';
+                transformControls.detach();
+                transformControls.enabled = false;
+            }
+            clearKeyframes(); // También borra los keyframes al reiniciar el objeto
+        }
+
+        // --- Keyframe Animation System ---
+        const keyframes = []; // Stores keyframe data: [{ time: 0, position: ..., rotation: ..., scale: ... }]
+        const animationDuration = 5; // seconds
+        let animationPlaying = false;
+        let animationTime = 0; // Current time in the animation
+        let lastTimestamp = 0;
+
+        const addKeyframeBtn = document.getElementById('addKeyframeBtn');
+        const playAnimationBtn = document.getElementById('playAnimationBtn');
+        const pauseAnimationBtn = document.getElementById('pauseAnimationBtn');
+        const stopAnimationBtn = document.getElementById('stopAnimationBtn');
+        const clearKeyframesBtn = document.getElementById('clearKeyframesBtn');
+        const timelineProgress = document.getElementById('timelineProgress');
+        const timelineContainer = document.getElementById('timelineContainer');
+
+        addKeyframeBtn.addEventListener('click', addKeyframe);
+        playAnimationBtn.addEventListener('click', playAnimation);
+        pauseAnimationBtn.addEventListener('click', pauseAnimation);
+        stopAnimationBtn.addEventListener('click', stopAnimation);
+        clearKeyframesBtn.addEventListener('click', clearKeyframes);
+
+        timelineContainer.addEventListener('pointerdown', onTimelinePointerDown);
+
+        function addKeyframe() {
+            if (!currentObject) return;
+
+            const time = animationTime; // Add keyframe at current timeline position
+            const newKeyframe = {
+                time: time,
+                position: currentObject.position.clone(),
+                rotation: currentObject.rotation.clone(),
+                scale: currentObject.scale.clone()
+            };
+
+            // Remove existing keyframe at this time if any
+            const existingIndex = keyframes.findIndex(kf => kf.time === time);
+            if (existingIndex !== -1) {
+                keyframes[existingIndex] = newKeyframe; // Replace
+            } else {
+                keyframes.push(newKeyframe);
+            }
+            keyframes.sort((a, b) => a.time - b.time); // Keep sorted by time
+
+            updateTimelineMarkers();
+            console.log("Keyframe added:", newKeyframe);
+        }
+
+        function removeKeyframe(timeToRemove) {
+            const index = keyframes.findIndex(kf => kf.time === timeToRemove);
+            if (index !== -1) {
+                keyframes.splice(index, 1);
+                updateTimelineMarkers();
+                console.log("Keyframe removed at time:", timeToRemove);
+            }
+        }
+
+        function playAnimation() {
+            if (keyframes.length < 2) {
+                console.warn("Se necesitan al menos 2 keyframes para una animación.");
+                return;
+            }
+            animationPlaying = true;
+            playAnimationBtn.disabled = true;
+            pauseAnimationBtn.disabled = false;
+            stopAnimationBtn.disabled = false;
+            orbitControls.enabled = false; // Deshabilitar OrbitControls durante la animación
+            transformControls.enabled = false; // Deshabilitar TransformControls durante la animación
+        }
+
+        function pauseAnimation() {
+            animationPlaying = false;
+            playAnimationBtn.disabled = false;
+            pauseAnimationBtn.disabled = true;
+            orbitControls.enabled = true; // Habilitar OrbitControls al pausar
+            if (currentObject && transformControls.object === currentObject) {
+                 transformControls.enabled = true;
+            }
+        }
+
+        function stopAnimation() {
+            animationPlaying = false;
+            animationTime = 0;
+            updateObjectFromKeyframes(0); // Reset object to initial state or first keyframe
+            updateTimelineUI();
+            playAnimationBtn.disabled = false;
+            pauseAnimationBtn.disabled = true;
+            stopAnimationBtn.disabled = true;
+            orbitControls.enabled = true; // Habilitar OrbitControls al detener
+            if (currentObject && transformControls.object === currentObject) {
+                 transformControls.enabled = true;
+            }
+        }
+
+        function clearKeyframes() {
+            keyframes.length = 0; // Clear array
+            updateTimelineMarkers();
+            stopAnimation(); // Stop any ongoing animation and reset object
+            console.log("All keyframes cleared.");
+        }
+
+        function updateTimelineUI() {
+            const progress = (animationTime / animationDuration) * 100;
+            timelineProgress.style.width = `${progress}%`;
+        }
+
+        function updateTimelineMarkers() {
+            // Remove existing markers
+            document.querySelectorAll('.keyframe-marker').forEach(marker => marker.remove());
+
+            // Add new markers
+            keyframes.forEach(kf => {
+                const marker = document.createElement('div');
+                marker.className = 'keyframe-marker';
+                marker.style.left = `${(kf.time / animationDuration) * 100}%`;
+                marker.dataset.time = kf.time; // Store time for identification
+                timelineContainer.appendChild(marker);
+
+                // Add event listener to each marker for drag/delete
+                marker.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation(); // Prevent timelineContainer's event
+                    if (e.pointerType === 'touch' && e.button === 0) { // Long press for touch
+                        // Implement a simple long press detection for deletion
+                        const touchStartTime = Date.now();
+                        let timer;
+                        const markerTime = parseFloat(marker.dataset.time);
+
+                        const onPointerUp = () => {
+                            clearTimeout(timer);
+                            marker.removeEventListener('pointerup', onPointerUp);
+                            marker.removeEventListener('pointercancel', onPointerUp);
+                        };
+
+                        timer = setTimeout(() => {
+                            // Long press detected, prompt for deletion
+                            if (confirm(`¿Borrar keyframe en el tiempo ${markerTime.toFixed(2)}s?`)) {
+                                removeKeyframe(markerTime);
+                            }
+                        }, 700); // 700ms for long press
+
+                        marker.addEventListener('pointerup', onPointerUp);
+                        marker.addEventListener('pointercancel', onPointerUp);
+
+                    } else if (e.button === 0) { // Left click for desktop
+                        if (e.ctrlKey || e.metaKey) { // Ctrl/Cmd + click to delete
+                            if (confirm(`¿Borrar keyframe en el tiempo ${parseFloat(marker.dataset.time).toFixed(2)}s?`)) {
+                                removeKeyframe(parseFloat(marker.dataset.time));
+                            }
+                        } else {
+                            // Drag functionality (more complex to implement robustly for touch + mouse)
+                            // For now, let's keep it simple: clicking moves timeline to keyframe
+                            animationTime = parseFloat(marker.dataset.time);
+                            updateObjectFromKeyframes(animationTime);
+                            updateTimelineUI();
+                        }
+                    }
+                });
+            });
+        }
+
+        let isDraggingTimeline = false;
+        function onTimelinePointerDown(event) {
+            if (event.target.classList.contains('keyframe-marker')) {
+                // Ignore if clicking on a marker, its own handler will fire
+                return;
+            }
+            isDraggingTimeline = true;
+            timelineContainer.setPointerCapture(event.pointerId); // Capture pointer for dragging
+            updateTimelineOnDrag(event);
+            
+            timelineContainer.addEventListener('pointermove', updateTimelineOnDrag);
+            timelineContainer.addEventListener('pointerup', onTimelinePointerUp);
+            timelineContainer.addEventListener('pointercancel', onTimelinePointerUp);
+        }
+
+        function updateTimelineOnDrag(event) {
+            if (!isDraggingTimeline) return;
+
+            const rect = timelineContainer.getBoundingClientRect();
+            let clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            
+            let x = clientX - rect.left;
+            let newTime = (x / rect.width) * animationDuration;
+            newTime = Math.max(0, Math.min(animationDuration, newTime)); // Clamp time
+
+            animationTime = newTime;
+            updateObjectFromKeyframes(animationTime);
+            updateTimelineUI();
+        }
+
+        function onTimelinePointerUp(event) {
+            isDraggingTimeline = false;
+            timelineContainer.releasePointerCapture(event.pointerId);
+            timelineContainer.removeEventListener('pointermove', updateTimelineOnDrag);
+            timelineContainer.removeEventListener('pointerup', onTimelinePointerUp);
+            timelineContainer.removeEventListener('pointercancel', onTimelinePointerUp);
+        }
+
+
+        function updateObjectFromKeyframes(time) {
+            if (!currentObject || keyframes.length === 0) return;
+
+            if (keyframes.length === 1) {
+                // If only one keyframe, snap to its state
+                currentObject.position.copy(keyframes[0].position);
+                currentObject.rotation.copy(keyframes[0].rotation);
+                currentObject.scale.copy(keyframes[0].scale);
+                return;
+            }
+
+            // Find the two keyframes to interpolate between
+            let kf1 = keyframes[0];
+            let kf2 = keyframes[keyframes.length - 1];
+
+            for (let i = 0; i < keyframes.length - 1; i++) {
+                if (time >= keyframes[i].time && time <= keyframes[i+1].time) {
+                    kf1 = keyframes[i];
+                    kf2 = keyframes[i+1];
+                    break;
+                }
+            }
+
+            // Handle edge cases (time before first or after last keyframe)
+            if (time < kf1.time) { // Before first keyframe
+                kf2 = kf1; // Treat as if interpolating from first to first
+            } else if (time > kf2.time) { // After last keyframe
+                kf1 = kf2; // Treat as if interpolating from last to last
+            }
+            
+            const t = (time - kf1.time) / (kf2.time - kf1.time || 1); // Normalize time between 0 and 1
+
+            // Interpolate position
+            currentObject.position.lerpVectors(kf1.position, kf2.position, t);
+
+            // Interpolate rotation (Spherical Linear Interpolation for Quaternions is better)
+            // For simplicity, we'll use a linear interpolation on Euler angles for now.
+            // For production, you'd convert to Quaternions and use .slerp()
+            currentObject.rotation.x = THREE.MathUtils.lerp(kf1.rotation.x, kf2.rotation.x, t);
+            currentObject.rotation.y = THREE.MathUtils.lerp(kf1.rotation.y, kf2.rotation.y, t);
+            currentObject.rotation.z = THREE.MathUtils.lerp(kf1.rotation.z, kf2.rotation.z, t);
+
+            // Interpolate scale
+            currentObject.scale.lerpVectors(kf1.scale, kf2.scale, t);
+        }
+
+        // --- Initial Camera Position ---
+        camera.position.set(3, 3, 5);
+        orbitControls.update();
+
+        // --- Animation Loop ---
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            if (animationPlaying && keyframes.length >= 2) {
+                const deltaTime = (timestamp - lastTimestamp) / 1000; // Time in seconds
+                lastTimestamp = timestamp;
+
+                animationTime += deltaTime;
+                if (animationTime > animationDuration) {
+                    animationTime = 0; // Loop animation
+                    // Or stop: stopAnimation();
+                }
+                updateObjectFromKeyframes(animationTime);
+                updateTimelineUI();
+            } else {
+                lastTimestamp = timestamp; // Reset lastTimestamp when not playing
+            }
+
+            orbitControls.update();
+            renderer.render(scene, camera);
+        }
+        animate(0); // Start animation loop, pass 0 for initial timestamp
+
+        // --- Window Resize Handler ---
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // Initial update of timeline markers (empty at start)
+        updateTimelineMarkers();
     </script>
 </body>
 </html>
