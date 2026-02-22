@@ -3,626 +3,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel OS - Desktop Edition</title>
+    <title>Voxel OS - Laptop Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&family=Roboto+Mono&family=Lexend:wght@300;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&family=JetBrains+Mono&display=swap');
 
         :root {
-            --os-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            --taskbar-bg: rgba(20, 20, 20, 0.85);
+            --bg-laptop: #0f172a;
+            --taskbar-glass: rgba(15, 23, 42, 0.8);
         }
 
-        body, html {
+        body {
             margin: 0;
             padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: var(--os-font);
+            font-family: 'Segoe UI', sans-serif;
             background-color: #000;
             color: white;
+            overflow: hidden;
+            height: 100vh;
         }
 
         /* Desktop Wallpaper */
-        .desktop {
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(135deg, #1e3a8a 0%, #581c87 50%, #0f172a 100%);
+        #desktop {
+            width: 100%;
+            height: calc(100% - 48px);
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1920');
             background-size: cover;
+            background-position: center;
             position: relative;
             display: none;
         }
 
-        .active { display: block; }
-
-        /* Installation Screen */
         .boot-screen {
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: black;
-            z-index: 1000;
+            background: #000;
         }
 
-        /* Icons on Desktop */
-        .desktop-icons {
+        /* Taskbar */
+        .taskbar {
+            height: 48px;
+            width: 100%;
+            background: var(--taskbar-glass);
+            backdrop-filter: blur(12px);
             position: absolute;
-            top: 0;
-            left: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            height: calc(100% - 50px);
-            flex-wrap: wrap;
-        }
-
-        .desktop-item {
-            width: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: 5px;
-            transition: background 0.2s;
-        }
-
-        .desktop-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .desktop-item img, .desktop-item .icon-placeholder {
-            width: 45px;
-            height: 45px;
-            margin-bottom: 5px;
+            bottom: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            border-radius: 8px;
-        }
-
-        .desktop-item span {
-            font-size: 12px;
-            text-shadow: 1px 1px 2px black;
+            padding: 0 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 9999;
         }
 
         /* Windows */
         .window {
             position: absolute;
-            min-width: 300px;
-            min-height: 200px;
             background: #1e1e1e;
-            border: 1px solid #444;
+            border: 1px solid #333;
             border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             display: none;
             flex-direction: column;
             overflow: hidden;
-            resize: both;
+            min-width: 200px;
+            min-height: 150px;
         }
 
         .window-header {
-            padding: 8px 12px;
+            padding: 10px 15px;
             background: #2d2d2d;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: move;
-            user-select: none;
         }
 
-        .window-controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        .control-btn {
+        .win-btn {
             width: 12px;
             height: 12px;
             border-radius: 50%;
+            margin-left: 8px;
             cursor: pointer;
         }
 
-        .close-btn { background: #ff5f56; }
-        .min-btn { background: #ffbd2e; }
-        .max-btn { background: #27c93f; }
-
-        /* Taskbar */
-        .taskbar {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 45px;
-            background: var(--taskbar-bg);
-            backdrop-filter: blur(15px);
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            z-index: 1000;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .start-btn {
-            padding: 5px 15px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            margin-right: 15px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .start-btn:hover { background: rgba(255,255,255,0.2); }
-
-        .system-tray {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 13px;
-        }
-
-        /* Start Menu */
-        #start-menu {
-            position: absolute;
-            bottom: 50px;
-            left: 10px;
-            width: 250px;
-            background: #1e1e1e;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 15px;
-            display: none;
-            z-index: 1001;
-        }
-
-        .start-menu-item {
+        /* Icons */
+        .desktop-icon {
+            width: 90px;
             padding: 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            text-align: center;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 6px;
+            transition: 0.2s;
+            margin: 10px;
         }
 
-        .start-menu-item:hover { background: #333; }
+        .desktop-icon:hover {
+            background: rgba(255,255,255,0.1);
+        }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e1e1e; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        .icon-img {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 5px;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        .loading-progress {
-            width: 0%;
-            height: 4px;
-            background: #3b82f6;
-            transition: width 0.1s linear;
+        /* Canvas Games */
+        canvas {
+            background: #000;
+            border: 2px solid #333;
+            image-rendering: pixelated;
+        }
+
+        /* Animations */
+        @keyframes crash {
+            0% { transform: translate(0,0); }
+            20% { transform: translate(-10px, 5px); }
+            40% { transform: translate(10px, -5px); }
+            60% { transform: translate(-5px, 10px); }
+            100% { transform: translate(0,0); }
+        }
+
+        .system-crash {
+            animation: crash 0.1s infinite;
         }
     </style>
 </head>
 <body>
 
-    <!-- BOOT / INSTALL SCREEN -->
-    <div id="screen-boot" class="boot-screen">
-        <div class="text-4xl font-bold mb-4">Voxel OS</div>
-        <div id="boot-status" class="text-sm text-gray-500 mb-2">Iniciando sistema...</div>
-        <div class="w-64 bg-gray-800 h-1 rounded-full overflow-hidden">
-            <div id="boot-progress" class="loading-progress"></div>
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen" class="boot-screen">
+        <div class="mb-4 text-2xl font-light tracking-widest">VOXEL LAPTOP</div>
+        <div class="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+            <div id="boot-progress" class="h-full bg-blue-500 w-0 transition-all duration-300"></div>
         </div>
-    </div>
-
-    <!-- REGISTRATION SCREEN -->
-    <div id="screen-auth" class="boot-screen" style="display: none; background: #0f172a;">
-        <div class="bg-gray-900 p-10 rounded-2xl shadow-2xl border border-gray-800 w-96">
-            <h2 class="text-2xl font-bold mb-6">Configurar Cuenta</h2>
-            <input type="text" id="reg-email" placeholder="Usuario o Correo" class="w-full bg-gray-800 border-none p-3 mb-4 rounded-lg focus:ring-2 ring-blue-500 outline-none">
-            <input type="password" id="reg-pass" placeholder="Contraseña" class="w-full bg-gray-800 border-none p-3 mb-8 rounded-lg focus:ring-2 ring-blue-500 outline-none">
-            <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold transition">Finalizar Configuración</button>
-        </div>
+        <div id="boot-status" class="mt-4 text-xs text-gray-500 font-mono">Iniciando BIOS...</div>
     </div>
 
     <!-- MAIN DESKTOP -->
-    <div id="screen-desktop" class="desktop">
-        <!-- Desktop Icons -->
-        <div id="desktop-grid" class="desktop-icons">
-            <div class="desktop-item" onclick="toggleWindow('store')">
-                <div class="icon-placeholder bg-pink-600">🛒</div>
-                <span>Voxel Store</span>
+    <div id="desktop">
+        <!-- Desktop Grid -->
+        <div class="flex flex-wrap flex-col h-full content-start">
+            <div class="desktop-icon" onclick="openWindow('win-bank')">
+                <div class="icon-img">🏦</div>
+                <span class="text-xs shadow-sm">Banco</span>
             </div>
-            <div class="desktop-item" onclick="toggleWindow('bank')">
-                <div class="icon-placeholder bg-emerald-600">🏦</div>
-                <span>Banco</span>
+            <div class="desktop-icon" onclick="openWindow('win-store')">
+                <div class="icon-img">🛒</div>
+                <span class="text-xs shadow-sm">Tienda</span>
             </div>
-            <div class="desktop-item" onclick="toggleWindow('settings')">
-                <div class="icon-placeholder bg-gray-600">⚙️</div>
-                <span>Ajustes</span>
+            <div class="desktop-icon" onclick="openWindow('win-browser')">
+                <div class="icon-img">🌐</div>
+                <span class="text-xs shadow-sm">Navegador</span>
             </div>
-        </div>
-
-        <!-- WINDOWS -->
-        <!-- VOXEL STORE -->
-        <div id="win-store" class="window" style="top: 100px; left: 150px; width: 500px; height: 400px;">
-            <div class="window-header" onmousedown="dragWindow(event, 'win-store')">
-                <span class="text-sm font-semibold">Voxel Store</span>
-                <div class="window-controls">
-                    <div class="control-btn min-btn"></div>
-                    <div class="control-btn max-btn"></div>
-                    <div class="control-btn close-btn" onclick="toggleWindow('store')"></div>
-                </div>
-            </div>
-            <div class="p-6 overflow-auto h-full text-sm">
-                <h3 class="text-lg font-bold mb-4">Aplicaciones Disponibles</h3>
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between">
-                        <div>
-                            <p class="font-bold">Bloc de Notas</p>
-                            <p class="text-xs text-gray-400">Editor de texto simple.</p>
-                            <p class="text-blue-400 mt-1">$50</p>
-                        </div>
-                        <button id="btn-buy-notepad" onclick="buyApp('notepad', 50)" class="bg-blue-600 px-4 py-2 rounded font-bold">Instalar</button>
-                    </div>
-
-                    <div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between">
-                        <div>
-                            <p class="font-bold">Voxel Navigator</p>
-                            <p class="text-xs text-gray-400">Navega por la Voxel-Net.</p>
-                            <p class="text-green-400 mt-1">Gratis</p>
-                        </div>
-                        <button id="btn-buy-browser" onclick="buyApp('browser', 0)" class="bg-green-600 px-4 py-2 rounded font-bold">Abrir</button>
-                    </div>
-
-                    <div id="update-banner" class="hidden bg-amber-900/40 border border-amber-600 p-4 rounded-lg">
-                        <p class="font-bold text-amber-500">Actualización disponible</p>
-                        <p class="text-xs mb-2">Bloc de Notas v2.0</p>
-                        <button onclick="updateApp()" class="bg-amber-600 px-3 py-1 rounded text-xs">Actualizar ($20)</button>
-                    </div>
-                </div>
+            <div id="installed-apps" class="contents">
+                <!-- Apps Dinámicas aquí -->
             </div>
         </div>
 
-        <!-- BANCO -->
-        <div id="win-bank" class="window" style="top: 150px; left: 200px; width: 400px; height: 300px;">
-            <div class="window-header" onmousedown="dragWindow(event, 'win-bank')">
-                <span class="text-sm font-semibold">Voxel Bank</span>
-                <div class="window-controls">
-                    <div class="control-btn min-btn"></div>
-                    <div class="control-btn max-btn"></div>
-                    <div class="control-btn close-btn" onclick="toggleWindow('bank')"></div>
-                </div>
-            </div>
-            <div class="p-8 flex flex-col items-center justify-center h-full">
-                <span class="text-gray-500 text-xs uppercase mb-2">Saldo en Cuenta</span>
-                <div class="text-5xl font-bold text-emerald-500 mb-4">$<span id="bank-val">0</span></div>
-                <div class="text-[10px] text-gray-400 bg-gray-800 px-3 py-1 rounded-full">
-                    Generando: $1 cada 0.5s
-                </div>
-            </div>
-        </div>
-
-        <!-- CONFIGURACIÓN -->
-        <div id="win-settings" class="window" style="top: 200px; left: 250px; width: 450px; height: 350px;">
-            <div class="window-header" onmousedown="dragWindow(event, 'win-settings')">
-                <span class="text-sm font-semibold">Configuración del Sistema</span>
-                <div class="window-controls">
-                    <div class="control-btn min-btn"></div>
-                    <div class="control-btn max-btn"></div>
-                    <div class="control-btn close-btn" onclick="toggleWindow('settings')"></div>
+        <!-- WINDOW: BANCO -->
+        <div id="win-bank" class="window" style="width: 400px; top: 100px; left: 200px;">
+            <div class="window-header" onmousedown="dragStart(event, 'win-bank')">
+                <span class="text-xs font-bold">Voxel Bank & Data</span>
+                <div class="flex">
+                    <div class="win-btn bg-yellow-500"></div>
+                    <div class="win-btn bg-red-500" onclick="closeWindow('win-bank')"></div>
                 </div>
             </div>
             <div class="p-6">
-                <h4 class="text-sm font-bold text-gray-400 mb-4 uppercase">Interfaz</h4>
-                <div class="mb-6">
-                    <p class="text-xs mb-2">Fuente del Sistema</p>
-                    <select onchange="changeFont(this.value)" class="w-full bg-gray-800 p-2 rounded outline-none border border-gray-700">
-                        <option value="'Segoe UI', sans-serif">Segoe UI (Windows Style)</option>
-                        <option value="'Roboto Mono', monospace">Consolas (Developer)</option>
-                        <option value="'Lexend', sans-serif">Lexend (Modern)</option>
-                    </select>
+                <div class="text-center mb-6">
+                    <div class="text-gray-400 text-xs uppercase">Saldo Disponible</div>
+                    <div class="text-4xl font-bold text-emerald-500">$<span id="balance">0</span></div>
                 </div>
-                <div>
-                    <p class="text-xs mb-2">Escala de Pantalla</p>
-                    <input type="range" oninput="changeBrightness(this.value)" class="w-full accent-blue-500">
+                <div class="bg-blue-600/10 border border-blue-500/30 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-bold text-blue-400">Recarga de Datos</span>
+                        <span class="text-[10px] bg-blue-500 px-2 rounded-full">Wi-Fi / 4G</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4">Necesitas datos para navegar y descargar.</p>
+                    <button onclick="buyData()" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold text-sm transition">
+                        Comprar 60s de Datos ($50)
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- BLOC DE NOTAS -->
-        <div id="win-notepad" class="window" style="top: 50px; left: 300px; width: 600px; height: 450px;">
-            <div class="window-header" onmousedown="dragWindow(event, 'win-notepad')">
-                <span class="text-sm font-semibold">Bloc de Notas - Sin Título</span>
-                <div class="window-controls">
-                    <div class="control-btn min-btn"></div>
-                    <div class="control-btn max-btn"></div>
-                    <div class="control-btn close-btn" onclick="toggleWindow('notepad')"></div>
+        <!-- WINDOW: STORE -->
+        <div id="win-store" class="window" style="width: 500px; top: 150px; left: 300px;">
+            <div class="window-header" onmousedown="dragStart(event, 'win-store')">
+                <span class="text-xs font-bold">Voxel Store</span>
+                <div class="flex">
+                    <div class="win-btn bg-red-500" onclick="closeWindow('win-store')"></div>
                 </div>
             </div>
-            <textarea class="flex-1 bg-neutral-900 p-4 text-gray-300 outline-none resize-none font-mono" placeholder="Escribe aquí..."></textarea>
+            <div class="p-4 grid grid-cols-1 gap-3">
+                <div class="bg-neutral-800 p-4 rounded flex justify-between items-center">
+                    <div>
+                        <div class="font-bold">Mario Cube</div>
+                        <div class="text-xs text-blue-400">$100</div>
+                    </div>
+                    <button onclick="installApp('mario', 100)" class="bg-blue-600 px-4 py-1 rounded text-xs">Instalar</button>
+                </div>
+                <div class="bg-neutral-800 p-4 rounded flex justify-between items-center">
+                    <div>
+                        <div class="font-bold">Dino Jump</div>
+                        <div class="text-xs text-blue-400">$60</div>
+                    </div>
+                    <button onclick="installApp('dino', 60)" class="bg-blue-600 px-4 py-1 rounded text-xs">Instalar</button>
+                </div>
+            </div>
         </div>
 
-        <!-- NAVEGADOR -->
-        <div id="win-browser" class="window" style="top: 80px; left: 80px; width: 700px; height: 500px;">
-            <div class="window-header" onmousedown="dragWindow(event, 'win-browser')">
-                <span class="text-sm font-semibold">Voxel Navigator</span>
-                <div class="window-controls">
-                    <div class="control-btn min-btn"></div>
-                    <div class="control-btn max-btn"></div>
-                    <div class="control-btn close-btn" onclick="toggleWindow('browser')"></div>
+        <!-- WINDOW: BROWSER -->
+        <div id="win-browser" class="window" style="width: 600px; height: 400px; top: 50px; left: 100px;">
+            <div class="window-header" onmousedown="dragStart(event, 'win-browser')">
+                <span class="text-xs font-bold">Voxel Navigator</span>
+                <div class="flex">
+                    <div class="win-btn bg-red-500" onclick="closeWindow('win-browser')"></div>
                 </div>
             </div>
-            <div class="flex flex-col h-full bg-white text-black">
-                <div class="bg-gray-200 p-2 flex gap-2">
-                    <div class="bg-white border p-1 px-3 text-xs flex-1 rounded">https://voxel-net.xyz/search</div>
+            <div class="bg-white text-black h-full flex flex-col">
+                <div class="bg-gray-200 p-2 flex gap-2 items-center">
+                    <div class="bg-white border flex-1 px-3 py-1 text-xs rounded">https://voxel-net.xyz/free-games</div>
                 </div>
-                <div class="p-10">
-                    <h1 class="text-3xl font-bold mb-6 text-blue-800">Voxel Search</h1>
-                    <div class="border-2 border-yellow-400 bg-yellow-50 p-6 rounded-xl shadow-lg flex justify-between items-center">
+                <div class="p-8 overflow-auto">
+                    <h1 class="text-2xl font-bold text-blue-800 mb-4">Voxel Search</h1>
+                    <div class="border-2 border-red-500 bg-red-50 p-4 rounded-lg flex justify-between items-center">
                         <div>
-                            <p class="text-yellow-800 font-bold text-lg">🎁 Bloc de Notas Gratis v2.0</p>
-                            <p class="text-sm text-yellow-600 italic">No pagues $50 en la store. Descarga oficial gratuita.</p>
+                            <p class="font-bold text-red-700">⚠️ DINO JUMP HACKED (FREE)</p>
+                            <p class="text-xs text-red-600">Versión desbloqueada. ¡No gastes dinero en la store!</p>
                         </div>
-                        <button onclick="installFakeApp()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-bold">DESCARGAR</button>
+                        <button onclick="installVirus()" class="bg-red-600 text-white px-4 py-2 rounded font-bold text-xs">DESCARGAR</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- START MENU -->
-        <div id="start-menu">
-            <div class="text-xs text-gray-500 mb-4 px-2 uppercase font-bold tracking-widest">Aplicaciones</div>
-            <div class="start-menu-item" onclick="toggleWindow('store'); toggleStartMenu()">
-                <span>🛒</span> Voxel Store
+        <!-- WINDOW: MARIO GAME -->
+        <div id="win-mario" class="window" style="width: 420px; top: 100px; left: 400px;">
+            <div class="window-header" onmousedown="dragStart(event, 'win-mario')">
+                <span class="text-xs font-bold">Mario Cube - Play to Earn</span>
+                <div class="win-btn bg-red-500" onclick="closeWindow('win-mario')"></div>
             </div>
-            <div class="start-menu-item" onclick="toggleWindow('bank'); toggleStartMenu()">
-                <span>🏦</span> Banco
+            <div class="p-4 text-center">
+                <canvas id="marioCanvas" width="380" height="200" onmousedown="marioAction()"></canvas>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-yellow-500 font-bold">Coins: <span id="mario-score">0</span></span>
+                    <span class="text-xs text-gray-500">Ganas $5 por salto</span>
+                </div>
             </div>
-            <div class="start-menu-item" onclick="toggleWindow('settings'); toggleStartMenu()">
-                <span>⚙️</span> Configuración
+        </div>
+
+        <!-- WINDOW: DINO GAME -->
+        <div id="win-dino" class="window" style="width: 420px; top: 120px; left: 450px;">
+            <div class="window-header" onmousedown="dragStart(event, 'win-dino')">
+                <span class="text-xs font-bold">Dino Jump</span>
+                <div class="win-btn bg-red-500" onclick="closeWindow('win-dino')"></div>
             </div>
-            <div id="start-extra"></div>
-            <hr class="my-4 border-gray-700">
-            <div class="start-menu-item text-red-400" onclick="location.reload()">
-                <span>⭕</span> Reiniciar Sistema
+            <div class="p-4 text-center">
+                <canvas id="dinoCanvas" width="380" height="200" onmousedown="dinoAction()"></canvas>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-emerald-500 font-bold">Score: <span id="dino-score">0</span></span>
+                    <span class="text-xs text-gray-500">Ganas $2 por salto</span>
+                </div>
             </div>
+        </div>
+
+        <!-- VIRUS OVERLAY -->
+        <div id="virus-lock" class="fixed inset-0 bg-red-700 z-[10000] hidden flex-col items-center justify-center text-center p-10">
+            <div class="text-9xl mb-10">💀</div>
+            <h1 class="text-5xl font-bold mb-4">SISTEMA INFECTADO</h1>
+            <p class="text-xl mb-10">Se ha detectado una descarga ilegal de 'Dino Jump Hacked'.<br>Borrando archivos del sistema en:</p>
+            <div class="text-8xl font-black mb-10" id="virus-timer">5</div>
+            <p class="text-xs opacity-50 font-mono">Kernel_Panic_At_0x00234FF</p>
         </div>
 
         <!-- TASKBAR -->
         <div class="taskbar">
-            <div class="start-btn" onclick="toggleStartMenu()">
-                <div class="w-4 h-4 bg-blue-500 rounded-sm"></div>
-                Voxel
-            </div>
+            <div class="bg-blue-500 w-8 h-8 rounded-sm mr-4 flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-blue-400">V</div>
             
-            <div id="taskbar-apps" class="flex gap-2">
-                <!-- Se llenará con las apps abiertas -->
+            <div class="flex-1 flex gap-2">
+                <!-- Taskbar Icons -->
             </div>
 
-            <div class="system-tray">
-                <div class="flex items-center gap-1 font-mono text-emerald-400">
-                    <span>$</span><span id="money-display">0</span>
+            <div class="flex items-center gap-4 text-xs font-medium">
+                <div class="flex items-center gap-1">
+                    <span id="data-status" class="text-red-500">● No Internet</span>
+                    <span id="data-count" class="hidden text-blue-400"></span>
                 </div>
-                <div id="os-clock">12:00 PM</div>
-                <div id="tray-brightness">☀ 100%</div>
+                <div class="text-emerald-400 font-mono">$<span id="money-display">0</span></div>
+                <div>🔋 <span id="battery">100%</span></div>
+                <div id="clock">12:00 PM</div>
             </div>
-        </div>
-    </div>
-
-    <!-- NOTIFICACIONES Y MODALES -->
-    <div id="modal-warning" class="fixed inset-0 bg-black/80 hidden z-[2000] flex items-center justify-center p-4">
-        <div class="bg-white text-black p-8 rounded-xl max-w-sm w-full text-center shadow-2xl">
-            <div class="text-5xl mb-4">⚠️</div>
-            <h2 class="text-xl font-bold text-red-600 mb-2">ALERTA DE SEGURIDAD</h2>
-            <p class="text-sm text-gray-600 mb-6">El archivo 'notepad_v2_free.exe' proviene de una fuente no verificada y podría dañar tu computadora.</p>
-            <div class="flex flex-col gap-2">
-                <button onclick="triggerVirus()" class="w-full bg-gray-200 py-3 rounded-lg font-bold text-red-700 hover:bg-red-50">Da igual, ejecutar</button>
-                <button onclick="closeWarning()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Cancelar instalación</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="virus-screen" class="fixed inset-0 bg-red-600 z-[3000] hidden flex flex-col items-center justify-center text-white text-center p-10">
-        <div class="text-9xl mb-10">☠️</div>
-        <h1 class="text-5xl font-bold mb-4">VIRUS DETECTADO</h1>
-        <p class="text-xl mb-10">Voxel OS ha detectado un acceso no autorizado al Kernel.<br>Formateando unidades para prevenir espionaje...</p>
-        <div class="w-96 bg-red-800 h-2 rounded-full overflow-hidden">
-            <div class="bg-white h-full animate-[progress_3s_linear]" style="width: 100%"></div>
         </div>
     </div>
 
     <script>
         let money = 0;
+        let dataSeconds = 0;
+        let isOnline = false;
         let installedApps = [];
-        let needsUpdate = false;
-        let activeWindow = null;
+        let battery = 100;
 
-        // BOOT PROCESS
-        function boot() {
-            let prog = 0;
+        // BOOTING
+        window.onload = () => {
+            let progress = 0;
             const bar = document.getElementById('boot-progress');
             const status = document.getElementById('boot-status');
             
-            const interval = setInterval(() => {
-                prog += Math.random() * 8;
-                if(prog > 100) prog = 100;
-                bar.style.width = prog + '%';
-                
-                if(prog > 30) status.innerText = "Cargando controladores de video...";
-                if(prog > 60) status.innerText = "Iniciando servicios de red...";
-                if(prog > 90) status.innerText = "Finalizando...";
+            const int = setInterval(() => {
+                progress += Math.random() * 5;
+                if(progress > 100) progress = 100;
+                bar.style.width = progress + '%';
 
-                if(prog >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        document.getElementById('screen-boot').style.display = 'none';
-                        document.getElementById('screen-auth').style.display = 'flex';
-                    }, 500);
+                if(progress > 30) status.innerText = "Cargando controladores de red...";
+                if(progress > 70) status.innerText = "Iniciando escritorio Voxel...";
+                
+                if(progress >= 100) {
+                    clearInterval(int);
+                    document.getElementById('boot-screen').style.display = 'none';
+                    document.getElementById('desktop').style.display = 'block';
+                    initLaptop();
                 }
             }, 100);
-        }
+        };
 
-        function login() {
-            const user = document.getElementById('reg-email').value;
-            if(!user) return alert("Ingresa un nombre de usuario");
-            document.getElementById('screen-auth').style.display = 'none';
-            document.getElementById('screen-desktop').style.display = 'block';
-            
-            startServices();
-        }
-
-        function startServices() {
-            // Clock
+        function initLaptop() {
+            // Reloj
             setInterval(() => {
-                const d = new Date();
-                document.getElementById('os-clock').innerText = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             }, 1000);
 
-            // Money Generation
+            // Batería
+            setInterval(() => {
+                if(battery > 0) {
+                    battery -= 1;
+                    document.getElementById('battery').innerText = battery + "%";
+                }
+            }, 30000);
+
+            // Generación pasiva
             setInterval(() => {
                 money += 1;
-                document.getElementById('money-display').innerText = money;
-                document.getElementById('bank-val').innerText = money;
-            }, 500);
+                updateDisplays();
+            }, 2000);
         }
 
-        // WINDOW SYSTEM
-        function toggleWindow(id) {
-            const win = document.getElementById('win-' + id);
-            if(win.style.display === 'flex') {
-                win.style.display = 'none';
+        // MONEY & DATA
+        function updateDisplays() {
+            document.getElementById('balance').innerText = money;
+            document.getElementById('money-display').innerText = money;
+        }
+
+        function buyData() {
+            if(money >= 50) {
+                money -= 50;
+                dataSeconds += 60;
+                if(!isOnline) startInternet();
+                updateDisplays();
             } else {
-                win.style.display = 'flex';
-                bringToFront(win);
+                alert("No tienes suficiente dinero.");
             }
         }
 
-        function bringToFront(win) {
-            document.querySelectorAll('.window').forEach(w => w.style.zIndex = 50);
-            win.style.zIndex = 100;
+        function startInternet() {
+            isOnline = true;
+            document.getElementById('data-status').classList.add('hidden');
+            const counter = document.getElementById('data-count');
+            counter.classList.remove('hidden');
+
+            const int = setInterval(() => {
+                dataSeconds--;
+                counter.innerText = dataSeconds + "s";
+                if(dataSeconds <= 0) {
+                    clearInterval(int);
+                    isOnline = false;
+                    document.getElementById('data-status').classList.remove('hidden');
+                    counter.classList.add('hidden');
+                    alert("Se agotaron tus datos.");
+                }
+            }, 1000);
         }
 
-        function toggleStartMenu() {
-            const menu = document.getElementById('start-menu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        // WINDOWS MANAGEMENT
+        function openWindow(id) {
+            document.getElementById(id).style.display = 'flex';
+            if(id === 'win-mario') startMario();
+            if(id === 'win-dino') startDino();
         }
 
-        // DRAG WINDOW LOGIC
-        function dragWindow(e, id) {
+        function closeWindow(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function dragStart(e, id) {
             const win = document.getElementById(id);
-            bringToFront(win);
-            let pos1 = 0, pos2 = 0, pos3 = e.clientX, pos4 = e.clientY;
-            
+            let x = e.clientX - win.offsetLeft;
+            let y = e.clientY - win.offsetTop;
+
             document.onmousemove = (event) => {
-                event.preventDefault();
-                pos1 = pos3 - event.clientX;
-                pos2 = pos4 - event.clientY;
-                pos3 = event.clientX;
-                pos4 = event.clientY;
-                win.style.top = (win.offsetTop - pos2) + "px";
-                win.style.left = (win.offsetLeft - pos1) + "px";
+                win.style.left = (event.clientX - x) + 'px';
+                win.style.top = (event.clientY - y) + 'px';
             };
 
             document.onmouseup = () => {
                 document.onmousemove = null;
-                document.onmouseup = null;
             };
         }
 
-        // APP LOGIC
-        function buyApp(id, cost) {
-            if(installedApps.includes(id)) return;
-            if(money >= cost) {
-                money -= cost;
-                install(id);
-                if(id === 'notepad') {
-                    document.getElementById('btn-buy-notepad').innerText = "Instalado";
-                    document.getElementById('btn-buy-notepad').disabled = true;
-                    setTimeout(() => {
-                        needsUpdate = true;
-                        document.getElementById('update-banner').classList.remove('hidden');
-                    }, 20000);
-                }
-            } else {
-                alert("Fondos insuficientes.");
-            }
-        }
+        // INSTALLER
+        function installApp(id, cost) {
+            if(!isOnline) return alert("❌ Sin conexión a internet. Recarga datos en el Banco.");
+            if(money < cost) return alert("❌ Dinero insuficiente.");
+            if(installedApps.includes(id)) return alert("Ya está instalado.");
 
-        function install(id) {
-            if(installedApps.includes(id)) return;
+            money -= cost;
             installedApps.push(id);
+            const grid = document.getElementById('installed-apps');
+            const div = document.createElement('div');
+            div.className = "desktop-icon";
             
-            // Add to Desktop
-            const grid = document.getElementById('desktop-grid');
-            const item = document.createElement('div');
-            item.className = "desktop-item";
-            item.onclick = () => toggleWindow(id === 'virus_app' ? 'virus_trigger' : id);
+            let icon = id === 'mario' ? '🧱' : '🦖';
+            let label = id === 'mario' ? 'Mario Cube' : 'Dino Jump';
             
-            let icon, label, color;
-            if(id === 'notepad') { icon = '📝'; label = 'Bloc de Notas'; color = 'bg-amber-500'; }
-            if(id === 'browser') { icon = '🌐'; label = 'Navigator'; color = 'bg-blue-500'; }
-            if(id === 'virus_app') { 
-                icon = '🎁'; label = 'Regalo'; color = 'bg-red-500';
-                item.onclick = () => document.getElementById('modal-warning').style.display = 'flex';
-            }
-
-            item.innerHTML = `<div class="icon-placeholder ${color}">${icon}</div><span>${label}</span>`;
-            grid.appendChild(item);
-
-            // Add to Start Menu
-            const startExtra = document.getElementById('start-extra');
-            const startItem = document.createElement('div');
-            startItem.className = "start-menu-item";
-            startItem.innerHTML = `<span>${icon}</span> ${label}`;
-            startItem.onclick = item.onclick;
-            startExtra.appendChild(startItem);
+            div.innerHTML = `<div class="icon-img">${icon}</div><span class="text-xs shadow-sm">${label}</span>`;
+            div.onclick = () => openWindow('win-' + id);
+            grid.appendChild(div);
+            updateDisplays();
         }
 
-        function updateApp() {
-            if(money >= 20) {
-                money -= 20;
-                needsUpdate = false;
-                document.getElementById('update-banner').classList.add('hidden');
-                alert("Bloc de Notas actualizado correctamente.");
-            }
-        }
-
-        // VIRUS SCENARIO
-        function installFakeApp() {
-            toggleWindow('browser');
-            alert("Descargando...");
+        // VIRUS
+        function installVirus() {
+            if(!isOnline) return alert("Sin conexión.");
+            closeWindow('win-browser');
             setTimeout(() => {
-                install('virus_app');
-                alert("Se ha instalado una nueva utilidad: 'Regalo'");
+                const grid = document.getElementById('installed-apps');
+                const div = document.createElement('div');
+                div.className = "desktop-icon";
+                div.innerHTML = `<div class="icon-img">🎁</div><span class="text-xs shadow-sm">Regalo_Free</span>`;
+                div.onclick = () => {
+                    document.getElementById('virus-lock').style.display = 'flex';
+                    document.body.classList.add('system-crash');
+                    let time = 5;
+                    const vInt = setInterval(() => {
+                        time--;
+                        document.getElementById('virus-timer').innerText = time;
+                        if(time <= 0) {
+                            clearInterval(vInt);
+                            location.reload();
+                        }
+                    }, 1000);
+                };
+                grid.appendChild(div);
+                alert("¡Descarga completa! Revisa tu escritorio.");
             }, 1000);
         }
 
-        function closeWarning() {
-            document.getElementById('modal-warning').style.display = 'none';
+        // GAMES LOGIC
+        let marioScore = 0;
+        function startMario() {
+            const c = document.getElementById('marioCanvas');
+            const ctx = c.getContext('2d');
+            function draw() {
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,380,200);
+                ctx.fillStyle = '#555'; ctx.fillRect(0,170,380,30);
+                ctx.fillStyle = 'red'; ctx.fillRect(50, 140, 30,30); // Mario
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+        function marioAction() {
+            marioScore += 1;
+            money += 5;
+            document.getElementById('mario-score').innerText = marioScore;
+            updateDisplays();
         }
 
-        function triggerVirus() {
-            closeWarning();
-            document.getElementById('virus-screen').style.display = 'flex';
-            setTimeout(() => location.reload(), 4000);
+        let dinoScore = 0;
+        function startDino() {
+            const c = document.getElementById('dinoCanvas');
+            const ctx = c.getContext('2d');
+            function draw() {
+                ctx.fillStyle = '#222'; ctx.fillRect(0,0,380,200);
+                ctx.fillStyle = 'green'; ctx.fillRect(50, 150, 20,30); // Dino
+                ctx.fillStyle = 'brown'; ctx.fillRect(300, 160, 10,20); // Obstacle
+                requestAnimationFrame(draw);
+            }
+            draw();
         }
-
-        // SETTINGS
-        function changeFont(font) {
-            document.body.style.fontFamily = font;
+        function dinoAction() {
+            dinoScore += 1;
+            money += 2;
+            document.getElementById('dino-score').innerText = dinoScore;
+            updateDisplays();
         }
-
-        function changeBrightness(val) {
-            const b = 0.5 + (val/100) * 0.5;
-            document.getElementById('screen-desktop').style.filter = `brightness(${b})`;
-            document.getElementById('tray-brightness').innerText = `☀ ${val}%`;
-        }
-
-        window.onload = boot;
     </script>
 </body>
 </html>
