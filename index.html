@@ -3,106 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mega Blender Editor Pro</title>
+    <title>Blender Web Suite Pro</title>
     <style>
         :root {
-            --bg-darker: #111111;
-            --bg-panel: #252525;
-            --bg-hover: #353535;
+            --bg-main: #1d1d1d;
+            --bg-panel: #282828;
+            --bg-header: #3d3d3d;
             --accent: #e67e22;
-            --text: #cfcfcf;
-            --border: #3d3d3d;
+            --text: #dbdbdb;
+            --border: #181818;
+            --ui-font: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
-        body { margin: 0; overflow: hidden; background: var(--bg-darker); font-family: 'Inter', sans-serif; color: var(--text); font-size: 12px; }
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: var(--bg-main); 
+            font-family: var(--ui-font); 
+            color: var(--text); 
+            font-size: 11px;
+            user-select: none;
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 40px 1fr 240px;
+            grid-template-rows: 24px 1fr 140px;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Barra de Menú Superior */
+        header {
+            grid-column: 1 / -1;
+            background: var(--bg-header);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .menu-btn { cursor: pointer; padding: 2px 5px; }
+        .menu-btn:hover { background: #555; border-radius: 2px; }
+
+        /* Toolbar Izquierda */
+        .toolbar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10px;
+            gap: 12px;
+        }
+
+        .tool-icon {
+            width: 24px;
+            height: 24px;
+            background: #444;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tool-icon.active { background: var(--accent); }
+
+        /* Viewport Central */
+        .viewport-container {
+            position: relative;
+            background: #333;
+            overflow: hidden;
+        }
+
+        canvas { width: 100% !important; height: 100% !important; }
+
+        /* Overlay del Viewport */
+        .viewport-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Sidebar Derecha (Outliner e Inspector) */
+        .sidebar {
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #333;
+            padding: 5px 10px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #outliner { flex: 1; overflow-y: auto; border-bottom: 2px solid var(--border); }
+        #inspector { flex: 1.5; overflow-y: auto; padding: 10px; }
+
+        .list-item {
+            padding: 4px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #222;
+        }
+        .list-item.selected { background: #4d4d4d; color: var(--accent); }
+
+        /* Timeline Inferior */
+        .timeline {
+            grid-column: 1 / -1;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timeline-controls {
+            height: 30px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 20px;
+        }
+
+        .playback-btn { cursor: pointer; font-size: 16px; }
         
-        /* Layout Principal */
-        .ui-overlay { position: absolute; pointer-events: none; inset: 0; display: flex; flex-direction: column; }
-        .panel { pointer-events: auto; background: var(--bg-panel); border: 1px solid var(--border); display: flex; flex-direction: column; }
+        .timeline-ruler {
+            flex: 1;
+            position: relative;
+            background: #222;
+            overflow: hidden;
+            border-top: 1px solid var(--border);
+        }
 
-        /* Barra Superior */
-        header { height: 40px; display: flex; align-items: center; padding: 0 15px; gap: 15px; border-bottom: 1px solid var(--border); pointer-events: auto; background: var(--bg-panel); }
-        .menu-item { cursor: pointer; padding: 5px 10px; border-radius: 3px; }
-        .menu-item:hover { background: var(--bg-hover); }
+        #playhead {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #4f9eee;
+            z-index: 5;
+        }
 
-        /* Contenedor Central */
-        .main-content { flex: 1; display: flex; justify-content: space-between; padding: 10px; }
+        /* Modales / Menús Flotantes */
+        .floating-menu {
+            position: absolute;
+            background: #333;
+            border: 1px solid #555;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            padding: 5px;
+            display: none;
+            z-index: 1000;
+            min-width: 150px;
+        }
 
-        /* Sidebar Izquierda: Outliner */
-        #outliner { width: 200px; }
-        .list-item { padding: 5px 10px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
-        .list-item:hover { background: var(--bg-hover); }
-        .list-item.selected { background: var(--accent); color: white; }
+        .menu-opt {
+            padding: 5px 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+        .menu-opt:hover { background: var(--accent); color: white; }
 
-        /* Sidebar Derecha: Propiedades */
-        #inspector { width: 260px; overflow-y: auto; padding: 15px; }
-        .prop-group { margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .prop-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-        .prop-row input { background: #111; border: 1px solid #444; color: var(--accent); width: 60px; padding: 2px; }
-        input[type="range"] { width: 100px; accent-color: var(--accent); }
+        /* Inputs */
+        input { background: #1a1a1a; border: 1px solid #444; color: var(--accent); font-size: 11px; width: 60px; }
+        .prop-row { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
 
-        /* Barra Inferior */
-        footer { height: 35px; background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 20px; pointer-events: auto; }
-        
-        .badge { background: #444; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
-        button { background: #3d3d3d; color: white; border: 1px solid #555; padding: 5px 10px; cursor: pointer; font-size: 11px; }
-        button:hover { background: var(--accent); }
-
-        canvas { position: absolute; top: 0; left: 0; z-index: -1; }
+        #realism-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div style="font-weight: bold; color: var(--accent); margin-right: 20px;">BLENDER WEB v2.0</div>
-    <div class="menu-item" onclick="app.addCube()">+ Cubo</div>
-    <div class="menu-item" onclick="app.addSphere()">+ Esfera</div>
-    <div class="menu-item" onclick="app.addPointLight()">+ Luz</div>
-    <div class="menu-item" onclick="app.resetScene()">Reset Escena</div>
-</header>
+<div class="app-container">
+    <!-- Header -->
+    <header>
+        <div class="menu-btn" style="color: var(--accent); font-weight: bold;">Archivo</div>
+        <div class="menu-btn">Editar</div>
+        <div class="menu-btn" id="add-trigger">Agregar</div>
+        <div class="menu-btn">Render</div>
+        <div class="menu-btn" id="toggle-realism" style="background: #444; border-radius: 4px; border: 1px solid #666;">Modo Realista</div>
+    </header>
 
-<div class="ui-overlay">
-    <div class="main-content">
-        <!-- Outliner -->
-        <div id="outliner" class="panel">
-            <div style="padding: 8px; font-weight: bold; border-bottom: 1px solid var(--border)">ESCENA</div>
-            <div id="object-list" style="overflow-y: auto; flex: 1;"></div>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="tool-icon active" title="Seleccionar">🖱️</div>
+        <div class="tool-icon" id="mode-move" title="Mover">✛</div>
+        <div class="tool-icon" id="mode-rotate" title="Rotar">🔄</div>
+        <div class="tool-icon" id="mode-scale" title="Escalar">📐</div>
+        <div style="flex:1"></div>
+        <div class="tool-icon" title="Ajustes">⚙️</div>
+    </div>
+
+    <!-- Viewport -->
+    <div class="viewport-container" id="viewport">
+        <div class="viewport-info">
+            Perspectiva del Usuario<br>
+            (1) Colección | <span id="active-obj-name">Cubo</span>
         </div>
+        <div id="realism-badge">MODO RENDER ACTIVO</div>
+    </div>
 
-        <!-- Inspector -->
-        <div id="inspector" class="panel">
-            <div id="empty-hint" style="text-align: center; margin-top: 50px; color: #666;">Selecciona un objeto</div>
-            <div id="props-content" style="display: none;">
-                <h3 id="obj-title" style="margin-top:0">Objeto</h3>
-                
-                <div class="prop-group">
-                    <h4>Transformación</h4>
-                    <div class="prop-row"><span>Pos X</span><input type="number" step="0.1" id="pX"></div>
-                    <div class="prop-row"><span>Pos Y</span><input type="number" step="0.1" id="pY"></div>
-                    <div class="prop-row"><span>Pos Z</span><input type="number" step="0.1" id="pZ"></div>
-                </div>
-
-                <div class="prop-group">
-                    <h4>Material</h4>
-                    <div class="prop-row"><span>Color</span><input type="color" id="mCol"></div>
-                    <div class="prop-row"><span>Metal</span><input type="range" min="0" max="1" step="0.01" id="mMet"></div>
-                    <div class="prop-row"><span>Rough</span><input type="range" min="0" max="1" step="0.01" id="mRou"></div>
-                </div>
-
-                <button id="cloneBtn" style="width: 100%; margin-bottom: 5px;">Duplicar (Shift+D)</button>
-                <button id="delBtn" style="width: 100%; background: #622;">Eliminar (DEL)</button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="panel-header">Outliner</div>
+        <div id="outliner">
+            <div id="obj-list"></div>
+        </div>
+        <div class="panel-header">Propiedades</div>
+        <div id="inspector">
+            <div id="props-empty">Selecciona algo</div>
+            <div id="props-content" style="display:none">
+                <h4 id="prop-title" style="margin-top:0">Transformación</h4>
+                <div class="prop-row"><span>Pos X</span><input type="number" step="0.1" id="val-px"></div>
+                <div class="prop-row"><span>Pos Y</span><input type="number" step="0.1" id="val-py"></div>
+                <div class="prop-row"><span>Pos Z</span><input type="number" step="0.1" id="val-pz"></div>
+                <hr style="border:0; border-top:1px solid #444">
+                <div class="prop-row"><span>Color</span><input type="color" id="val-col"></div>
+                <div class="prop-row"><span>Metal</span><input type="range" min="0" max="1" step="0.01" id="val-met"></div>
             </div>
         </div>
     </div>
 
-    <footer>
-        <div class="badge">FPS: <span id="fps">60</span></div>
-        <div class="badge">Objetos: <span id="obj-count">0</span></div>
-        <div style="margin-left: auto; display: flex; gap: 15px;">
-            <label><input type="checkbox" id="fogCheck"> Niebla</label>
-            <label><input type="checkbox" id="gridCheck" checked> Rejilla</label>
-            <label><input type="checkbox" id="rainCheck"> Lluvia</label>
+    <!-- Timeline -->
+    <div class="timeline">
+        <div class="timeline-controls">
+            <div class="playback-btn" id="play-btn">▶️</div>
+            <div id="current-frame">Frame: 0</div>
+            <div style="display:flex; gap: 5px;">
+                Inicio: <input type="number" value="0" style="width:40px">
+                Fin: <input type="number" value="250" style="width:40px">
+            </div>
         </div>
-    </footer>
+        <div class="timeline-ruler" id="timeline-ruler">
+            <div id="playhead"></div>
+            <!-- Marcas de tiempo generadas por JS -->
+            <canvas id="timeline-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:1"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Menú Flotante Agregar -->
+<div id="add-menu" class="floating-menu">
+    <div class="menu-opt" onclick="app.addObject('cube')">Malla Cubo <span>Shift+A</span></div>
+    <div class="menu-opt" onclick="app.addObject('sphere')">Malla Esfera</div>
+    <div class="menu-opt" onclick="app.addObject('cylinder')">Malla Cilindro</div>
+    <div class="menu-opt" onclick="app.addObject('torus')">Malla Toroide</div>
+    <div class="menu-opt" onclick="app.addObject('plane')">Malla Plano</div>
+    <div class="menu-opt" onclick="app.addObject('cone')">Malla Cono</div>
+    <hr style="border:0; border-top:1px solid #555">
+    <div class="menu-opt" onclick="app.addObject('light')">Luz de Punto</div>
+    <div class="menu-opt" onclick="app.addObject('sun')">Luz de Sol</div>
+    <div class="menu-opt" onclick="app.addObject('area')">Luz de Área</div>
+    <hr style="border:0; border-top:1px solid #555">
+    <div class="menu-opt" onclick="app.addObject('camera')">Cámara</div>
+    <div class="menu-opt" onclick="app.addObject('text')">Texto 3D</div>
+    <div class="menu-opt" onclick="app.addObject('monkey')">Suzanne (Mono)</div>
 </div>
 
 <script type="importmap">
@@ -119,247 +293,225 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    class BlenderApp {
+    class BlenderClone {
         constructor() {
+            this.frame = 0;
+            this.isPlaying = false;
+            this.objects = [];
+            this.selected = null;
+            this.realism = false;
+
+            this.initThree();
+            this.initTimeline();
+            this.bindUI();
+            this.addObject('cube');
+            this.animate();
+        }
+
+        initThree() {
             this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x1a1a1a);
+            this.scene.background = new THREE.Color(0x333333);
             
-            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.set(10, 10, 10);
+            this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(10, 8, 10);
 
             this.renderer = new THREE.WebGLRenderer({ antialias: true });
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.body.appendChild(this.renderer.domElement);
+            document.getElementById('viewport').appendChild(this.renderer.domElement);
 
-            this.objects = [];
-            this.selected = null;
-            this.rainParticles = null;
+            this.grid = new THREE.GridHelper(30, 30, 0x555555, 0x444444);
+            this.scene.add(this.grid);
 
-            this.initControls();
-            this.initLights();
-            this.initHelpers();
-            this.bindEvents();
-            this.animate();
-        }
+            // Luces básicas
+            this.ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            this.scene.add(this.ambient);
 
-        initControls() {
+            this.mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            this.mainLight.position.set(5, 10, 7);
+            this.scene.add(this.mainLight);
+
+            // Controles
             this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
             this.orbit.enableDamping = true;
 
             this.transform = new TransformControls(this.camera, this.renderer.domElement);
             this.scene.add(this.transform);
-
+            
             this.transform.addEventListener('dragging-changed', (e) => {
                 this.orbit.enabled = !e.value;
-                if (!e.value) this.updateUI();
             });
-
-            this.transform.addEventListener('change', () => this.updateUIInputs());
+            this.transform.addEventListener('change', () => this.syncInputs());
         }
 
-        initLights() {
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-            this.scene.add(ambient);
-
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true;
-            this.scene.add(sun);
+        initTimeline() {
+            const canvas = document.getElementById('timeline-canvas');
+            const ctx = canvas.getContext('2d');
+            const ruler = document.getElementById('timeline-ruler');
+            
+            const drawRuler = () => {
+                canvas.width = ruler.clientWidth;
+                canvas.height = ruler.clientHeight;
+                ctx.strokeStyle = '#555';
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Arial';
+                
+                for(let i=0; i<canvas.width; i+=40) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, 15);
+                    ctx.stroke();
+                    ctx.fillText(Math.floor(i/4), i+2, 25);
+                }
+            };
+            
+            drawRuler();
+            window.addEventListener('resize', drawRuler);
         }
 
-        initHelpers() {
-            this.grid = new THREE.GridHelper(50, 50, 0x333333, 0x222222);
-            this.scene.add(this.grid);
-        }
+        addObject(type) {
+            let geo, mat, mesh;
+            mat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.2, roughness: 0.5 });
 
-        addCube() {
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(2, 2, 2),
-                new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.5, metalness: 0.1 })
-            );
-            mesh.name = "Cubo_" + this.objects.length;
-            this.addToScene(mesh);
-        }
+            switch(type) {
+                case 'cube': geo = new THREE.BoxGeometry(2, 2, 2); break;
+                case 'sphere': geo = new THREE.SphereGeometry(1.2, 32, 32); break;
+                case 'cylinder': geo = new THREE.CylinderGeometry(1, 1, 2, 32); break;
+                case 'torus': geo = new THREE.TorusGeometry(1, 0.4, 16, 100); break;
+                case 'plane': geo = new THREE.PlaneGeometry(5, 5); break;
+                case 'cone': geo = new THREE.ConeGeometry(1, 2, 32); break;
+                case 'light': 
+                    mesh = new THREE.PointLight(0xffaa00, 50, 20);
+                    mesh.add(new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffaa00})));
+                    break;
+                default: geo = new THREE.BoxGeometry(1,1,1);
+            }
 
-        addSphere() {
-            const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(1.2, 32, 32),
-                new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.1, metalness: 0.8 })
-            );
-            mesh.name = "Esfera_" + this.objects.length;
-            this.addToScene(mesh);
-        }
-
-        addPointLight() {
-            const light = new THREE.PointLight(0xffffff, 50, 20);
-            const helper = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0xffff00}));
-            light.add(helper);
-            light.name = "Luz_" + this.objects.length;
-            this.addToScene(light);
-        }
-
-        addToScene(obj) {
-            obj.position.set(0, 1, 0);
-            obj.castShadow = true;
-            obj.receiveShadow = true;
-            this.scene.add(obj);
-            this.objects.push(obj);
-            this.select(obj);
+            if(!mesh) mesh = new THREE.Mesh(geo, mat);
+            
+            mesh.position.set(0, 1, 0);
+            mesh.name = type.charAt(0).toUpperCase() + type.slice(1) + "_" + this.objects.length;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            this.scene.add(mesh);
+            this.objects.push(mesh);
+            this.select(mesh);
             this.updateOutliner();
         }
 
         select(obj) {
             this.selected = obj;
-            if (obj) {
+            if(obj) {
                 this.transform.attach(obj);
                 document.getElementById('props-content').style.display = 'block';
-                document.getElementById('empty-hint').style.display = 'none';
-                document.getElementById('obj-title').innerText = obj.name;
-                this.updateUIInputs();
+                document.getElementById('props-empty').style.display = 'none';
+                document.getElementById('active-obj-name').innerText = obj.name;
+                this.syncInputs();
             } else {
                 this.transform.detach();
                 document.getElementById('props-content').style.display = 'none';
-                document.getElementById('empty-hint').style.display = 'block';
+                document.getElementById('props-empty').style.display = 'block';
             }
             this.updateOutliner();
+        }
+
+        syncInputs() {
+            if(!this.selected) return;
+            document.getElementById('val-px').value = this.selected.position.x.toFixed(2);
+            document.getElementById('val-py').value = this.selected.position.y.toFixed(2);
+            document.getElementById('val-pz').value = this.selected.position.z.toFixed(2);
+            if(this.selected.material) {
+                document.getElementById('val-col').value = "#" + this.selected.material.color.getHexString();
+            }
         }
 
         updateOutliner() {
-            const list = document.getElementById('object-list');
+            const list = document.getElementById('obj-list');
             list.innerHTML = '';
             this.objects.forEach(obj => {
-                const item = document.createElement('div');
-                item.className = `list-item ${this.selected === obj ? 'selected' : ''}`;
-                item.innerHTML = `<span>${obj.name}</span>`;
-                item.onclick = () => this.select(obj);
-                list.appendChild(item);
+                const div = document.createElement('div');
+                div.className = 'list-item' + (this.selected === obj ? ' selected' : '');
+                div.innerText = "👁️ " + obj.name;
+                div.onclick = () => this.select(obj);
+                list.appendChild(div);
             });
-            document.getElementById('obj-count').innerText = this.objects.length;
         }
 
-        updateUIInputs() {
-            if (!this.selected) return;
-            document.getElementById('pX').value = this.selected.position.x.toFixed(2);
-            document.getElementById('pY').value = this.selected.position.y.toFixed(2);
-            document.getElementById('pZ').value = this.selected.position.z.toFixed(2);
-            
-            if (this.selected.material) {
-                document.getElementById('mCol').value = '#' + this.selected.material.color.getHexString();
-                document.getElementById('mMet').value = this.selected.material.metalness;
-                document.getElementById('mRou').value = this.selected.material.roughness;
-            }
-        }
-
-        bindEvents() {
-            // Inputs Manuales
-            ['pX', 'pY', 'pZ'].forEach(id => {
-                document.getElementById(id).oninput = (e) => {
-                    if (this.selected) this.selected.position[id[1].toLowerCase()] = parseFloat(e.target.value);
-                };
-            });
-
-            document.getElementById('mCol').oninput = (e) => {
-                if (this.selected?.material) this.selected.material.color.set(e.target.value);
-            };
-
-            document.getElementById('mMet').oninput = (e) => {
-                if (this.selected?.material) this.selected.material.metalness = parseFloat(e.target.value);
-            };
-
-            document.getElementById('mRou').oninput = (e) => {
-                if (this.selected?.material) this.selected.material.roughness = parseFloat(e.target.value);
-            };
-
-            // Teclado
-            window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT') return;
-                switch(e.key.toLowerCase()) {
-                    case 'w': this.transform.setMode('translate'); break;
-                    case 'e': this.transform.setMode('rotate'); break;
-                    case 'r': this.transform.setMode('scale'); break;
-                    case 'd': if (e.shiftKey) this.cloneSelected(); break;
-                    case 'delete': this.deleteSelected(); break;
-                }
-            });
-
-            // Niebla y Extras
-            document.getElementById('fogCheck').onchange = (e) => this.scene.fog = e.target.checked ? new THREE.FogExp2(0x1a1a1a, 0.05) : null;
-            document.getElementById('gridCheck').onchange = (e) => this.grid.visible = e.target.checked;
-            document.getElementById('rainCheck').onchange = (e) => this.toggleRain(e.target.checked);
-        }
-
-        cloneSelected() {
-            if (!this.selected) return;
-            const clone = this.selected.clone();
-            clone.position.x += 2;
-            clone.name = this.selected.name + "_Copia";
-            this.addToScene(clone);
-        }
-
-        deleteSelected() {
-            if (!this.selected) return;
-            this.scene.remove(this.selected);
-            this.objects = this.objects.filter(o => o !== this.selected);
-            this.select(null);
-            this.updateOutliner();
-        }
-
-        toggleRain(enabled) {
-            if (enabled) {
-                const geo = new THREE.BufferGeometry();
-                const count = 5000;
-                const pos = new Float32Array(count * 3);
-                for(let i=0; i<count*3; i+=3) {
-                    pos[i] = Math.random()*40-20;
-                    pos[i+1] = Math.random()*20;
-                    pos[i+2] = Math.random()*40-20;
-                }
-                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                this.rainParticles = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xaaaaaf, size: 0.05}));
-                this.scene.add(this.rainParticles);
+        toggleRealism() {
+            this.realism = !this.realism;
+            const badge = document.getElementById('realism-badge');
+            if(this.realism) {
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.ambient.intensity = 0.2;
+                this.mainLight.castShadow = true;
+                this.scene.background = new THREE.Color(0x111111);
+                badge.style.display = 'block';
             } else {
-                this.scene.remove(this.rainParticles);
-                this.rainParticles = null;
+                this.ambient.intensity = 0.5;
+                this.scene.background = new THREE.Color(0x333333);
+                badge.style.display = 'none';
             }
+        }
+
+        bindUI() {
+            // Botón Agregar
+            const addBtn = document.getElementById('add-trigger');
+            const addMenu = document.getElementById('add-menu');
+            addBtn.onclick = (e) => {
+                addMenu.style.display = 'block';
+                addMenu.style.left = e.clientX + 'px';
+                addMenu.style.top = e.clientY + 'px';
+            };
+            window.onclick = (e) => { if(e.target !== addBtn) addMenu.style.display = 'none'; };
+
+            // Realismo
+            document.getElementById('toggle-realism').onclick = () => this.toggleRealism();
+
+            // Transform Modes
+            document.getElementById('mode-move').onclick = () => this.transform.setMode('translate');
+            document.getElementById('mode-rotate').onclick = () => this.transform.setMode('rotate');
+            document.getElementById('mode-scale').onclick = () => this.transform.setMode('scale');
+
+            // Timeline
+            const playBtn = document.getElementById('play-btn');
+            playBtn.onclick = () => {
+                this.isPlaying = !this.isPlaying;
+                playBtn.innerText = this.isPlaying ? '⏸️' : '▶️';
+            };
+
+            // Inputs Manuales
+            document.getElementById('val-px').oninput = (e) => { if(this.selected) this.selected.position.x = parseFloat(e.target.value); };
+            document.getElementById('val-py').oninput = (e) => { if(this.selected) this.selected.position.y = parseFloat(e.target.value); };
+            document.getElementById('val-pz').oninput = (e) => { if(this.selected) this.selected.position.z = parseFloat(e.target.value); };
+            document.getElementById('val-col').oninput = (e) => { if(this.selected?.material) this.selected.material.color.set(e.target.value); };
         }
 
         animate() {
             requestAnimationFrame(() => this.animate());
             this.orbit.update();
 
-            if (this.rainParticles) {
-                const pos = this.rainParticles.geometry.attributes.position.array;
-                for(let i=1; i<pos.length; i+=3) {
-                    pos[i] -= 0.3;
-                    if (pos[i] < 0) pos[i] = 20;
-                }
-                this.rainParticles.geometry.attributes.position.needsUpdate = true;
+            if(this.isPlaying) {
+                this.frame = (this.frame + 1) % 250;
+                document.getElementById('current-frame').innerText = `Frame: ${this.frame}`;
+                
+                const playhead = document.getElementById('playhead');
+                playhead.style.left = (this.frame * 4) + 'px';
+
+                // Ejemplo de animación automática de los objetos
+                this.objects.forEach((obj, i) => {
+                    if(obj.isMesh) {
+                        obj.rotation.y += 0.01 * (i + 1);
+                    }
+                });
             }
 
             this.renderer.render(this.scene, this.camera);
-            
-            // Stats simples
-            if (Math.random() > 0.9) document.getElementById('fps').innerText = Math.round(60); 
-        }
-
-        resetScene() {
-            this.objects.forEach(o => this.scene.remove(o));
-            this.objects = [];
-            this.select(null);
-            this.updateOutliner();
         }
     }
 
-    const app = new BlenderApp();
-    window.app = app; // Para acceso desde HTML
-
-    window.addEventListener('resize', () => {
-        app.camera.aspect = window.innerWidth / window.innerHeight;
-        app.camera.updateProjectionMatrix();
-        app.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    const app = new BlenderClone();
+    window.app = app;
 </script>
 </body>
 </html>
