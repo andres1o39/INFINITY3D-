@@ -2,172 +2,186 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Blood Strike: Loot & Buildings</title>
+    <title>Blood Strike - Character Select</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
-        #instructions {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: #0f0; display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; cursor: pointer; text-align: center;
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
+        
+        /* Menú de Selección */
+        #menu {
+            position: absolute; width: 100%; height: 100%; 
+            background: radial-gradient(circle, #1a1a2e 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; color: white;
         }
+        .char-container { display: flex; gap: 40px; margin-top: 30px; }
+        .card {
+            width: 200px; padding: 20px; border: 2px solid #333; border-radius: 10px;
+            text-align: center; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.05);
+        }
+        .card:hover { border-color: #0f0; transform: scale(1.1); background: rgba(0,255,0,0.1); }
+        .card h2 { margin: 10px 0; color: #0f0; }
+
         #hud {
             position: absolute; bottom: 20px; left: 20px; color: #fff; 
-            background: rgba(0,255,0,0.1); padding: 15px; border: 1px solid #0f0;
+            background: rgba(0,0,0,0.6); padding: 15px; border-left: 5px solid #0f0; display: none;
         }
         #interaction {
             position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
-            color: yellow; font-weight: bold; display: none; text-shadow: 2px 2px #000;
+            color: yellow; font-weight: bold; display: none;
         }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
-            background: #0f0; border-radius: 50%; transform: translate(-50%, -50%);
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            border: 1px solid rgba(0,255,0,0.5); border-radius: 50%; transform: translate(-50%, -50%);
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="instructions">
-        <h1>BLOOD STRIKE: <span style="color:white">LOOT SYSTEM</span></h1>
-        <p>CAMINA HACIA LAS ARMAS O COFRES PARA RECOGERLOS</p>
-        <p>[ CLICK PARA DESPLEGARSE ]</p>
+    <div id="menu">
+        <h1 style="font-size: 50px; letter-spacing: 5px;">BLOOD STRIKE</h1>
+        <p>ELIGE TU OPERADOR</p>
+        <div class="char-container">
+            <div class="card" onclick="startGame(0x00ff00, 'TÁCTICO')">
+                <div style="width:100%; height:150px; background:#004400; border-radius:5px;"></div>
+                <h2>TÁCTICO</h2>
+                <p>Velocidad +</p>
+            </div>
+            <div class="card" onclick="startGame(0xff0000, 'CAZADOR')">
+                <div style="width:100%; height:150px; background:#440000; border-radius:5px;"></div>
+                <h2>CAZADOR</h2>
+                <p>Ataque +</p>
+            </div>
+        </div>
     </div>
-    
-    <div id="interaction">PRESIONA 'E' PARA ABRIR</div>
+
     <div id="crosshair"></div>
-    
+    <div id="interaction">PRESIONA 'E'</div>
     <div id="hud">
+        OPERADOR: <span id="op-name">-</span> <br>
         ARMA: <span id="weapon-name">NINGUNA</span> <br>
-        MUNICIÓN: <span id="ammo">0</span> <br>
-        BOTÍN: <span id="loot-count">0</span> COFRES
+        AMMO: <span id="ammo">0</span>
     </div>
 
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
         import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/PointerLockControls.js';
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020502);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        const light = new THREE.HemisphereLight(0xffffff, 0x004400, 1);
-        scene.add(light);
-
-        // --- MAPA: SUELO VERDE ---
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({color: 0x0a330a}));
-        floor.rotation.x = -Math.PI / 2;
-        scene.add(floor);
-
-        // --- SISTEMA DE LOOT Y EDIFICIOS ---
-        const interactables = [];
-        
-        function createBuilding(x, z, color) {
-            const group = new THREE.Group();
-            // Paredes (hueco por dentro)
-            const wallMat = new THREE.MeshStandardMaterial({color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.8});
-            const room = new THREE.Mesh(new THREE.BoxGeometry(20, 15, 20), wallMat);
-            room.position.set(x, 7.5, z);
-            scene.add(room);
-
-            // Puerta (hueco visual)
-            const door = new THREE.Mesh(new THREE.BoxGeometry(4, 7, 1), new THREE.MeshBasicMaterial({color: 0x000000}));
-            door.position.set(x, 3.5, z + 10.1);
-            scene.add(door);
-
-            // Cofre dentro
-            const chest = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 1), new THREE.MeshStandardMaterial({color: 0xffd700}));
-            chest.position.set(x + 5, 0.5, z + 5);
-            chest.userData = { type: 'cofré' };
-            scene.add(chest);
-            interactables.push(chest);
-
-            // Arma dentro (Subfusil o Sniper)
-            const isSniper = Math.random() > 0.5;
-            const gun = new THREE.Mesh(
-                isSniper ? new THREE.BoxGeometry(0.1, 0.2, 2) : new THREE.BoxGeometry(0.2, 0.4, 0.8),
-                new THREE.MeshStandardMaterial({color: 0x333333})
-            );
-            gun.position.set(x - 5, 1, z - 5);
-            gun.userData = { type: 'arma', name: isSniper ? 'SNIPER' : 'SUBFUSIL', ammo: isSniper ? 5 : 30 };
-            scene.add(gun);
-            interactables.push(gun);
-        }
-
-        // Generar 10 edificios con loot
-        for(let i=0; i<10; i++) {
-            createBuilding(Math.random()*400-200, Math.random()*400-200, Math.random()*0x444444);
-        }
-
-        // --- JUGADOR Y ARMA VISUAL ---
-        const weaponModel = new THREE.Group();
-        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 1), new THREE.MeshStandardMaterial({color: 0x111111}));
-        weaponModel.add(gunBody);
-        camera.add(weaponModel);
-        scene.add(camera);
-        weaponModel.position.set(0.4, -0.4, -0.8);
-        weaponModel.visible = false; // Solo visible si recoges arma
-
-        const controls = new PointerLockControls(camera, document.body);
-        document.getElementById('instructions').addEventListener('click', () => controls.lock());
-        
+        let scene, camera, renderer, controls, playerColor;
         let move = { f: false, b: false, l: false, r: false };
         let velocity = new THREE.Vector3();
-        let lootCount = 0;
+        let interactables = [];
+        let isStarted = false;
 
-        camera.position.set(0, 100, 0); // Caida
+        window.startGame = function(color, name) {
+            playerColor = color;
+            document.getElementById('op-name').innerText = name;
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            document.getElementById('crosshair').style.display = 'block';
+            init();
+            animate();
+            controls.lock();
+        }
 
-        document.addEventListener('keydown', (e) => {
-            if(e.code === 'KeyW') move.f = true;
-            if(e.code === 'KeyS') move.b = true;
-            if(e.code === 'KeyA') move.l = true;
-            if(e.code === 'KeyD') move.r = true;
-            if(e.code === 'Space' && camera.position.y <= 1.8) velocity.y = 10;
-            if(e.code === 'KeyE') checkLoot();
-        });
-        document.addEventListener('keyup', (e) => {
-            if(e.code === 'KeyW') move.f = false;
-            if(e.code === 'KeyS') move.b = false;
-            if(e.code === 'KeyA') move.l = false;
-            if(e.code === 'KeyD') move.r = false;
-        });
+        function init() {
+            scene = new THREE.Scene();
+            
+            // --- CIELO REALISTA ---
+            // Niebla para horizonte
+            scene.fog = new THREE.Fog(0x87ceeb, 1, 1000);
+            // Fondo degradado (Cielo)
+            const vertexShader = `varying vec3 vWorldPosition; void main() { vec4 worldPosition = modelMatrix * vec4( position, 1.0 ); vWorldPosition = worldPosition.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`;
+            const fragmentShader = `uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize( vWorldPosition + offset ).y; gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 ); }`;
+            const skyGeo = new THREE.SphereGeometry(500, 32, 15);
+            const skyMat = new THREE.ShaderMaterial({
+                vertexShader, fragmentShader,
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x0077ff) },
+                    bottomColor: { value: new THREE.Color(0xffffff) },
+                    offset: { value: 33 },
+                    exponent: { value: 0.6 }
+                },
+                side: THREE.BackSide
+            });
+            scene.add(new THREE.Mesh(skyGeo, skyMat));
 
-        function checkLoot() {
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(new THREE.Vector2(), camera);
-            const intersects = raycaster.intersectObjects(interactables);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
+            camera.position.set(0, 300, 0); // Inicio desde el avión
 
-            if (intersects.length > 0 && intersects[0].distance < 5) {
-                const obj = intersects[0].object;
-                if(obj.userData.type === 'cofré') {
-                    lootCount++;
-                    document.getElementById('loot-count').innerText = lootCount;
-                    scene.remove(obj);
-                } else if(obj.userData.type === 'arma') {
-                    document.getElementById('weapon-name').innerText = obj.userData.name;
-                    document.getElementById('ammo').innerText = obj.userData.ammo;
-                    weaponModel.visible = true;
-                    scene.remove(obj);
-                }
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+            scene.add(light);
+
+            // Suelo Verde
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({color: 0x113311}));
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // Generar Edificios y Botín
+            for(let i=0; i<15; i++) {
+                const x = Math.random()*600-300;
+                const z = Math.random()*600-300;
+                // Edificio
+                const b = new THREE.Mesh(new THREE.BoxGeometry(20, 40, 20), new THREE.MeshStandardMaterial({color: 0x333333, wireframe: false}));
+                b.position.set(x, 20, z);
+                scene.add(b);
+                
+                // Arma Sniper (flotante)
+                const gun = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 2), new THREE.MeshBasicMaterial({color: 0xffff00}));
+                gun.position.set(x, 2, z + 15);
+                gun.userData = { type: 'arma', name: 'SNIPER RIFLE', ammo: 10 };
+                scene.add(gun);
+                interactables.push(gun);
+            }
+
+            controls = new PointerLockControls(camera, document.body);
+            isStarted = true;
+
+            // Eventos
+            document.addEventListener('keydown', (e) => {
+                if(e.code === 'KeyW') move.f = true;
+                if(e.code === 'KeyS') move.b = true;
+                if(e.code === 'KeyA') move.l = true;
+                if(e.code === 'KeyD') move.r = true;
+                if(e.code === 'Space' && camera.position.y <= 2) velocity.y = 12;
+                if(e.code === 'KeyE') checkInteraction();
+            });
+            document.addEventListener('keyup', (e) => {
+                if(e.code === 'KeyW') move.f = false;
+                if(e.code === 'KeyS') move.b = false;
+                if(e.code === 'KeyA') move.l = false;
+                if(e.code === 'KeyD') move.r = false;
+            });
+        }
+
+        function checkInteraction() {
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(new THREE.Vector2(), camera);
+            const inter = ray.intersectObjects(interactables);
+            if(inter.length > 0 && inter[0].distance < 6) {
+                const obj = inter[0].object;
+                document.getElementById('weapon-name').innerText = obj.userData.name;
+                document.getElementById('ammo').innerText = obj.userData.ammo;
+                scene.remove(obj);
             }
         }
 
         function animate() {
+            if(!isStarted) return;
             requestAnimationFrame(animate);
+            
             if (controls.isLocked) {
-                // Raycast constante para mostrar texto de "E para recoger"
-                const ray = new THREE.Raycaster();
-                ray.setFromCamera(new THREE.Vector2(), camera);
-                const inter = ray.intersectObjects(interactables);
-                document.getElementById('interaction').style.display = (inter.length > 0 && inter[0].distance < 5) ? 'block' : 'none';
-
-                // Física básica
                 const delta = 0.016;
                 velocity.x -= velocity.x * 10 * delta;
                 velocity.z -= velocity.z * 10 * delta;
-                if(camera.position.y > 1.7) velocity.y -= 25 * delta;
+                
+                // Gravedad (Caída de paracaídas lenta si estás arriba)
+                const gravity = camera.position.y > 50 ? 5 : 25;
+                velocity.y -= gravity * delta;
 
                 if(move.f) velocity.z -= 150 * delta;
                 if(move.b) velocity.z += 150 * delta;
@@ -178,11 +192,16 @@
                 controls.moveForward(-velocity.z * delta);
                 camera.position.y += velocity.y * delta;
 
-                if(camera.position.y < 1.7) { camera.position.y = 1.7; velocity.y = 0; }
+                if(camera.position.y < 2) { camera.position.y = 2; velocity.y = 0; }
+                
+                // Mostrar "E"
+                const ray = new THREE.Raycaster();
+                ray.setFromCamera(new THREE.Vector2(), camera);
+                const inter = ray.intersectObjects(interactables);
+                document.getElementById('interaction').style.display = (inter.length > 0 && inter[0].distance < 6) ? 'block' : 'none';
             }
             renderer.render(scene, camera);
         }
-        animate();
     </script>
 </body>
 </html>
