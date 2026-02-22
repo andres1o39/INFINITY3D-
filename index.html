@@ -2,206 +2,293 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Blood Strike - Character Select</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeminiOS - Titan Engine v4.0</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
-        
-        /* Menú de Selección */
-        #menu {
-            position: absolute; width: 100%; height: 100%; 
-            background: radial-gradient(circle, #1a1a2e 0%, #000 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; color: white;
+        :root {
+            --primary: #6200ea;
+            --secondary: #03dac6;
+            --accent: #00d2ff;
+            --bg: #050505;
+            --surface: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
-        .char-container { display: flex; gap: 40px; margin-top: 30px; }
-        .card {
-            width: 200px; padding: 20px; border: 2px solid #333; border-radius: 10px;
-            text-align: center; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.05);
-        }
-        .card:hover { border-color: #0f0; transform: scale(1.1); background: rgba(0,255,0,0.1); }
-        .card h2 { margin: 10px 0; color: #0f0; }
 
-        #hud {
-            position: absolute; bottom: 20px; left: 20px; color: #fff; 
-            background: rgba(0,0,0,0.6); padding: 15px; border-left: 5px solid #0f0; display: none;
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+            color: white; overflow: hidden;
+            user-select: none;
         }
-        #interaction {
-            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
-            color: yellow; font-weight: bold; display: none;
+
+        /* --- ESCRITORIO --- */
+        #desktop {
+            width: 100vw; height: calc(100vh - 50px);
+            position: relative;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            animation: bootUp 1.5s ease-out;
         }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            border: 1px solid rgba(0,255,0,0.5); border-radius: 50%; transform: translate(-50%, -50%);
-            display: none;
+
+        @keyframes bootUp {
+            from { opacity: 0; filter: blur(20px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+
+        .icon {
+            position: absolute; width: 90px; text-align: center;
+            cursor: pointer; padding: 10px; border-radius: 12px;
+            transition: 0.3s; z-index: 5;
+        }
+        .icon:hover { background: rgba(255,255,255,0.1); transform: translateY(-5px); }
+        .icon img { width: 50px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); }
+        .icon div { font-size: 12px; margin-top: 5px; text-shadow: 1px 1px 3px black; }
+
+        /* --- VENTANAS --- */
+        .window {
+            position: absolute; min-width: 300px; display: none;
+            flex-direction: column; background: rgba(15, 15, 20, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 15px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            overflow: hidden; z-index: 100;
+        }
+
+        .window-header {
+            background: rgba(255,255,255,0.05); padding: 12px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: move; font-weight: 600; font-size: 14px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .window-content { padding: 20px; flex-grow: 1; overflow-y: auto; }
+
+        .btn-close { 
+            width: 14px; height: 14px; background: #ff5f56; 
+            border-radius: 50%; cursor: pointer; border: none;
+            transition: 0.2s;
+        }
+        .btn-close:hover { transform: scale(1.2); }
+
+        /* --- WIDGETS --- */
+        .widget {
+            position: absolute; right: 20px; top: 20px;
+            width: 220px; padding: 15px;
+            background: var(--surface); backdrop-filter: blur(15px);
+            border-radius: 15px; border: 1px solid var(--glass-border);
+            font-size: 11px; pointer-events: none; z-index: 1;
+        }
+        .stat-bar { height: 4px; background: #333; margin: 8px 0; border-radius: 2px; overflow: hidden; }
+        .stat-fill { height: 100%; background: var(--secondary); width: 0%; transition: width 0.5s; }
+
+        /* --- BARRA DE TAREAS --- */
+        #taskbar {
+            position: absolute; bottom: 0; width: 100%; height: 50px;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(25px);
+            display: flex; align-items: center; justify-content: center;
+            border-top: 1px solid var(--glass-border); z-index: 1000;
+        }
+
+        .dock-icon {
+            width: 38px; height: 38px; margin: 0 12px;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .dock-icon:hover { transform: translateY(-12px) scale(1.3); }
+
+        /* --- APP ESPECÍFICA: STORE & 3D --- */
+        .btn-install { 
+            background: var(--secondary); color: black; border: none; 
+            padding: 10px 25px; border-radius: 20px; font-weight: bold; 
+            cursor: pointer; transition: 0.3s;
+        }
+        .btn-install:hover { box-shadow: 0 0 20px var(--secondary); transform: scale(1.05); }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--secondary);
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        textarea {
+            width: 100%; height: 150px; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border); color: white; border-radius: 8px;
+            padding: 10px; box-sizing: border-box; outline: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="menu">
-        <h1 style="font-size: 50px; letter-spacing: 5px;">BLOOD STRIKE</h1>
-        <p>ELIGE TU OPERADOR</p>
-        <div class="char-container">
-            <div class="card" onclick="startGame(0x00ff00, 'TÁCTICO')">
-                <div style="width:100%; height:150px; background:#004400; border-radius:5px;"></div>
-                <h2>TÁCTICO</h2>
-                <p>Velocidad +</p>
-            </div>
-            <div class="card" onclick="startGame(0xff0000, 'CAZADOR')">
-                <div style="width:100%; height:150px; background:#440000; border-radius:5px;"></div>
-                <h2>CAZADOR</h2>
-                <p>Ataque +</p>
+<div id="desktop">
+    <div class="icon" style="top: 20px; left: 20px;" onclick="toggleWindow('notes')">
+        <img src="https://cdn-icons-png.flaticon.com/512/3209/3209265.png" alt="Notes">
+        <div>Mis Notas</div>
+    </div>
+
+    <div class="icon" style="top: 130px; left: 20px;" onclick="toggleWindow('store')">
+        <img src="https://cdn-icons-png.flaticon.com/512/3382/3382607.png" alt="Store">
+        <div>Titan Store</div>
+    </div>
+
+    <div class="widget">
+        <div style="letter-spacing: 1px; color: var(--secondary); font-weight: bold;">TITAN CORE v4.0</div>
+        <div style="margin-top:10px">CPU <span id="cpu-text">0%</span></div>
+        <div class="stat-bar"><div id="cpu-load" class="stat-fill"></div></div>
+        <div>RAM <span id="ram-text">0%</span></div>
+        <div class="stat-bar"><div id="ram-load" class="stat-fill" style="background:var(--primary)"></div></div>
+        <div style="color: #555; font-size: 9px; margin-top: 5px;">GPU ACCELERATION: ACTIVE</div>
+    </div>
+
+    <div id="notes" class="window" style="width: 400px; top: 100px; left: 150px;">
+        <div class="window-header">
+            <span>Editor de Notas</span>
+            <button class="btn-close" onclick="toggleWindow('notes')"></button>
+        </div>
+        <div class="window-content">
+            <textarea id="note-pad" placeholder="Escribe algo aquí..."></textarea>
+            <button onclick="saveNote()" style="margin-top:10px; cursor:pointer;">Guardar</button>
+        </div>
+    </div>
+
+    <div id="store" class="window" style="width: 450px; height: 480px; top: 50px; left: 300px;">
+        <div class="window-header">
+            <span>Titan Store</span>
+            <button class="btn-close" onclick="toggleWindow('store')"></button>
+        </div>
+        <div class="window-content" style="text-align: center;">
+            <h2 style="color: var(--secondary);">App Destacada</h2>
+            <div style="background: rgba(255,255,255,0.03); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
+                <div style="font-size: 50px; margin-bottom: 10px;">🧊</div>
+                <h3>Visualizador 3D Pro</h3>
+                <p style="font-size: 13px; opacity: 0.6; line-height: 1.5;">Motor de renderizado avanzado para laptops. Compatible con modelos .OBJ y WebGL.</p>
+                <button id="install-btn" class="btn-install" onclick="installApp()">INSTALAR</button>
             </div>
         </div>
     </div>
 
-    <div id="crosshair"></div>
-    <div id="interaction">PRESIONA 'E'</div>
-    <div id="hud">
-        OPERADOR: <span id="op-name">-</span> <br>
-        ARMA: <span id="weapon-name">NINGUNA</span> <br>
-        AMMO: <span id="ammo">0</span>
+    <div id="app-3d" class="window" style="width: 700px; height: 500px; top: 60px; left: 100px; background: #000;">
+        <div class="window-header">
+            <span>Visualizador 3D - Engine Room</span>
+            <button class="btn-close" onclick="toggleWindow('app-3d')"></button>
+        </div>
+        <div id="render-canvas" class="window-content" style="padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div id="placeholder-text" style="text-align: center; color: #444;">
+                <p>MOTOR 3D LISTO</p>
+                <div class="loader"></div>
+                <p style="font-size: 12px;">Inyecta tu código de visualización aquí</p>
+            </div>
+        </div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
-        import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/PointerLockControls.js';
+</div>
 
-        let scene, camera, renderer, controls, playerColor;
-        let move = { f: false, b: false, l: false, r: false };
-        let velocity = new THREE.Vector3();
-        let interactables = [];
-        let isStarted = false;
+<div id="taskbar">
+    <img src="https://cdn-icons-png.flaticon.com/512/888/888871.png" class="dock-icon" onclick="alert('GeminiOS v4.0 \nEstado: Operativo')">
+    <img src="https://cdn-icons-png.flaticon.com/512/5968/5968263.png" class="dock-icon" onclick="toggleWindow('notes')">
+    <img src="https://cdn-icons-png.flaticon.com/512/3382/3382607.png" class="dock-icon" onclick="toggleWindow('store')">
+    <div id="clock" style="position:absolute; right: 25px; font-family: monospace; font-size: 16px; color: var(--secondary);">00:00</div>
+</div>
 
-        window.startGame = function(color, name) {
-            playerColor = color;
-            document.getElementById('op-name').innerText = name;
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('hud').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'block';
-            init();
-            animate();
-            controls.lock();
+<script>
+    // --- MOTOR DE AUDIO ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq, duration) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // --- LÓGICA DE VENTANAS ---
+    function toggleWindow(id) {
+        const win = document.getElementById(id);
+        const isOpen = win.style.display === 'flex';
+        win.style.display = isOpen ? 'none' : 'flex';
+        if(!isOpen) {
+            win.style.zIndex = Math.floor(Date.now() / 1000); // Traer al frente
+            playBeep(600, 0.1);
+        } else {
+            playBeep(300, 0.1);
         }
+    }
 
-        function init() {
-            scene = new THREE.Scene();
+    // --- INSTALACIÓN DE TU APP ---
+    function installApp() {
+        const btn = document.getElementById('install-btn');
+        btn.innerText = "DESCARGANDO...";
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            btn.innerText = "INSTALADO";
+            playBeep(800, 0.3);
             
-            // --- CIELO REALISTA ---
-            // Niebla para horizonte
-            scene.fog = new THREE.Fog(0x87ceeb, 1, 1000);
-            // Fondo degradado (Cielo)
-            const vertexShader = `varying vec3 vWorldPosition; void main() { vec4 worldPosition = modelMatrix * vec4( position, 1.0 ); vWorldPosition = worldPosition.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`;
-            const fragmentShader = `uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize( vWorldPosition + offset ).y; gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 ); }`;
-            const skyGeo = new THREE.SphereGeometry(500, 32, 15);
-            const skyMat = new THREE.ShaderMaterial({
-                vertexShader, fragmentShader,
-                uniforms: {
-                    topColor: { value: new THREE.Color(0x0077ff) },
-                    bottomColor: { value: new THREE.Color(0xffffff) },
-                    offset: { value: 33 },
-                    exponent: { value: 0.6 }
-                },
-                side: THREE.BackSide
-            });
-            scene.add(new THREE.Mesh(skyGeo, skyMat));
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
-            camera.position.set(0, 300, 0); // Inicio desde el avión
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-            scene.add(light);
-
-            // Suelo Verde
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({color: 0x113311}));
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
-
-            // Generar Edificios y Botín
-            for(let i=0; i<15; i++) {
-                const x = Math.random()*600-300;
-                const z = Math.random()*600-300;
-                // Edificio
-                const b = new THREE.Mesh(new THREE.BoxGeometry(20, 40, 20), new THREE.MeshStandardMaterial({color: 0x333333, wireframe: false}));
-                b.position.set(x, 20, z);
-                scene.add(b);
-                
-                // Arma Sniper (flotante)
-                const gun = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 2), new THREE.MeshBasicMaterial({color: 0xffff00}));
-                gun.position.set(x, 2, z + 15);
-                gun.userData = { type: 'arma', name: 'SNIPER RIFLE', ammo: 10 };
-                scene.add(gun);
-                interactables.push(gun);
-            }
-
-            controls = new PointerLockControls(camera, document.body);
-            isStarted = true;
-
-            // Eventos
-            document.addEventListener('keydown', (e) => {
-                if(e.code === 'KeyW') move.f = true;
-                if(e.code === 'KeyS') move.b = true;
-                if(e.code === 'KeyA') move.l = true;
-                if(e.code === 'KeyD') move.r = true;
-                if(e.code === 'Space' && camera.position.y <= 2) velocity.y = 12;
-                if(e.code === 'KeyE') checkInteraction();
-            });
-            document.addEventListener('keyup', (e) => {
-                if(e.code === 'KeyW') move.f = false;
-                if(e.code === 'KeyS') move.b = false;
-                if(e.code === 'KeyA') move.l = false;
-                if(e.code === 'KeyD') move.r = false;
-            });
-        }
-
-        function checkInteraction() {
-            const ray = new THREE.Raycaster();
-            ray.setFromCamera(new THREE.Vector2(), camera);
-            const inter = ray.intersectObjects(interactables);
-            if(inter.length > 0 && inter[0].distance < 6) {
-                const obj = inter[0].object;
-                document.getElementById('weapon-name').innerText = obj.userData.name;
-                document.getElementById('ammo').innerText = obj.userData.ammo;
-                scene.remove(obj);
-            }
-        }
-
-        function animate() {
-            if(!isStarted) return;
-            requestAnimationFrame(animate);
+            // Crear icono en el escritorio
+            const newIcon = document.createElement('div');
+            newIcon.className = 'icon';
+            newIcon.style.top = "20px";
+            newIcon.style.left = "120px";
+            newIcon.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/7414/7414521.png"><div>Visor 3D</div>`;
+            newIcon.onclick = () => toggleWindow('app-3d');
+            document.getElementById('desktop').appendChild(newIcon);
             
-            if (controls.isLocked) {
-                const delta = 0.016;
-                velocity.x -= velocity.x * 10 * delta;
-                velocity.z -= velocity.z * 10 * delta;
-                
-                // Gravedad (Caída de paracaídas lenta si estás arriba)
-                const gravity = camera.position.y > 50 ? 5 : 25;
-                velocity.y -= gravity * delta;
+            alert("¡App instalada con éxito!");
+        }, 2500);
+    }
 
-                if(move.f) velocity.z -= 150 * delta;
-                if(move.b) velocity.z += 150 * delta;
-                if(move.l) velocity.x -= 150 * delta;
-                if(move.r) velocity.x += 150 * delta;
+    // --- SISTEMA DE ARCHIVOS (NOTAS) ---
+    function saveNote() {
+        const text = document.getElementById('note-pad').value;
+        localStorage.setItem('gemini_note', text);
+        playBeep(1000, 0.1);
+        alert("Nota guardada en el disco virtual.");
+    }
 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
-                camera.position.y += velocity.y * delta;
+    window.onload = () => {
+        const saved = localStorage.getItem('gemini_note');
+        if(saved) document.getElementById('note-pad').value = saved;
+    };
 
-                if(camera.position.y < 2) { camera.position.y = 2; velocity.y = 0; }
-                
-                // Mostrar "E"
-                const ray = new THREE.Raycaster();
-                ray.setFromCamera(new THREE.Vector2(), camera);
-                const inter = ray.intersectObjects(interactables);
-                document.getElementById('interaction').style.display = (inter.length > 0 && inter[0].distance < 6) ? 'block' : 'none';
+    // --- MONITOR DE RECURSOS ---
+    function updateStats() {
+        const cpu = Math.floor(Math.random() * 30 + 5);
+        const ram = Math.floor(Math.random() * 10 + 45);
+        document.getElementById('cpu-load').style.width = cpu + "%";
+        document.getElementById('cpu-text').innerText = cpu + "%";
+        document.getElementById('ram-load').style.width = ram + "%";
+        document.getElementById('ram-text').innerText = ram + "%";
+    }
+    setInterval(updateStats, 2000);
+
+    // --- RELOJ ---
+    setInterval(() => {
+        const d = new Date();
+        document.getElementById('clock').innerText = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }, 1000);
+
+    // --- ARRASTRE DE VENTANAS (DRAG & DROP) ---
+    document.querySelectorAll('.window-header').forEach(header => {
+        header.onmousedown = function(e) {
+            let win = header.parentElement;
+            win.style.zIndex = 10000;
+            let shiftX = e.clientX - win.getBoundingClientRect().left;
+            let shiftY = e.clientY - win.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                win.style.left = pageX - shiftX + 'px';
+                win.style.top = pageY - shiftY + 'px';
             }
-            renderer.render(scene, camera);
-        }
-    </script>
+
+            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+            document.addEventListener('mousemove', onMouseMove);
+            document.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+            };
+        };
+    });
+</script>
+
 </body>
 </html>
