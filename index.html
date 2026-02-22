@@ -2,193 +2,164 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Blood Strike Pro - Ultra Edition</title>
+    <title>Blood Strike Neon - Ultra Performance</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
         #instructions {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: #fff; display: flex;
+            background: rgba(0,0,0,0.8); color: cyan; display: flex;
             flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; cursor: pointer; text-transform: uppercase;
+            z-index: 10; cursor: pointer; text-align: center;
         }
         #hud {
-            position: absolute; bottom: 30px; left: 30px; color: #0f0; 
-            font-size: 20px; letter-spacing: 2px; pointer-events: none;
+            position: absolute; bottom: 30px; left: 30px; color: #0ff; 
+            font-size: 20px; text-shadow: 0 0 10px cyan; pointer-events: none;
         }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 12px; height: 12px;
-            border: 2px solid rgba(0, 255, 0, 0.5); border-radius: 50%;
-            transform: translate(-50%, -50%); pointer-events: none;
-        }
-        #flash {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; opacity: 0; pointer-events: none;
+            position: absolute; top: 50%; left: 50%; width: 15px; height: 15px;
+            border: 2px solid cyan; border-radius: 50%; transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
 
-    <div id="flash"></div>
     <div id="instructions">
-        <h1 style="font-size: 50px; margin-bottom: 10px;">BLOOD STRIKE <span style="color: red;">JS</span></h1>
-        <p>Potencia Detectada: Modo Ultra Activado</p>
-        <p>CLICK PARA DESPLEGARSE</p>
+        <h1 style="font-size: 40px;">BLOOD STRIKE <span style="color:magenta">NEON</span></h1>
+        <p>TECLAS: WASD (Mover) | ESPACIO (Saltar) | R (Recargar)</p>
+        <p style="color: yellow;">[ CLICK PARA INICIAR DESPLIEGUE ]</p>
     </div>
+    
     <div id="crosshair"></div>
+    
     <div id="hud">
-        STATUS: OPERATIVO <br> 
-        ALTITUD: <span id="alt">0</span>m <br>
-        AMMO: 30/&infin;
+        ESTADO: INFILTRANDO... <br>
+        MUNICIÓN: <span id="ammo">30</span>/30 <br>
+        ACCIÓN: <span id="action">LISTO</span>
     </div>
 
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
         import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/PointerLockControls.js';
 
-        // --- Configuración Core ---
+        // --- Escena y Renderer ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020205);
-        scene.fog = new THREE.FogExp2(0x020205, 0.015);
-
+        scene.fog = new THREE.FogExp2(0x000000, 0.01);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Sombras activadas para laptops potentes
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // --- Luces de alta calidad ---
+        // --- Iluminación ---
         const ambient = new THREE.AmbientLight(0x404040, 0.5);
         scene.add(ambient);
 
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(50, 100, 50);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048; // Alta resolución de sombras
-        sun.shadow.mapSize.height = 2048;
-        scene.add(sun);
+        // --- Suelo de Luces de Colores ---
+        const floorSize = 1000;
+        const grid = new THREE.GridHelper(floorSize, 40, 0xff00ff, 0x00ffff);
+        scene.add(grid);
 
-        // --- Mapa Avanzado ---
-        const gridHelper = new THREE.GridHelper(1000, 100, 0xff0000, 0x222222);
-        scene.add(gridHelper);
-
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        // Obstáculos con sombras
-        for (let i = 0; i < 80; i++) {
-            const h = Math.random() * 30 + 2;
-            const boxGeo = new THREE.BoxGeometry(8, h, 8);
-            const boxMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            const box = new THREE.Mesh(boxGeo, boxMat);
-            box.position.set(Math.random() * 600 - 300, h/2, Math.random() * 600 - 300);
-            box.castShadow = true;
-            box.receiveShadow = true;
+        // Agregar luces puntuales de colores en el suelo
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
+        for(let i = 0; i < 15; i++) {
+            const pLight = new THREE.PointLight(colors[i % colors.length], 2, 50);
+            pLight.position.set(Math.random()*400-200, 1, Math.random()*400-200);
+            scene.add(pLight);
+            
+            // Cubo brillante bajo la luz
+            const box = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.5, 2),
+                new THREE.MeshBasicMaterial({ color: colors[i % colors.length] })
+            );
+            box.position.copy(pLight.position);
+            box.position.y = 0.2;
             scene.add(box);
         }
 
-        // --- Arma Avanzada (FPS View) ---
-        const weaponGroup = new THREE.Group();
-        const bodyGeo = new THREE.BoxGeometry(0.15, 0.2, 0.7);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 0.9, roughness: 0.1 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        weaponGroup.add(body);
-        
-        const barrelGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5);
-        const barrel = new THREE.Mesh(barrelGeo, bodyMat);
-        barrel.rotation.x = Math.PI / 2;
-        barrel.position.z = -0.4;
-        weaponGroup.add(barrel);
-
+        // --- Arma con Animación ---
+        const weapon = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), new THREE.MeshStandardMaterial({color: 0x111111}));
+        weapon.add(body);
+        camera.add(weapon);
         scene.add(camera);
-        camera.add(weaponGroup);
-        weaponGroup.position.set(0.4, -0.3, -0.6);
+        weapon.position.set(0.4, -0.4, -0.7);
 
-        // --- Controles y Movimiento ---
+        // --- Lógica de Juego ---
         const controls = new PointerLockControls(camera, document.body);
-        const instructions = document.getElementById('instructions');
-        instructions.addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => instructions.style.display = 'none');
-        controls.addEventListener('unlock', () => instructions.style.display = 'flex');
+        document.getElementById('instructions').addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => document.getElementById('instructions').style.display = 'none');
+        controls.addEventListener('unlock', () => document.getElementById('instructions').style.display = 'flex');
 
-        let moveFwd = false, moveBwd = false, moveL = false, moveR = false;
+        let move = { f: false, b: false, l: false, r: false };
         let velocity = new THREE.Vector3();
-        camera.position.y = 250; // Caída desde más alto
-        let parachuting = true;
+        let canJump = false;
+        let ammo = 30;
+        let isReloading = false;
+
+        camera.position.y = 150; // Altura inicial
 
         document.addEventListener('keydown', (e) => {
-            if(e.code === 'KeyW') moveFwd = true;
-            if(e.code === 'KeyS') moveBwd = true;
-            if(e.code === 'KeyA') moveL = true;
-            if(e.code === 'KeyD') moveR = true;
+            if(e.code === 'KeyW') move.f = true;
+            if(e.code === 'KeyS') move.b = true;
+            if(e.code === 'KeyA') move.l = true;
+            if(e.code === 'KeyD') move.r = true;
+            if(e.code === 'Space' && canJump) {
+                velocity.y += 10;
+                canJump = false;
+            }
+            if(e.code === 'KeyR' && !isReloading) reload();
         });
         document.addEventListener('keyup', (e) => {
-            if(e.code === 'KeyW') moveFwd = false;
-            if(e.code === 'KeyS') moveBwd = false;
-            if(e.code === 'KeyA') moveL = false;
-            if(e.code === 'KeyD') moveR = false;
+            if(e.code === 'KeyW') move.f = false;
+            if(e.code === 'KeyS') move.b = false;
+            if(e.code === 'KeyA') move.l = false;
+            if(e.code === 'KeyD') move.r = false;
         });
 
-        // --- Sistema de Disparo ---
-        window.addEventListener('mousedown', () => {
-            if(!controls.isLocked) return;
-            // Efecto Muzzle Flash
-            document.getElementById('flash').style.opacity = '0.3';
-            setTimeout(() => document.getElementById('flash').style.opacity = '0', 50);
+        function reload() {
+            isReloading = true;
+            document.getElementById('action').innerText = "RECARGANDO...";
+            document.getElementById('action').style.color = "yellow";
             
-            // Retroceso visual del arma
-            weaponGroup.position.z += 0.1;
-        });
+            // Animación de rotación del arma
+            weapon.rotation.x = Math.PI / 4;
+            
+            setTimeout(() => {
+                ammo = 30;
+                isReloading = false;
+                weapon.rotation.x = 0;
+                document.getElementById('ammo').innerText = ammo;
+                document.getElementById('action').innerText = "LISTO";
+                document.getElementById('action').style.color = "#0ff";
+            }, 1500);
+        }
 
-        // --- Bucle de Renderizado ---
-        let prevTime = performance.now();
         function animate() {
             requestAnimationFrame(animate);
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-
             if (controls.isLocked) {
-                // Física de movimiento
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-
-                if (parachuting) {
-                    velocity.y = -8; 
-                    if (camera.position.y <= 2) parachuting = false;
-                } else {
-                    velocity.y -= 20.0 * delta; // Gravedad más fuerte
-                }
-
-                if (moveFwd) velocity.z -= 200.0 * delta;
-                if (moveBwd) velocity.z += 200.0 * delta;
-                if (moveL) velocity.x -= 200.0 * delta;
-                if (moveR) velocity.x += 200.0 * delta;
-
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
-                camera.position.y += (velocity.y * delta);
-
-                if (camera.position.y < 1.7) {
-                    velocity.y = 0;
-                    camera.position.y = 1.7;
-                }
-
-                // Balanceo del arma (Bobbing)
-                const timer = Date.now() * 0.005;
-                if (moveFwd || moveBwd || moveL || moveR) {
-                    weaponGroup.position.y = -0.3 + Math.sin(timer) * 0.02;
-                    weaponGroup.position.x = 0.4 + Math.cos(timer) * 0.01;
-                }
-                // Recuperación de retroceso
-                weaponGroup.position.z += ( -0.6 - weaponGroup.position.z ) * 0.1;
+                const delta = 0.1;
                 
-                document.getElementById('alt').innerText = Math.floor(camera.position.y);
+                // Gravedad y Fricción
+                velocity.x -= velocity.x * 10.0 * 0.016;
+                velocity.z -= velocity.z * 10.0 * 0.016;
+                velocity.y -= 9.8 * 2.5 * 0.016; // Gravedad
+
+                if (move.f) velocity.z -= 150.0 * 0.016;
+                if (move.b) velocity.z += 150.0 * 0.016;
+                if (move.l) velocity.x -= 150.0 * 0.016;
+                if (move.r) velocity.x += 150.0 * 0.016;
+
+                controls.moveRight(-velocity.x * 0.016);
+                controls.moveForward(-velocity.z * 0.016);
+                camera.position.y += (velocity.y * 0.016);
+
+                // Colisión Suelo
+                if (camera.position.y < 1.8) {
+                    velocity.y = 0;
+                    camera.position.y = 1.8;
+                    canJump = true;
+                }
             }
-            prevTime = time;
             renderer.render(scene, camera);
         }
         animate();
