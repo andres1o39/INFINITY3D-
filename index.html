@@ -3,360 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blender Pro Edition</title>
+    <title>Blender Ultra Pro - Suite Completa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --bg-main: #282828;
-            --bg-panel: #3d3d3d;
-            --bg-sidebar: #212121;
-            --accent: #4772b3;
-            --text: #dbdbdb;
-            --keyframe: #e2a126;
+            --bg-base: #1d1d1d;
+            --bg-panel: #2b2b2b;
+            --bg-header: #333333;
+            --accent: #e2a126;
+            --blue: #4772b3;
+            --text: #cfcfcf;
         }
-        body { margin: 0; overflow: hidden; background-color: var(--bg-main); color: var(--text); font-family: 'Inter', sans-serif; font-size: 12px; }
-        
-        .viewport-container { position: relative; flex: 1; background: #1d1d1d; cursor: crosshair; }
+        body { margin: 0; overflow: hidden; background: var(--bg-base); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 11px; }
         
         /* Layout */
-        .app-container { display: flex; flex-direction: column; height: 100vh; }
-        .top-nav { height: 24px; background: #181818; display: flex; align-items: center; padding: 0 10px; gap: 15px; border-bottom: 1px solid #000; }
-        .main-area { display: flex; flex: 1; overflow: hidden; }
+        .app-grid { display: grid; grid-template-rows: 24px 1fr 200px; height: 100vh; }
+        .top-bar { background: var(--bg-header); display: flex; align-items: center; padding: 0 10px; gap: 15px; border-bottom: 1px solid #111; z-index: 100; }
+        .editor-area { display: grid; grid-template-columns: 45px 1fr 300px; overflow: hidden; }
         
-        /* Sidebar Tools */
-        .tools-bar { width: 40px; background: var(--bg-sidebar); border-right: 1px solid #111; display: flex; flex-direction: column; align-items: center; padding-top: 10px; gap: 8px; }
-        .tool-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; }
-        .tool-icon.active { background: var(--accent); }
-        .tool-icon:hover:not(.active) { background: #444; }
+        /* Toolbar */
+        .toolbar { background: var(--bg-panel); border-right: 1px solid #111; display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 10px; }
+        .t-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+        .t-btn:hover { background: #444; }
+        .t-btn.active { background: var(--blue); border-color: #77aaff; }
 
-        /* Right Panels */
-        .side-panel { width: 280px; background: var(--bg-sidebar); border-left: 1px solid #111; display: flex; flex-direction: column; }
-        .panel-header { background: #333; padding: 4px 8px; font-weight: bold; font-size: 11px; border-bottom: 1px solid #111; display: flex; justify-content: space-between; }
-        .outliner { flex: 0.4; overflow-y: auto; border-bottom: 2px solid #111; }
-        .properties { flex: 0.6; overflow-y: auto; padding: 10px; }
+        /* Panels */
+        .side-panel { background: var(--bg-panel); border-left: 1px solid #111; display: flex; flex-direction: column; overflow-y: auto; }
+        .panel-sec { border-bottom: 1px solid #111; padding: 10px; }
+        .p-title { font-weight: bold; margin-bottom: 8px; color: #888; text-transform: uppercase; font-size: 9px; display: flex; justify-content: space-between; }
 
-        /* Animation Dope Sheet */
-        .animation-editor { height: 200px; background: var(--bg-main); border-top: 2px solid #111; display: flex; flex-direction: column; }
-        .timeline-header { height: 28px; background: #333; display: flex; align-items: center; padding: 0 10px; gap: 10px; border-bottom: 1px solid #111; }
-        .dope-sheet { flex: 1; display: flex; overflow: hidden; }
-        .channel-list { width: 150px; background: #2b2b2b; border-right: 1px solid #111; }
-        .channel-item { padding: 4px 8px; border-bottom: 1px solid #333; font-size: 10px; display: flex; justify-content: space-between; }
-        .timeline-grid { flex: 1; position: relative; background: #1d1d1d; background-image: linear-gradient(#2a2a2a 1px, transparent 1px), linear-gradient(90deg, #2a2a2a 1px, transparent 1px); background-size: 40px 100%; overflow-x: auto; }
+        /* Dope Sheet */
+        .dope-sheet-area { background: var(--bg-base); border-top: 2px solid #111; display: grid; grid-template-columns: 200px 1fr; }
+        .channels { background: #262626; border-right: 1px solid #111; overflow-y: auto; }
+        .channel-row { height: 24px; display: flex; align-items: center; padding: 0 10px; border-bottom: 1px solid #1d1d1d; }
+        .timeline-view { position: relative; overflow-x: auto; background: #181818; background-image: linear-gradient(90deg, #222 1px, transparent 1px); background-size: 40px 100%; }
+        .frame-num { position: absolute; top: 0; color: #555; font-size: 9px; pointer-events: none; }
         
-        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #4772b3; z-index: 20; pointer-events: none; }
-        .playhead-handle { position: absolute; top: -5px; left: -5px; width: 12px; height: 12px; background: #4772b3; border-radius: 2px; }
+        /* Interactive Elements */
+        .key-diamond { position: absolute; width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); top: 7px; border: 1px solid #000; cursor: pointer; }
+        .key-diamond:hover { filter: brightness(1.2); outline: 1px solid white; }
+        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #5680c1; z-index: 50; pointer-events: none; }
+        .playhead::after { content: ''; position: absolute; top: 0; left: -5px; width: 12px; height: 12px; background: #5680c1; border-radius: 2px; }
 
-        .keyframe-diamond { position: absolute; width: 10px; height: 10px; background: var(--keyframe); transform: rotate(45deg); top: 50%; margin-top: -5px; border: 1px solid #000; cursor: pointer; z-index: 10; }
+        input[type="number"], select { background: #111; border: 1px solid #444; color: #fff; border-radius: 2px; padding: 2px; width: 100%; }
+        button { background: #444; border: 1px solid #555; padding: 4px; border-radius: 2px; cursor: pointer; width: 100%; }
+        button:hover { background: #555; }
+        .btn-active { background: var(--accent) !important; color: #000; }
 
-        /* Input Styles */
-        .prop-row { display: flex; align-items: center; margin-bottom: 4px; gap: 5px; }
-        .prop-label { width: 70px; color: #aaa; }
-        .prop-input { background: #111; border: 1px solid #444; color: #fff; padding: 2px 4px; width: 100%; border-radius: 2px; text-align: right; }
-        
-        .btn-blender { background: #555; border: 1px solid #222; padding: 4px 12px; border-radius: 3px; cursor: pointer; transition: 0.2s; }
-        .btn-blender:hover { background: #666; }
-        .btn-primary { background: #e2a126; color: #000; font-weight: bold; }
+        .stats-overlay { position: absolute; top: 40px; left: 60px; pointer-events: none; color: #777; line-height: 1.4; text-shadow: 1px 1px 1px #000; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <!-- Barra Superior -->
-    <div class="top-nav">
-        <span style="color: #e2a126; font-weight: bold;">Blender</span>
-        <span>Archivo</span>
-        <span>Editar</span>
-        <span>Render</span>
-        <span>Vista</span>
+<div class="app-grid">
+    <!-- Header -->
+    <div class="top-bar">
+        <span class="text-orange-500 font-bold">BLENDER Web</span>
+        <div class="flex gap-4 ml-4 opacity-70">
+            <span>Archivo</span><span>Editar</span><span>Render</span><span>Escena</span>
+        </div>
+        <div class="flex-1"></div>
+        <div class="text-[10px] text-gray-500">v2.5 Professional Edition</div>
     </div>
 
-    <div class="main-area">
-        <!-- Herramientas -->
-        <div class="tools-bar">
-            <div id="tool-select" class="tool-icon active" title="Seleccionar (W)">🖱️</div>
-            <div id="tool-move" class="tool-icon" title="Mover (G)">✢</div>
-            <div id="tool-rotate" class="tool-icon" title="Rotar (R)">🔄</div>
-            <div id="tool-scale" class="tool-icon" title="Escalar (S)">⤢</div>
+    <!-- Main Workspace -->
+    <div class="editor-area">
+        <div class="toolbar">
+            <div id="t-select" class="t-btn active" title="Seleccionar (W)">🖱️</div>
+            <div id="t-move" class="t-btn" title="Mover (G)">✢</div>
+            <div id="t-rotate" class="t-btn" title="Rotar (R)">🔄</div>
+            <div id="t-scale" class="t-btn" title="Escalar (S)">⤢</div>
+            <div class="h-px w-8 bg-gray-700 my-2"></div>
+            <div id="t-wire" class="t-btn" title="Wireframe (Z)">🕸️</div>
+            <div id="t-xray" class="t-btn" title="Rayos X (Alt+Z)">🦴</div>
+            <div id="t-snap" class="t-btn" title="Ajuste a Rejilla">🧲</div>
         </div>
 
-        <!-- Viewport -->
-        <div id="viewport" class="viewport-container">
-            <div class="absolute top-2 left-2 text-[10px] text-gray-500 pointer-events-none">
-                User Perspective<br>Cube | Frames: 250
+        <div class="relative flex-1">
+            <div id="viewport" class="w-full h-full bg-[#151515]"></div>
+            <div class="stats-overlay">
+                <div>Colección de Escena</div>
+                <div id="stat-objects">Objetos: 1</div>
+                <div id="stat-verts">Vértices: 8</div>
+                <div id="active-tool" class="text-blue-400 mt-2">Herramienta: Selección</div>
             </div>
         </div>
 
-        <!-- Paneles Derechos -->
         <div class="side-panel">
-            <div class="outliner">
-                <div class="panel-header"><span>Escena</span> 👁️</div>
-                <div class="p-2 space-y-1">
-                    <div class="flex items-center gap-2"><span class="text-orange-400">📦</span> Cube</div>
-                    <div class="flex items-center gap-2 opacity-50"><span class="text-yellow-200">💡</span> Light</div>
-                    <div class="flex items-center gap-2 opacity-50"><span class="text-blue-400">📷</span> Camera</div>
+            <div class="panel-sec">
+                <div class="p-title">Outliner (Escena) <span>👁️</span></div>
+                <div id="outliner-list" class="space-y-1 max-h-40 overflow-y-auto pr-2">
+                    <!-- Dinámico -->
                 </div>
             </div>
-            <div class="properties">
-                <div class="panel-header"><span>Transformación</span> 🛠️</div>
-                <div class="mt-4">
-                    <div class="text-[10px] font-bold text-gray-500 mb-2 uppercase">Localización</div>
-                    <div class="prop-row"><span class="prop-label">X</span><input id="px" type="number" step="0.1" class="prop-input" value="0.00"></div>
-                    <div class="prop-row"><span class="prop-label">Y</span><input id="py" type="number" step="0.1" class="prop-input" value="0.00"></div>
-                    <div class="prop-row"><span class="prop-label">Z</span><input id="pz" type="number" step="0.1" class="prop-input" value="0.00"></div>
+
+            <div class="panel-sec">
+                <div class="p-title">Añadir Primitivas <span>➕</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="addObject('cube')">Cubo</button>
+                    <button onclick="addObject('sphere')">Esfera</button>
+                    <button onclick="addObject('cylinder')">Cilindro</button>
+                    <button onclick="addObject('torus')">Toro</button>
+                    <button onclick="addObject('light')" class="text-yellow-400">Luz Punto</button>
                 </div>
-                <div class="mt-4">
-                    <div class="text-[10px] font-bold text-gray-500 mb-2 uppercase">Rotación</div>
-                    <div class="prop-row"><span class="prop-label">X</span><input id="rx" type="number" step="1" class="prop-input" value="0.00"></div>
-                    <div class="prop-row"><span class="prop-label">Y</span><input id="ry" type="number" step="1" class="prop-input" value="0.00"></div>
-                    <div class="prop-row"><span class="prop-label">Z</span><input id="rz" type="number" step="1" class="prop-input" value="0.00"></div>
+            </div>
+
+            <div class="panel-sec">
+                <div class="p-title">Transformación <span>📐</span></div>
+                <div class="space-y-2" id="transform-ui">
+                    <div class="flex gap-2">X <input id="tx" type="number" step="0.1"></div>
+                    <div class="flex gap-2">Y <input id="ty" type="number" step="0.1"></div>
+                    <div class="flex gap-2">Z <input id="tz" type="number" step="0.1"></div>
                 </div>
-                <div class="mt-6 flex flex-col gap-2">
-                    <button id="btn-key" class="btn-blender btn-primary">Insertar Fotograma (I)</button>
-                    <button id="btn-clear" class="btn-blender text-[10px]">Borrar Animación</button>
+            </div>
+
+            <div class="panel-sec mt-auto">
+                <div class="p-title">Animación <span>🎞️</span></div>
+                <button id="btn-key" class="btn-active mb-2">Insertar Keyframe (I)</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="deleteCurrentKeyframe()">Borrar Key</button>
+                    <button onclick="clearAllAnimation()">Limpiar Todo</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Línea de Tiempo / Dope Sheet -->
-    <div class="animation-editor">
-        <div class="timeline-header">
-            <button id="play-btn" class="btn-blender">▶ Reproducir</button>
-            <div class="flex items-center gap-2">
-                <span>Frame:</span>
-                <input id="frame-input" type="number" class="bg-black border-none w-12 text-center" value="0">
-            </div>
+    <!-- Dope Sheet -->
+    <div class="dope-sheet-area">
+        <div class="channels">
+            <div class="channel-row font-bold bg-[#333]">Dope Sheet</div>
+            <div class="channel-row text-orange-400">🔸 Summary</div>
+            <div class="channel-row pl-6">Transform</div>
+            <div class="channel-row pl-10 text-[9px] opacity-60">Location</div>
+            <div class="channel-row pl-10 text-[9px] opacity-60">Rotation</div>
         </div>
-        <div class="dope-sheet">
-            <div class="channel-list">
-                <div class="channel-item"><span>Summary</span> 👁️</div>
-                <div class="channel-item" style="padding-left: 15px;"><span>Location</span></div>
-                <div class="channel-item" style="padding-left: 15px;"><span>Rotation</span></div>
-                <div class="channel-item" style="padding-left: 15px;"><span>Scale</span></div>
-            </div>
-            <div id="timeline-container" class="timeline-grid">
-                <div id="playhead" class="playhead">
-                    <div class="playhead-handle"></div>
-                </div>
-                <!-- Los diamantes de keyframe se insertarán aquí -->
-            </div>
+        <div id="timeline" class="timeline-view">
+            <div id="playhead" class="playhead"></div>
+            <div id="key-container" class="relative h-full"></div>
+            <!-- Marcadores de frames -->
+            <div id="frame-labels" class="absolute inset-0 pointer-events-none"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // Configuración Base de Three.js
-    let scene, camera, renderer, controls, transformControls, cube;
+    let scene, camera, renderer, controls, transformControls;
     let currentFrame = 0;
     let isPlaying = false;
-    const maxFrames = 250;
-    let keyframes = []; // Formato: { frame, pos, rot, scl }
+    let selectedObject = null;
+    let objects = [];
+    let isSnap = false;
+    let isXRay = false;
+    let isWireframe = false;
 
+    // Inicialización
     function init() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a1a);
 
-        // Cámara
-        const viewport = document.getElementById('viewport');
-        camera = new THREE.PerspectiveCamera(50, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
-        camera.position.set(6, 6, 6);
+        const v = document.getElementById('viewport');
+        camera = new THREE.PerspectiveCamera(45, v.clientWidth / v.clientHeight, 0.1, 1000);
+        camera.position.set(8, 8, 8);
 
-        // Renderer con mejor calidad
         renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-        viewport.appendChild(renderer.domElement);
+        renderer.setSize(v.clientWidth, v.clientHeight);
+        renderer.shadowMap.enabled = true;
+        v.appendChild(renderer.domElement);
 
-        // --- ILUMINACIÓN (Crucial para visibilidad) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
-
-        // Cuadrícula estilo Blender
-        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        // Grid
+        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x282828);
         scene.add(grid);
 
-        // El Cubo (Material Gris Blender)
-        const geometry = new THREE.BoxGeometry(2, 2, 2);
-        const material = new THREE.MeshPhongMaterial({ 
-            color: 0x909090, 
-            specular: 0x111111,
-            shininess: 30
-        });
-        cube = new THREE.Mesh(geometry, material);
-        cube.position.y = 1;
-        scene.add(cube);
+        // Luces
+        const amb = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(amb);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+        sun.position.set(5, 10, 5);
+        scene.add(sun);
 
-        // Orbit Controls
+        // Controles
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        // Transform Controls
         transformControls = new THREE.TransformControls(camera, renderer.domElement);
-        transformControls.attach(cube);
-        transformControls.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
-        transformControls.addEventListener('change', updateUIFromCube);
+        transformControls.addEventListener('dragging-changed', e => controls.enabled = !e.value);
+        transformControls.addEventListener('change', updateTransformUI);
         scene.add(transformControls);
 
+        // Primer Cubo
+        addObject('cube');
+        
+        setupTimelineLabels();
         setupEvents();
         animate();
     }
 
+    function addObject(type) {
+        let geometry, material, mesh;
+        material = new THREE.MeshPhongMaterial({ color: 0x909090 });
+
+        switch(type) {
+            case 'cube': geometry = new THREE.BoxGeometry(2,2,2); break;
+            case 'sphere': geometry = new THREE.SphereGeometry(1.2, 32, 32); break;
+            case 'cylinder': geometry = new THREE.CylinderGeometry(1, 1, 2, 32); break;
+            case 'torus': geometry = new THREE.TorusGeometry(1, 0.4, 16, 100); break;
+            case 'light': 
+                const lp = new THREE.PointLight(0xffcc00, 1, 10);
+                const helper = new THREE.PointLightHelper(lp, 0.5);
+                lp.add(helper);
+                lp.isLightObject = true;
+                mesh = lp;
+                break;
+        }
+
+        if(!mesh) mesh = new THREE.Mesh(geometry, material);
+        
+        mesh.position.y = 1;
+        mesh.name = `${type}_${objects.length}`;
+        mesh.userData.keyframes = []; // Storage for animation
+        
+        scene.add(mesh);
+        objects.push(mesh);
+        selectObject(mesh);
+        updateOutliner();
+    }
+
+    function selectObject(obj) {
+        selectedObject = obj;
+        transformControls.attach(obj);
+        updateOutliner();
+        updateTransformUI();
+        drawKeyframes();
+    }
+
+    function updateOutliner() {
+        const list = document.getElementById('outliner-list');
+        list.innerHTML = '';
+        objects.forEach(obj => {
+            const item = document.createElement('div');
+            item.className = `p-1 cursor-pointer flex justify-between ${selectedObject === obj ? 'bg-[#4772b3]' : 'hover:bg-[#444]'}`;
+            item.innerHTML = `<span>📦 ${obj.name}</span> <span onclick="event.stopPropagation(); removeObject('${obj.name}')">🗑️</span>`;
+            item.onclick = () => selectObject(obj);
+            list.appendChild(item);
+        });
+        document.getElementById('stat-objects').innerText = `Objetos: ${objects.length}`;
+    }
+
+    function removeObject(name) {
+        const obj = objects.find(o => o.name === name);
+        if(!obj) return;
+        if(selectedObject === obj) transformControls.detach();
+        scene.remove(obj);
+        objects = objects.filter(o => o !== obj);
+        updateOutliner();
+    }
+
+    function setupTimelineLabels() {
+        const container = document.getElementById('frame-labels');
+        for(let i=0; i<=250; i+=10) {
+            const lbl = document.createElement('div');
+            lbl.className = 'frame-num';
+            lbl.style.left = (i * 40 + 5) + 'px';
+            lbl.innerText = i;
+            container.appendChild(lbl);
+        }
+    }
+
     function setupEvents() {
-        window.addEventListener('resize', () => {
-            const viewport = document.getElementById('viewport');
-            camera.aspect = viewport.clientWidth / viewport.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        window.addEventListener('keydown', e => {
+            if(e.target.tagName === 'INPUT') return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'g': setTransformMode('translate'); break;
+                case 'r': setTransformMode('rotate'); break;
+                case 's': setTransformMode('scale'); break;
+                case 'w': transformControls.detach(); break;
+                case 'i': insertKeyframe(); break;
+                case 'x': 
+                case 'delete': if(selectedObject) removeObject(selectedObject.name); break;
+                case 'z': toggleWireframe(); break;
+                case ' ': e.preventDefault(); togglePlay(); break;
+                case 'd': if(e.shiftKey) duplicateSelected(); break;
+            }
+            if(e.altKey && e.key.toLowerCase() === 'z') toggleXRay();
         });
 
-        // Shortcuts
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'g' || e.key === 'G') transformControls.setMode('translate');
-            if (e.key === 'r' || e.key === 'R') transformControls.setMode('rotate');
-            if (e.key === 's' || e.key === 'S') transformControls.setMode('scale');
-            if (e.key === 'i' || e.key === 'I') addKeyframe();
-            if (e.key === ' ') { e.preventDefault(); togglePlay(); }
-        });
-
-        document.getElementById('play-btn').onclick = togglePlay;
-        document.getElementById('btn-key').onclick = addKeyframe;
-        document.getElementById('btn-clear').onclick = clearAnimation;
-
-        // Click en línea de tiempo para mover playhead
-        const timeline = document.getElementById('timeline-container');
-        timeline.onclick = (e) => {
-            const rect = timeline.getBoundingClientRect();
-            const x = e.clientX - rect.left + timeline.scrollLeft;
-            const frame = Math.round((x / 40));
-            goToFrame(Math.min(maxFrames, Math.max(0, frame)));
+        document.getElementById('t-move').onclick = () => setTransformMode('translate');
+        document.getElementById('t-rotate').onclick = () => setTransformMode('rotate');
+        document.getElementById('t-scale').onclick = () => setTransformMode('scale');
+        document.getElementById('t-select').onclick = () => { transformControls.detach(); setActiveTool('t-select', 'Selección'); };
+        document.getElementById('t-wire').onclick = toggleWireframe;
+        document.getElementById('t-xray').onclick = toggleXRay;
+        document.getElementById('btn-key').onclick = insertKeyframe;
+        
+        document.getElementById('timeline').onclick = e => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const frame = Math.round((e.clientX - rect.left + e.currentTarget.scrollLeft) / 40);
+            setFrame(Math.max(0, frame));
         };
 
-        // Inputs manuales
-        ['px', 'py', 'pz', 'rx', 'ry', 'rz'].forEach(id => {
-            document.getElementById(id).oninput = updateCubeFromUI;
+        // UI inputs
+        ['tx', 'ty', 'tz'].forEach(id => {
+            document.getElementById(id).oninput = e => {
+                if(!selectedObject) return;
+                selectedObject.position[id[1]] = parseFloat(e.target.value);
+            };
         });
     }
 
-    function addKeyframe() {
-        // Eliminar keyframe existente en este cuadro
-        keyframes = keyframes.filter(k => k.frame !== currentFrame);
+    function setTransformMode(mode) {
+        transformControls.setMode(mode);
+        if(selectedObject) transformControls.attach(selectedObject);
+        const labels = {translate: 'Mover', rotate: 'Rotar', scale: 'Escalar'};
+        setActiveTool('t-' + (mode === 'translate' ? 'move' : mode), labels[mode]);
+    }
+
+    function setActiveTool(id, label) {
+        document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('active-tool').innerText = `Herramienta: ${label}`;
+    }
+
+    function toggleWireframe() {
+        isWireframe = !isWireframe;
+        objects.forEach(o => { if(o.material) o.material.wireframe = isWireframe; });
+        document.getElementById('t-wire').classList.toggle('active', isWireframe);
+    }
+
+    function toggleXRay() {
+        isXRay = !isXRay;
+        objects.forEach(o => { if(o.material) o.material.opacity = isXRay ? 0.4 : 1.0; o.material.transparent = isXRay; });
+        document.getElementById('t-xray').classList.toggle('active', isXRay);
+    }
+
+    function duplicateSelected() {
+        if(!selectedObject) return;
+        const type = selectedObject.name.split('_')[0];
+        addObject(type);
+        selectedObject.position.copy(transformControls.object.position).addScalar(0.5);
+        updateTransformUI();
+    }
+
+    // --- Animación Engine ---
+
+    function insertKeyframe() {
+        if(!selectedObject) return;
+        const keys = selectedObject.userData.keyframes;
+        const existing = keys.findIndex(k => k.frame === currentFrame);
         
-        keyframes.push({
+        const newKey = {
             frame: currentFrame,
-            pos: cube.position.clone(),
-            rot: cube.rotation.clone(),
-            scl: cube.scale.clone()
-        });
+            pos: selectedObject.position.clone(),
+            rot: selectedObject.rotation.clone(),
+            scl: selectedObject.scale.clone()
+        };
+
+        if(existing >= 0) keys[existing] = newKey;
+        else keys.push(newKey);
         
-        keyframes.sort((a, b) => a.frame - b.frame);
+        keys.sort((a,b) => a.frame - b.frame);
         drawKeyframes();
-        console.log("Keyframe added at frame", currentFrame);
+    }
+
+    function deleteCurrentKeyframe() {
+        if(!selectedObject) return;
+        selectedObject.userData.keyframes = selectedObject.userData.keyframes.filter(k => k.frame !== currentFrame);
+        drawKeyframes();
+    }
+
+    function clearAllAnimation() {
+        if(!selectedObject) return;
+        selectedObject.userData.keyframes = [];
+        drawKeyframes();
     }
 
     function drawKeyframes() {
-        const container = document.getElementById('timeline-container');
-        // Limpiar diamantes viejos (manteniendo el playhead)
-        const oldKeys = container.querySelectorAll('.keyframe-diamond');
-        oldKeys.forEach(k => k.remove());
+        const container = document.getElementById('key-container');
+        container.innerHTML = '';
+        if(!selectedObject) return;
 
-        keyframes.forEach(k => {
-            const diamond = document.createElement('div');
-            diamond.className = 'keyframe-diamond';
-            diamond.style.left = (k.frame * 40) + 'px';
-            container.appendChild(diamond);
+        selectedObject.userData.keyframes.forEach(k => {
+            const d = document.createElement('div');
+            d.className = 'key-diamond';
+            d.style.left = (k.frame * 40) + 'px';
+            d.onclick = (e) => { e.stopPropagation(); setFrame(k.frame); };
+            container.appendChild(d);
         });
+    }
+
+    function setFrame(f) {
+        currentFrame = f;
+        document.getElementById('playhead').style.left = (currentFrame * 40) + 'px';
+        applyPose();
+    }
+
+    function applyPose() {
+        objects.forEach(obj => {
+            const keys = obj.userData.keyframes;
+            if(keys.length === 0) return;
+
+            let prev = null, next = null;
+            for(let i=0; i<keys.length; i++) {
+                if(keys[i].frame <= currentFrame) prev = keys[i];
+                if(keys[i].frame > currentFrame && !next) next = keys[i];
+            }
+
+            if(prev && next) {
+                const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
+                obj.position.lerpVectors(prev.pos, next.pos, t);
+                obj.scale.lerpVectors(prev.scl, next.scl, t);
+                
+                const q1 = new THREE.Quaternion().setFromEuler(prev.rot);
+                const q2 = new THREE.Quaternion().setFromEuler(next.rot);
+                obj.quaternion.slerpQuaternions(q1, q2, t);
+            } else if(prev) {
+                obj.position.copy(prev.pos);
+                obj.rotation.copy(prev.rot);
+                obj.scale.copy(prev.scl);
+            }
+        });
+        updateTransformUI();
     }
 
     function togglePlay() {
         isPlaying = !isPlaying;
-        document.getElementById('play-btn').textContent = isPlaying ? "⏸ Pausar" : "▶ Reproducir";
+        document.getElementById('play-btn-main')?.classList.toggle('bg-blue-600');
     }
 
-    function goToFrame(f) {
-        currentFrame = f;
-        document.getElementById('frame-input').value = currentFrame;
-        document.getElementById('playhead').style.left = (currentFrame * 40) + 'px';
-        applyAnimation();
-    }
-
-    function applyAnimation() {
-        if (keyframes.length === 0) return;
-
-        // Buscar los dos keyframes entre los que estamos
-        let prev = null;
-        let next = null;
-
-        for (let i = 0; i < keyframes.length; i++) {
-            if (keyframes[i].frame <= currentFrame) prev = keyframes[i];
-            if (keyframes[i].frame > currentFrame && !next) next = keyframes[i];
-        }
-
-        if (prev && next) {
-            const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
-            // Interpolación Suave
-            cube.position.lerpVectors(prev.pos, next.pos, t);
-            cube.scale.lerpVectors(prev.scl, next.scl, t);
-            
-            // Rotación suave con cuaterniones para evitar problemas de gimbal lock
-            const qPrev = new THREE.Quaternion().setFromEuler(prev.rot);
-            const qNext = new THREE.Quaternion().setFromEuler(next.rot);
-            cube.quaternion.slerpQuaternions(qPrev, qNext, t);
-        } else if (prev) {
-            cube.position.copy(prev.pos);
-            cube.rotation.copy(prev.rot);
-            cube.scale.copy(prev.scl);
-        }
-        updateUIFromCube();
-    }
-
-    function updateUIFromCube() {
-        document.getElementById('px').value = cube.position.x.toFixed(2);
-        document.getElementById('py').value = cube.position.y.toFixed(2);
-        document.getElementById('pz').value = cube.position.z.toFixed(2);
-        document.getElementById('rx').value = (cube.rotation.x * 180 / Math.PI).toFixed(0);
-        document.getElementById('ry').value = (cube.rotation.y * 180 / Math.PI).toFixed(0);
-        document.getElementById('rz').value = (cube.rotation.z * 180 / Math.PI).toFixed(0);
-    }
-
-    function updateCubeFromUI() {
-        cube.position.set(
-            parseFloat(document.getElementById('px').value),
-            parseFloat(document.getElementById('py').value),
-            parseFloat(document.getElementById('pz').value)
-        );
-        cube.rotation.set(
-            parseFloat(document.getElementById('rx').value) * Math.PI / 180,
-            parseFloat(document.getElementById('ry').value) * Math.PI / 180,
-            parseFloat(document.getElementById('rz').value) * Math.PI / 180
-        );
-    }
-
-    function clearAnimation() {
-        keyframes = [];
-        drawKeyframes();
+    function updateTransformUI() {
+        if(!selectedObject) return;
+        document.getElementById('tx').value = selectedObject.position.x.toFixed(2);
+        document.getElementById('ty').value = selectedObject.position.y.toFixed(2);
+        document.getElementById('tz').value = selectedObject.position.z.toFixed(2);
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        
-        if (isPlaying) {
+        if(isPlaying) {
             currentFrame++;
-            if (currentFrame > maxFrames) currentFrame = 0;
-            goToFrame(currentFrame);
+            if(currentFrame > 250) currentFrame = 0;
+            setFrame(currentFrame);
         }
-
         controls.update();
         renderer.render(scene, camera);
     }
 
-    init();
+    window.onload = init;
 </script>
+
 </body>
 </html>
 
