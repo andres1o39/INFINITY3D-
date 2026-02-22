@@ -2,93 +2,114 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Mini Blender Clone - Con Efectos y Objetos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Blender Editor Pro</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #333; font-family: sans-serif; }
-        #ui-top, #ui-bottom, #ui-left {
-            position: absolute;
-            color: white;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 15px;
-            border-radius: 8px;
-            pointer-events: auto; /* Permitir interacción con los elementos del UI */
-            z-index: 1000;
+        :root {
+            --bg-darker: #111111;
+            --bg-panel: #252525;
+            --bg-hover: #353535;
+            --accent: #e67e22;
+            --text: #cfcfcf;
+            --border: #3d3d3d;
         }
-        #ui-left {
-            top: 10px;
-            left: 10px;
-        }
-        #ui-top {
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-        #ui-bottom {
-            bottom: 10px;
-            left: 10px;
-        }
-        kbd {
-            background: #eee;
-            color: #333;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        .ui-section label {
-            margin-right: 10px;
-            cursor: pointer;
-        }
+        body { margin: 0; overflow: hidden; background: var(--bg-darker); font-family: 'Inter', sans-serif; color: var(--text); font-size: 12px; }
+        
+        /* Layout Principal */
+        .ui-overlay { position: absolute; pointer-events: none; inset: 0; display: flex; flex-direction: column; }
+        .panel { pointer-events: auto; background: var(--bg-panel); border: 1px solid var(--border); display: flex; flex-direction: column; }
+
+        /* Barra Superior */
+        header { height: 40px; display: flex; align-items: center; padding: 0 15px; gap: 15px; border-bottom: 1px solid var(--border); pointer-events: auto; background: var(--bg-panel); }
+        .menu-item { cursor: pointer; padding: 5px 10px; border-radius: 3px; }
+        .menu-item:hover { background: var(--bg-hover); }
+
+        /* Contenedor Central */
+        .main-content { flex: 1; display: flex; justify-content: space-between; padding: 10px; }
+
+        /* Sidebar Izquierda: Outliner */
+        #outliner { width: 200px; }
+        .list-item { padding: 5px 10px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .list-item:hover { background: var(--bg-hover); }
+        .list-item.selected { background: var(--accent); color: white; }
+
+        /* Sidebar Derecha: Propiedades */
+        #inspector { width: 260px; overflow-y: auto; padding: 15px; }
+        .prop-group { margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .prop-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+        .prop-row input { background: #111; border: 1px solid #444; color: var(--accent); width: 60px; padding: 2px; }
+        input[type="range"] { width: 100px; accent-color: var(--accent); }
+
+        /* Barra Inferior */
+        footer { height: 35px; background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 20px; pointer-events: auto; }
+        
+        .badge { background: #444; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
+        button { background: #3d3d3d; color: white; border: 1px solid #555; padding: 5px 10px; cursor: pointer; font-size: 11px; }
+        button:hover { background: var(--accent); }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: -1; }
     </style>
 </head>
 <body>
 
-<div id="ui-top">
-    <div class="ui-section">
-        <label>
-            <input type="checkbox" id="toggleFog"> Niebla
-        </label>
-        <label>
-            <input type="checkbox" id="toggleRain"> Lluvia (Agua)
-        </label>
-        <label>
-            <input type="checkbox" id="toggleFire"> Fuego
-        </label>
+<header>
+    <div style="font-weight: bold; color: var(--accent); margin-right: 20px;">BLENDER WEB v2.0</div>
+    <div class="menu-item" onclick="app.addCube()">+ Cubo</div>
+    <div class="menu-item" onclick="app.addSphere()">+ Esfera</div>
+    <div class="menu-item" onclick="app.addPointLight()">+ Luz</div>
+    <div class="menu-item" onclick="app.resetScene()">Reset Escena</div>
+</header>
+
+<div class="ui-overlay">
+    <div class="main-content">
+        <!-- Outliner -->
+        <div id="outliner" class="panel">
+            <div style="padding: 8px; font-weight: bold; border-bottom: 1px solid var(--border)">ESCENA</div>
+            <div id="object-list" style="overflow-y: auto; flex: 1;"></div>
+        </div>
+
+        <!-- Inspector -->
+        <div id="inspector" class="panel">
+            <div id="empty-hint" style="text-align: center; margin-top: 50px; color: #666;">Selecciona un objeto</div>
+            <div id="props-content" style="display: none;">
+                <h3 id="obj-title" style="margin-top:0">Objeto</h3>
+                
+                <div class="prop-group">
+                    <h4>Transformación</h4>
+                    <div class="prop-row"><span>Pos X</span><input type="number" step="0.1" id="pX"></div>
+                    <div class="prop-row"><span>Pos Y</span><input type="number" step="0.1" id="pY"></div>
+                    <div class="prop-row"><span>Pos Z</span><input type="number" step="0.1" id="pZ"></div>
+                </div>
+
+                <div class="prop-group">
+                    <h4>Material</h4>
+                    <div class="prop-row"><span>Color</span><input type="color" id="mCol"></div>
+                    <div class="prop-row"><span>Metal</span><input type="range" min="0" max="1" step="0.01" id="mMet"></div>
+                    <div class="prop-row"><span>Rough</span><input type="range" min="0" max="1" step="0.01" id="mRou"></div>
+                </div>
+
+                <button id="cloneBtn" style="width: 100%; margin-bottom: 5px;">Duplicar (Shift+D)</button>
+                <button id="delBtn" style="width: 100%; background: #622;">Eliminar (DEL)</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<div id="ui-left">
-    <h2>Viewport Control</h2>
-    <p><kbd>W</kbd> Mover</p>
-    <p><kbd>E</kbd> Rotar</p>
-    <p><kbd>R</kbd> Escalar</p>
-    <p><kbd>Q</kbd> Ocultar Controles</p>
-</div>
-
-<div id="ui-bottom">
-    <h2>Objetos</h2>
-    <button id="addCubeButton">Añadir Cubo</button>
+    <footer>
+        <div class="badge">FPS: <span id="fps">60</span></div>
+        <div class="badge">Objetos: <span id="obj-count">0</span></div>
+        <div style="margin-left: auto; display: flex; gap: 15px;">
+            <label><input type="checkbox" id="fogCheck"> Niebla</label>
+            <label><input type="checkbox" id="gridCheck" checked> Rejilla</label>
+            <label><input type="checkbox" id="rainCheck"> Lluvia</label>
+        </div>
+    </footer>
 </div>
 
 <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
         }
     }
 </script>
@@ -98,263 +119,248 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // --- CONFIGURACIÓN BÁSICA ---
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x282828);
+    class BlenderApp {
+        constructor() {
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x1a1a1a);
+            
+            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(10, 10, 10);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(5, 5, 5);
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(this.renderer.domElement);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+            this.objects = [];
+            this.selected = null;
+            this.rainParticles = null;
 
-    // --- ELEMENTOS DE LA ESCENA ---
-    // Rejilla (Grid)
-    const gridHelper = new THREE.GridHelper(10, 10, 0x888888, 0x444444);
-    scene.add(gridHelper);
-
-    // Luces
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(1, 1, 2);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040, 0.8)); // Aumentar luz ambiental
-
-    // El Cubo Inicial
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const initialMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
-    const cube = new THREE.Mesh(geometry, initialMaterial);
-    scene.add(cube);
-
-    const objects = [cube]; // Array para guardar todos los objetos (cubos)
-
-    // --- CONTROLES ---
-    // Órbita (Navegación de cámara)
-    const orbit = new OrbitControls(camera, renderer.domElement);
-
-    // Transformación (Mover, Rotar, Escalar)
-    const transformControls = new TransformControls(camera, renderer.domElement);
-    transformControls.attach(cube); // Adjuntar al cubo inicial
-    scene.add(transformControls);
-
-    // Evitar que la cámara se mueva mientras arrastramos el cubo
-    transformControls.addEventListener('dragging-changed', (event) => {
-        orbit.enabled = !event.value;
-    });
-
-    // --- LÓGICA DE TECLADO (W, E, R, Q) ---
-    window.addEventListener('keydown', (event) => {
-        // Asegurarse de que no estamos escribiendo en un input
-        if (event.target.tagName === 'INPUT') return;
-
-        switch (event.key.toLowerCase()) {
-            case 'w':
-                transformControls.setMode('translate');
-                break;
-            case 'e':
-                transformControls.setMode('rotate');
-                break;
-            case 'r':
-                transformControls.setMode('scale');
-                break;
-            case 'q':
-                transformControls.showX = transformControls.showY = transformControls.showZ = !transformControls.showX;
-                break;
+            this.initControls();
+            this.initLights();
+            this.initHelpers();
+            this.bindEvents();
+            this.animate();
         }
-    });
 
-    // --- EFECTOS DE PARTÍCULAS Y NIEBLA ---
-    let rainParticles = null;
-    let fireParticles = null;
+        initControls() {
+            this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
+            this.orbit.enableDamping = true;
 
-    // Niebla
-    const toggleFog = document.getElementById('toggleFog');
-    toggleFog.addEventListener('change', (event) => {
-        if (event.target.checked) {
-            scene.fog = new THREE.Fog(0x888888, 5, 50); // Color, distancia de inicio, distancia final
-        } else {
-            scene.fog = null;
-        }
-    });
+            this.transform = new TransformControls(this.camera, this.renderer.domElement);
+            this.scene.add(this.transform);
 
-    // Lluvia (Partículas de agua)
-    const toggleRain = document.getElementById('toggleRain');
-    toggleRain.addEventListener('change', (event) => {
-        if (event.target.checked) {
-            const particleCount = 2000;
-            const positions = new Float32Array(particleCount * 3);
-            const velocities = new Float32Array(particleCount * 3);
-
-            for (let i = 0; i < particleCount * 3; i += 3) {
-                positions[i] = (Math.random() * 20 - 10); // x
-                positions[i + 1] = (Math.random() * 20 + 10); // y (arriba)
-                positions[i + 2] = (Math.random() * 20 - 10); // z
-
-                velocities[i] = 0; // x
-                velocities[i + 1] = -0.1 - Math.random() * 0.1; // y (hacia abajo)
-                velocities[i + 2] = 0; // z
-            }
-
-            const particleGeometry = new THREE.BufferGeometry();
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            particleGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0xADD8E6, // Azul claro
-                size: 0.1,
-                transparent: true,
-                opacity: 0.7
+            this.transform.addEventListener('dragging-changed', (e) => {
+                this.orbit.enabled = !e.value;
+                if (!e.value) this.updateUI();
             });
 
-            rainParticles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(rainParticles);
-        } else {
-            if (rainParticles) {
-                scene.remove(rainParticles);
-                rainParticles.geometry.dispose();
-                rainParticles.material.dispose();
-                rainParticles = null;
+            this.transform.addEventListener('change', () => this.updateUIInputs());
+        }
+
+        initLights() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            this.scene.add(ambient);
+
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(10, 20, 10);
+            sun.castShadow = true;
+            this.scene.add(sun);
+        }
+
+        initHelpers() {
+            this.grid = new THREE.GridHelper(50, 50, 0x333333, 0x222222);
+            this.scene.add(this.grid);
+        }
+
+        addCube() {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 2, 2),
+                new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.5, metalness: 0.1 })
+            );
+            mesh.name = "Cubo_" + this.objects.length;
+            this.addToScene(mesh);
+        }
+
+        addSphere() {
+            const mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(1.2, 32, 32),
+                new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, roughness: 0.1, metalness: 0.8 })
+            );
+            mesh.name = "Esfera_" + this.objects.length;
+            this.addToScene(mesh);
+        }
+
+        addPointLight() {
+            const light = new THREE.PointLight(0xffffff, 50, 20);
+            const helper = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0xffff00}));
+            light.add(helper);
+            light.name = "Luz_" + this.objects.length;
+            this.addToScene(light);
+        }
+
+        addToScene(obj) {
+            obj.position.set(0, 1, 0);
+            obj.castShadow = true;
+            obj.receiveShadow = true;
+            this.scene.add(obj);
+            this.objects.push(obj);
+            this.select(obj);
+            this.updateOutliner();
+        }
+
+        select(obj) {
+            this.selected = obj;
+            if (obj) {
+                this.transform.attach(obj);
+                document.getElementById('props-content').style.display = 'block';
+                document.getElementById('empty-hint').style.display = 'none';
+                document.getElementById('obj-title').innerText = obj.name;
+                this.updateUIInputs();
+            } else {
+                this.transform.detach();
+                document.getElementById('props-content').style.display = 'none';
+                document.getElementById('empty-hint').style.display = 'block';
+            }
+            this.updateOutliner();
+        }
+
+        updateOutliner() {
+            const list = document.getElementById('object-list');
+            list.innerHTML = '';
+            this.objects.forEach(obj => {
+                const item = document.createElement('div');
+                item.className = `list-item ${this.selected === obj ? 'selected' : ''}`;
+                item.innerHTML = `<span>${obj.name}</span>`;
+                item.onclick = () => this.select(obj);
+                list.appendChild(item);
+            });
+            document.getElementById('obj-count').innerText = this.objects.length;
+        }
+
+        updateUIInputs() {
+            if (!this.selected) return;
+            document.getElementById('pX').value = this.selected.position.x.toFixed(2);
+            document.getElementById('pY').value = this.selected.position.y.toFixed(2);
+            document.getElementById('pZ').value = this.selected.position.z.toFixed(2);
+            
+            if (this.selected.material) {
+                document.getElementById('mCol').value = '#' + this.selected.material.color.getHexString();
+                document.getElementById('mMet').value = this.selected.material.metalness;
+                document.getElementById('mRou').value = this.selected.material.roughness;
             }
         }
-    });
 
-    // Fuego (Partículas de llamas simples)
-    const toggleFire = document.getElementById('toggleFire');
-    toggleFire.addEventListener('change', (event) => {
-        if (event.target.checked) {
-            const particleCount = 500;
-            const positions = new Float32Array(particleCount * 3);
-            const velocities = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount); // Para escalar el tamaño
-
-            for (let i = 0; i < particleCount * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 0.5; // x cerca del origen
-                positions[i + 1] = Math.random() * 0.5; // y
-                positions[i + 2] = (Math.random() - 0.5) * 0.5; // z
-
-                velocities[i] = (Math.random() - 0.5) * 0.01; // x
-                velocities[i + 1] = 0.05 + Math.random() * 0.05; // y (hacia arriba)
-                velocities[i + 2] = (Math.random() - 0.5) * 0.01; // z
-                
-                sizes[i / 3] = 0.2 + Math.random() * 0.3; // Tamaño inicial
-            }
-
-            const particleGeometry = new THREE.BufferGeometry();
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            particleGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-            particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0xFF4500, // Naranja rojizo
-                size: 0.3,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending // Para que parezca que brilla
+        bindEvents() {
+            // Inputs Manuales
+            ['pX', 'pY', 'pZ'].forEach(id => {
+                document.getElementById(id).oninput = (e) => {
+                    if (this.selected) this.selected.position[id[1].toLowerCase()] = parseFloat(e.target.value);
+                };
             });
 
-            fireParticles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(fireParticles);
-        } else {
-            if (fireParticles) {
-                scene.remove(fireParticles);
-                fireParticles.geometry.dispose();
-                fireParticles.material.dispose();
-                fireParticles = null;
+            document.getElementById('mCol').oninput = (e) => {
+                if (this.selected?.material) this.selected.material.color.set(e.target.value);
+            };
+
+            document.getElementById('mMet').oninput = (e) => {
+                if (this.selected?.material) this.selected.material.metalness = parseFloat(e.target.value);
+            };
+
+            document.getElementById('mRou').oninput = (e) => {
+                if (this.selected?.material) this.selected.material.roughness = parseFloat(e.target.value);
+            };
+
+            // Teclado
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
+                switch(e.key.toLowerCase()) {
+                    case 'w': this.transform.setMode('translate'); break;
+                    case 'e': this.transform.setMode('rotate'); break;
+                    case 'r': this.transform.setMode('scale'); break;
+                    case 'd': if (e.shiftKey) this.cloneSelected(); break;
+                    case 'delete': this.deleteSelected(); break;
+                }
+            });
+
+            // Niebla y Extras
+            document.getElementById('fogCheck').onchange = (e) => this.scene.fog = e.target.checked ? new THREE.FogExp2(0x1a1a1a, 0.05) : null;
+            document.getElementById('gridCheck').onchange = (e) => this.grid.visible = e.target.checked;
+            document.getElementById('rainCheck').onchange = (e) => this.toggleRain(e.target.checked);
+        }
+
+        cloneSelected() {
+            if (!this.selected) return;
+            const clone = this.selected.clone();
+            clone.position.x += 2;
+            clone.name = this.selected.name + "_Copia";
+            this.addToScene(clone);
+        }
+
+        deleteSelected() {
+            if (!this.selected) return;
+            this.scene.remove(this.selected);
+            this.objects = this.objects.filter(o => o !== this.selected);
+            this.select(null);
+            this.updateOutliner();
+        }
+
+        toggleRain(enabled) {
+            if (enabled) {
+                const geo = new THREE.BufferGeometry();
+                const count = 5000;
+                const pos = new Float32Array(count * 3);
+                for(let i=0; i<count*3; i+=3) {
+                    pos[i] = Math.random()*40-20;
+                    pos[i+1] = Math.random()*20;
+                    pos[i+2] = Math.random()*40-20;
+                }
+                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                this.rainParticles = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xaaaaaf, size: 0.05}));
+                this.scene.add(this.rainParticles);
+            } else {
+                this.scene.remove(this.rainParticles);
+                this.rainParticles = null;
             }
         }
-    });
 
+        animate() {
+            requestAnimationFrame(() => this.animate());
+            this.orbit.update();
 
-    // --- GESTIÓN DE OBJETOS ---
-    const addCubeButton = document.getElementById('addCubeButton');
-    addCubeButton.addEventListener('click', () => {
-        const newMaterial = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(Math.random(), Math.random(), Math.random()) // Color aleatorio
-        });
-        const newCube = new THREE.Mesh(geometry, newMaterial);
+            if (this.rainParticles) {
+                const pos = this.rainParticles.geometry.attributes.position.array;
+                for(let i=1; i<pos.length; i+=3) {
+                    pos[i] -= 0.3;
+                    if (pos[i] < 0) pos[i] = 20;
+                }
+                this.rainParticles.geometry.attributes.position.needsUpdate = true;
+            }
 
-        // Posición aleatoria
-        newCube.position.set(
-            (Math.random() * 6 - 3),
-            0.5, // Para que esté sobre la rejilla
-            (Math.random() * 6 - 3)
-        );
+            this.renderer.render(this.scene, this.camera);
+            
+            // Stats simples
+            if (Math.random() > 0.9) document.getElementById('fps').innerText = Math.round(60); 
+        }
 
-        scene.add(newCube);
-        objects.push(newCube);
+        resetScene() {
+            this.objects.forEach(o => this.scene.remove(o));
+            this.objects = [];
+            this.select(null);
+            this.updateOutliner();
+        }
+    }
 
-        // Opcional: Adjuntar los TransformControls al último cubo añadido
-        transformControls.attach(newCube);
-    });
-
-
-    // --- ANIMACIÓN Y RESIZE ---
-    const clock = new THREE.Clock(); // Para controlar el tiempo de las partículas
+    const app = new BlenderApp();
+    window.app = app; // Para acceso desde HTML
 
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        app.camera.aspect = window.innerWidth / window.innerHeight;
+        app.camera.updateProjectionMatrix();
+        app.renderer.setSize(window.innerWidth, window.innerHeight);
     });
-
-    function animate() {
-        requestAnimationFrame(animate);
-
-        const delta = clock.getDelta(); // Tiempo transcurrido desde el último frame
-
-        // Actualizar partículas de lluvia
-        if (rainParticles) {
-            const positions = rainParticles.geometry.attributes.position.array;
-            const velocities = rainParticles.geometry.attributes.velocity.array;
-
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i] += velocities[i] * delta * 50; // Acelerar el movimiento
-                positions[i + 1] += velocities[i + 1] * delta * 50;
-                positions[i + 2] += velocities[i + 2] * delta * 50;
-
-                // Reiniciar partículas que caen por debajo
-                if (positions[i + 1] < -5) {
-                    positions[i + 1] = 10 + Math.random() * 5; // Reaparece arriba
-                    positions[i] = (Math.random() * 20 - 10);
-                    positions[i + 2] = (Math.random() * 20 - 10);
-                }
-            }
-            rainParticles.geometry.attributes.position.needsUpdate = true;
-        }
-
-        // Actualizar partículas de fuego
-        if (fireParticles) {
-            const positions = fireParticles.geometry.attributes.position.array;
-            const velocities = fireParticles.geometry.attributes.velocity.array;
-            const sizes = fireParticles.geometry.attributes.size.array;
-            const originalSizes = fireParticles.userData.originalSizes || sizes.slice(); // Guardar tamaños originales
-            fireParticles.userData.originalSizes = originalSizes;
-
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i] += velocities[i] * delta * 10;
-                positions[i + 1] += velocities[i + 1] * delta * 10;
-                positions[i + 2] += velocities[i + 2] * delta * 10;
-
-                // Reducir el tamaño de la partícula a medida que sube (o pasa el tiempo)
-                sizes[i / 3] = originalSizes[i / 3] * (1 - (positions[i + 1] / 1.5)); // Ejemplo simple de escalado
-
-                // Reiniciar partículas que suben demasiado
-                if (positions[i + 1] > 2) {
-                    positions[i] = (Math.random() - 0.5) * 0.5;
-                    positions[i + 1] = Math.random() * 0.5;
-                    positions[i + 2] = (Math.random() - 0.5) * 0.5;
-                    sizes[i / 3] = originalSizes[i / 3]; // Restablecer tamaño
-                }
-            }
-            fireParticles.geometry.attributes.position.needsUpdate = true;
-            fireParticles.geometry.attributes.size.needsUpdate = true; // Si el tamaño cambia
-        }
-
-
-        renderer.render(scene, camera);
-    }
-    animate();
 </script>
 </body>
 </html>
+
