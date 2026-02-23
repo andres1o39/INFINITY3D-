@@ -2,36 +2,35 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Warzone HTML5 - Prototipo Avanzado</title>
+    <title>Warzone HTML5 - Color & Jump</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         #gui { position: absolute; bottom: 20px; left: 20px; color: white; text-shadow: 2px 2px 4px black; }
         #crosshair { 
             position: absolute; top: 50%; left: 50%; 
-            width: 10px; height: 10px; border: 2px solid rgba(255,255,255,0.8);
+            width: 12px; height: 12px; border: 2px solid #00ff00;
             border-radius: 50%; transform: translate(-50%, -50%); 
-            pointer-events: none; transition: all 0.1s;
+            pointer-events: none;
         }
         #instructions {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: white; background: rgba(0,0,0,0.7); padding: 20px; text-align: center;
-            border-radius: 10px; cursor: pointer;
+            position: absolute; top: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.5); color: white; cursor: pointer; z-index: 10;
         }
     </style>
 </head>
 <body>
 
     <div id="instructions">
-        <h1>WARZONE HTML</h1>
-        <p>Click para Jugar</p>
-        <p>(W,A,S,D para moverte | Click para disparar | Shift para correr)</p>
+        <h1>MODO COMBATE ACTIVADO</h1>
+        <p>CLICK PARA EMPEZAR</p>
+        <p>W,A,S,D: Mover | ESPACIO: Saltar | SHIFT: Correr | CLICK: Disparar</p>
     </div>
 
     <div id="crosshair"></div>
-    
     <div id="gui">
-        <h2 id="weapon-name">M4A1 - CUSTOM SKIN</h2>
-        <p>MUNICIÓN: <span id="ammo">30</span> / ∞</p>
+        <h2>M4A1 - VERDANSK EDITION</h2>
+        <p>ESTADO: <span style="color: #00ff00;">LISTO</span></p>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -40,140 +39,127 @@
     <script type="module">
         import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
 
-        // --- CONFIGURACIÓN DE ESCENA ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x222222);
-        scene.fog = new THREE.FogExp2(0x222222, 0.02); // Niebla estilo Warzone
+        scene.background = new THREE.Color(0x87CEEB); // Cielo azul claro
+        scene.fog = new THREE.Fog(0x87CEEB, 0, 500);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- ILUMINACIÓN ---
-        const light = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(light);
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(10, 20, 10);
-        scene.add(sun);
+        // --- LUCES PARA MÁS COLOR ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+        sunLight.position.set(50, 100, 50);
+        scene.add(sunLight);
 
-        // --- EL MUNDO (MAPA) ---
-        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
-        const floorMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
+        // --- MAPA CON COLOR ---
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x348C31 }); // Pasto verde
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        // Generar "Edificios" aleatorios para el mapa
-        for(let i=0; i<50; i++) {
-            const h = Math.random() * 20 + 5;
+        // Edificios de colores
+        for(let i=0; i<60; i++) {
+            const h = Math.random() * 30 + 5;
             const boxGeo = new THREE.BoxGeometry(10, h, 10);
-            const boxMat = new THREE.MeshPhongMaterial({ color: 0x666666 });
+            const boxMat = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
             const building = new THREE.Mesh(boxGeo, boxMat);
             building.position.set(Math.random()*400-200, h/2, Math.random()*400-200);
             scene.add(building);
         }
 
-        // --- EL ARMA (VIEWMODEL) ---
+        // --- ARMA Y FLASH DE DISPARO ---
         const weaponGroup = new THREE.Group();
-        const bodyGeo = new THREE.BoxGeometry(0.1, 0.2, 0.8);
-        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        weaponGroup.add(body);
-        
-        // Skin (Detalle estético)
-        const barrelGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.5);
-        const barrelMat = new THREE.MeshPhongMaterial({ color: 0xffd700 }); // "Gold Skin"
-        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-        barrel.rotation.x = Math.PI / 2;
-        barrel.position.z = -0.5;
-        weaponGroup.add(barrel);
+        const gunMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), gunMat);
+        weaponGroup.add(gunBody);
 
-        weaponGroup.position.set(0.4, -0.4, -0.6); // Posición en pantalla
+        const flash = new THREE.PointLight(0xffaa00, 0, 5); // Luz del disparo
+        flash.position.set(0, 0, -0.6);
+        weaponGroup.add(flash);
+
+        weaponGroup.position.set(0.4, -0.4, -0.6);
         camera.add(weaponGroup);
         scene.add(camera);
 
-        // --- CONTROLES Y LÓGICA ---
+        // --- FÍSICAS DE MOVIMIENTO Y SALTO ---
         const controls = new PointerLockControls(camera, document.body);
-        const instructions = document.getElementById('instructions');
+        document.getElementById('instructions').addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => document.getElementById('instructions').style.display = 'none');
+        controls.addEventListener('unlock', () => document.getElementById('instructions').style.display = 'flex');
 
-        instructions.addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => instructions.style.display = 'none');
-        controls.addEventListener('unlock', () => instructions.style.display = 'block');
+        let moveF = false, moveB = false, moveL = false, moveR = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
 
-        let moveF = false, moveB = false, moveL = false, moveR = false, isSprinting = false;
         document.addEventListener('keydown', (e) => {
             if(e.code === 'KeyW') moveF = true;
             if(e.code === 'KeyS') moveB = true;
             if(e.code === 'KeyA') moveL = true;
             if(e.code === 'KeyD') moveR = true;
-            if(e.shiftKey) isSprinting = true;
+            if(e.code === 'Space' && canJump) {
+                velocity.y += 15; // Fuerza del salto
+                canJump = false;
+            }
         });
+
         document.addEventListener('keyup', (e) => {
             if(e.code === 'KeyW') moveF = false;
             if(e.code === 'KeyS') moveB = false;
             if(e.code === 'KeyA') moveL = false;
             if(e.code === 'KeyD') moveR = false;
-            if(!e.shiftKey) isSprinting = false;
         });
 
-        // --- SISTEMA DE DISPARO ---
-        let ammo = 30;
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2(0, 0);
-
-        window.addEventListener('mousedown', (e) => {
-            if(!controls.isLocked || ammo <= 0) return;
-
-            // Animación de Retroceso (Recoil) con GSAP
-            gsap.to(weaponGroup.position, { z: -0.4, duration: 0.05, yoyo: true, repeat: 1 });
-            gsap.to(weaponGroup.rotation, { x: 0.1, duration: 0.05, yoyo: true, repeat: 1 });
-
-            // Raycast (Detección de impacto)
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children);
+        // --- ACCIÓN DE DISPARO ---
+        window.addEventListener('mousedown', () => {
+            if(!controls.isLocked) return;
             
-            if (intersects.length > 1) { // 0 es el suelo o el arma
-                const target = intersects[1].object;
-                if(target.geometry.type === "BoxGeometry") {
-                    target.material.color.set(0xff0000); // "Sangre" o daño
-                }
-            }
-
-            ammo--;
-            document.getElementById('ammo').innerText = ammo;
+            // Animación retroceso
+            gsap.to(weaponGroup.position, { z: -0.45, duration: 0.04, yoyo: true, repeat: 1 });
+            
+            // Flash de luz
+            flash.intensity = 5;
+            setTimeout(() => { flash.intensity = 0; }, 50);
         });
 
-        // --- BUCLE DE ANIMACIÓN ---
+        // --- LOOP PRINCIPAL ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             if(controls.isLocked) {
                 const delta = clock.getDelta();
-                const speed = isSprinting ? 15 : 7;
-                
-                if(moveF) controls.moveForward(speed * delta);
-                if(moveB) controls.moveForward(-speed * delta);
-                if(moveL) controls.moveRight(-speed * delta);
-                if(moveR) controls.moveRight(speed * delta);
 
-                // Efecto de balanceo al caminar (Bobbing)
-                if(moveF || moveB || moveL || moveR) {
-                    const timer = Date.now() * 0.008;
-                    weaponGroup.position.y = -0.4 + Math.sin(timer) * 0.01;
+                // Fricción y Gravedad
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 9.8 * 4.0 * delta; // Gravedad (9.8 m/s^2)
+
+                direction.z = Number(moveF) - Number(moveB);
+                direction.x = Number(moveR) - Number(moveL);
+                direction.normalize();
+
+                if (moveF || moveB) velocity.z -= direction.z * 400.0 * delta;
+                if (moveL || moveR) velocity.x -= direction.x * 400.0 * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                camera.position.y += (velocity.y * delta);
+
+                // Detectar suelo
+                if (camera.position.y < 2) {
+                    velocity.y = 0;
+                    camera.position.y = 2;
+                    canJump = true;
                 }
             }
             renderer.render(scene, camera);
         }
         animate();
-
-        // Ajuste de ventana
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
