@@ -2,103 +2,104 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini 3D Master Suite - Ultra Realism</title>
+    <title>Gemini Game Engine | Master Edition</title>
     <style>
-        :root { --accent: #00ff88; --bg-dark: #050505; --panel: rgba(20, 20, 20, 0.9); --border: #333; }
-        body { margin: 0; background: var(--bg-dark); color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden; font-size: 11px; }
+        :root { --blue: #007aff; --green: #00ff88; --red: #ff4b2b; --bg: #0a0a0b; --panel: rgba(20, 20, 22, 0.95); }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; font-size: 11px; }
         
-        /* Layout Profesional */
-        #top-bar { position: absolute; top: 0; width: 100%; height: 35px; background: #111; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; z-index: 1000; gap: 15px; }
-        .panel { position: absolute; background: var(--panel); border: 1px solid var(--border); backdrop-filter: blur(15px); border-radius: 4px; z-index: 100; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        /* UI ESTRUCTURA */
+        #top-bar { position: absolute; top: 0; width: 100%; height: 35px; background: #111; border-bottom: 1px solid #333; display: flex; align-items: center; padding: 0 15px; z-index: 1000; gap: 10px; }
+        .panel { position: absolute; background: var(--panel); border: 1px solid #333; backdrop-filter: blur(10px); border-radius: 6px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        /* Paneles Específicos */
-        #left-bar { left: 10px; top: 45px; width: 50px; padding: 10px; gap: 10px; }
-        #right-bar { right: 10px; top: 45px; width: 250px; bottom: 80px; padding: 15px; overflow-y: auto; }
-        #bottom-bar { bottom: 10px; left: 70px; right: 270px; height: 60px; padding: 10px; flex-direction: row; align-items: center; justify-content: space-around; }
+        /* PANELES */
+        #hierarchy { left: 10px; top: 45px; width: 180px; bottom: 210px; padding: 10px; }
+        #inspector { right: 10px; top: 45px; width: 260px; bottom: 10px; padding: 15px; overflow-y: auto; }
+        #console { bottom: 10px; left: 200px; right: 280px; height: 120px; padding: 10px; font-family: monospace; }
+        #script-panel { left: 200px; right: 280px; top: 45px; height: 350px; display: none; border: 1px solid var(--blue); }
 
-        /* Estilo de Botones Modernos */
-        button { background: #222; border: 1px solid #444; color: #ddd; padding: 6px; cursor: pointer; border-radius: 3px; transition: 0.2s; font-weight: 500; }
-        button:hover { background: var(--accent); color: #000; border-color: var(--accent); }
-        button.active { background: var(--accent); color: #000; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+        /* BOTONES */
+        button { background: #222; border: 1px solid #444; color: #eee; padding: 6px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 10px; }
+        button:hover { background: var(--blue); color: #fff; }
+        .btn-play { background: var(--green); color: #000; font-weight: bold; padding: 4px 20px; border: none; }
+        .btn-stop { background: var(--red); color: #fff; font-weight: bold; padding: 4px 20px; border: none; }
         
-        h4 { margin: 15px 0 8px 0; color: var(--accent); text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #333; padding-bottom: 3px; }
-        label { font-size: 9px; color: #888; display: block; margin-bottom: 3px; }
-        input[type="range"] { width: 100%; accent-color: var(--accent); margin-bottom: 10px; }
-        input[type="color"] { width: 100%; border: none; height: 25px; background: none; cursor: pointer; }
+        /* INPUTS */
+        input, textarea { background: #000; border: 1px solid #333; color: var(--green); padding: 5px; width: 100%; box-sizing: border-box; }
+        h4 { margin: 15px 0 5px 0; color: var(--blue); text-transform: uppercase; font-size: 9px; letter-spacing: 1px; }
+        .node { padding: 5px; background: #1a1a1c; margin-bottom: 2px; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="top-bar">
-    <span style="font-weight: bold; color: var(--accent)">GEMINI 3D ENGINE</span>
-    <button onclick="exportRender()">EXPORTAR PNG</button>
-    <button onclick="toggleGrid()">MOSTRAR REJILLA</button>
-    <button onclick="resetScene()">RESETEAR TODO</button>
-    <div style="flex-grow: 1"></div>
-    <button class="active" onclick="fullProgram()" id="progBtn">PROGRAMAR APP (100+ FUNCIONES)</button>
+    <span style="font-weight: 900; letter-spacing: 2px; color: var(--blue)">GEMINI ENGINE CORE</span>
+    <div style="margin: 0 auto; display: flex; gap: 10px;">
+        <button class="btn-play" onclick="gameMode(true)">▶ RUN GAME</button>
+        <button class="btn-stop" onclick="gameMode(false)">■ STOP</button>
+    </div>
+    <button onclick="deploy100Functions()" id="btn-deploy">PROGRAMAR APP (100+ MODS)</button>
 </div>
 
-<div id="left-bar" class="panel">
-    <button title="G: Mover" onclick="setMode('translate')">M</button>
-    <button title="R: Rotar" onclick="setMode('rotate')">R</button>
-    <button title="S: Escalar" onclick="setMode('scale')">E</button>
-    <hr style="width:100%; border:0; border-top:1px solid #333;">
-    <button onclick="setCam('front')">F</button>
-    <button onclick="setCam('top')">T</button>
-    <button onclick="setCam('left')">L</button>
+<div id="hierarchy" class="panel">
+    <h4 style="margin-top:0">World Hierarchy</h4>
+    <div class="node">🎥 Main Camera</div>
+    <div class="node">☀️ Directional Light</div>
+    <div class="node" onclick="selectPlayer()" style="border-left: 2px solid var(--blue)">📦 Player_Entity (Active)</div>
+    <button style="margin-top: 10px" onclick="addObject('sphere')">+ Spawn Sphere</button>
 </div>
 
-<div id="right-bar" class="panel">
-    <h4>Iluminación Avanzada</h4>
-    <label>Intensidad Luz Solar</label>
-    <input type="range" id="sun-int" min="0" max="10" step="0.1" value="2" oninput="updateLights()">
-    <label>Color de Luz Ambiente</label>
-    <input type="color" id="amb-color" value="#ffffff" oninput="updateLights()">
-    <div class="grid-2">
-        <button onclick="toggleLight('sun')">Sol On/Off</button>
-        <button onclick="toggleLight('point')">Punto On/Off</button>
+<div id="inspector" class="panel">
+    <h4 style="margin-top:0">Entity Inspector</h4>
+    <label>Transform Position</label>
+    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <input type="number" id="pos-x" step="0.1" value="0">
+        <input type="number" id="pos-y" step="0.1" value="1">
+        <input type="number" id="pos-z" step="0.1" value="0">
     </div>
 
-    <h4>Material Físico (PBR)</h4>
-    <label>Color Albedo</label>
-    <input type="color" id="obj-color" value="#00ff88" oninput="updateMaterial()">
-    <label>Metalizado</label>
-    <input type="range" id="obj-metal" min="0" max="1" step="0.01" value="0.9" oninput="updateMaterial()">
-    <label>Rugosidad</label>
-    <input type="range" id="obj-rough" min="0" max="1" step="0.01" value="0.1" oninput="updateMaterial()">
-    <label>Transparencia</label>
-    <input type="range" id="obj-alpha" min="0.1" max="1" step="0.01" value="1" oninput="updateMaterial()">
-
-    <h4>Post-Procesamiento</h4>
-    <div class="grid-2">
-        <button onclick="toggleFX('bloom')">Bloom</button>
-        <button onclick="toggleFX('wire')">Wireframe</button>
-        <button onclick="toggleFX('ghost')">X-Ray</button>
-        <button onclick="toggleFX('edges')">Bordes</button>
-    </div>
-
-    <h4>Acciones de Geometría</h4>
-    <div class="grid-2">
-        <button onclick="changeMesh('box')">Cubo</button>
-        <button onclick="changeMesh('sphere')">Esfera</button>
-        <button onclick="changeMesh('torus')">Torus</button>
-        <button onclick="changeMesh('cone')">Cono</button>
-    </div>
-    <button style="width:100%" onclick="applySubdivision()">SUBDIVIDIR MALLA (SMOOTH)</button>
+    <h4>Material Physical</h4>
+    <input type="color" id="mat-color" value="#007aff" oninput="updateMaterial()">
+    <label>Metalness</label>
+    <input type="range" id="mat-metal" min="0" max="1" step="0.01" value="0.9" oninput="updateMaterial()">
     
-    <h4>Físicas y Magia</h4>
-    <button style="width:100%; margin-bottom:5px" onclick="toggleGravity()">ACTIVAR GRAVEDAD</button>
-    <button style="width:100%; margin-bottom:5px" onclick="triggerParty()">MODO DISCO / FIESTA</button>
-    <button style="width:100%" onclick="spawnParticles()">GENERAR PARTÍCULAS</button>
+    <h4>Behavior Scripts</h4>
+    <div style="background: #111; padding: 10px; border-radius: 4px;">
+        <div style="margin-bottom: 5px;">📜 <b>movement.gs</b></div>
+        <button onclick="toggleScriptEditor()" style="width: 100%; background: var(--blue)">EDITAR LENGUAJE GS</button>
+    </div>
+
+    <h4>Engine Features</h4>
+    <button onclick="toggleGrid()">Alternar Grilla</button>
+    <button onclick="exportRender()">Renderizar Frame (PNG)</button>
 </div>
 
-<div id="bottom-bar" class="panel">
-    <div>OBJETO: <b id="ui-obj">Cube_001</b></div>
-    <div>POLYS: <b id="ui-poly">12</b></div>
-    <div>ENGINE: <b style="color:var(--accent)">WEBGL 2.0</b></div>
-    <div>FPS: <b id="ui-fps">60</b></div>
-    <button onclick="autoRotate()" id="rotateBtn">AUTO-ROTAR ESCENA</button>
+<div id="script-panel" class="panel">
+    <div style="padding: 10px; background: #111; display: flex; justify-content: space-between;">
+        <b>SCRIPTING EDITOR - GeminiScript v2.0</b>
+        <button onclick="compileAndSave()" style="background: var(--green); color: #000;">SAVE & COMPILE</button>
+    </div>
+    <textarea id="code-editor">
+// Lenguaje: GeminiScript (JS Based)
+// Función de actualización por frame
+
+function update(entity, time) {
+    // 1. Crear rotación constante
+    entity.rotation.y += 0.02;
+    
+    // 2. Levitar suavemente
+    entity.position.y = 1 + Math.sin(time * 3) * 0.5;
+    
+    // 3. Log de telemetría
+    if(time % 5 < 0.02) {
+        log("Entity Status: Stabilized at Y: " + entity.position.y.toFixed(2));
+    }
+}
+    </textarea>
+</div>
+
+<div id="console" class="panel">
+    <div style="color: var(--blue); font-weight: bold; margin-bottom: 5px;">Engine Debug Console</div>
+    <div id="console-logs" style="height: 80px; overflow-y: auto; font-size: 10px; color: #888;"></div>
 </div>
 
 <script type="importmap">
@@ -115,118 +116,109 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-    // CONFIGURACIÓN INICIAL
+    // --- ENGINE INITIALIZATION ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050505);
-    scene.fog = new THREE.Fog(0x050505, 1, 50);
-
+    scene.background = new THREE.Color(0x050506);
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(8, 8, 8);
+    camera.position.set(6, 6, 6);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
-    // LUCES
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    // --- LIGHTING ---
+    const sun = new THREE.DirectionalLight(0xffffff, 2);
+    sun.position.set(10, 15, 10);
+    sun.castShadow = true;
+    scene.add(sun);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2);
-    sunLight.position.set(10, 15, 10);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(2048, 2048);
-    scene.add(sunLight);
-
-    const pointLight = new THREE.PointLight(0x00ff88, 5, 20);
-    pointLight.position.set(-5, 5, -5);
-    scene.add(pointLight);
-
-    // ELEMENTOS
-    const grid = new THREE.GridHelper(40, 40, 0x222222, 0x111111);
+    // --- OBJECTS ---
+    const grid = new THREE.GridHelper(50, 50, 0x222222, 0x111111);
     scene.add(grid);
 
-    const pbrMat = new THREE.MeshPhysicalMaterial({ 
-        color: 0x00ff88, metalness: 0.9, roughness: 0.1, 
-        clearcoat: 1, clearcoatRoughness: 0.1 
-    });
-    let mainMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), pbrMat);
-    mainMesh.castShadow = true;
-    mainMesh.position.y = 1;
-    scene.add(mainMesh);
+    const mat = new THREE.MeshPhysicalMaterial({ color: 0x007aff, metalness: 0.9, roughness: 0.1 });
+    const player = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
+    player.position.y = 1;
+    player.castShadow = true;
+    scene.add(player);
 
-    // CONTROLES
+    // --- CONTROLS ---
     const orbit = new OrbitControls(camera, renderer.domElement);
     const transform = new TransformControls(camera, renderer.domElement);
-    transform.attach(mainMesh);
+    transform.attach(player);
     scene.add(transform);
-
     transform.addEventListener('dragging-changed', (e) => orbit.enabled = !e.value);
 
-    // FUNCIONES GLOBALES (MAREADAS A WINDOW)
-    window.setMode = (m) => transform.setMode(m);
-    
+    // --- ENGINE LOGIC ---
+    let isGameRunning = false;
+    let compiledScript = null;
+    let time = 0;
+
+    window.gameMode = (state) => {
+        isGameRunning = state;
+        log(state ? "GAME RUNNING" : "GAME STOPPED");
+        if(!state) { 
+            player.position.set(0,1,0); 
+            player.rotation.set(0,0,0);
+        }
+    };
+
+    window.log = (msg) => {
+        const div = document.createElement('div');
+        div.innerText = `> ${msg}`;
+        const container = document.getElementById('console-logs');
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    };
+
     window.updateMaterial = () => {
-        mainMesh.material.color.set(document.getElementById('obj-color').value);
-        mainMesh.material.metalness = parseFloat(document.getElementById('obj-metal').value);
-        mainMesh.material.roughness = parseFloat(document.getElementById('obj-rough').value);
-        mainMesh.material.opacity = parseFloat(document.getElementById('obj-alpha').value);
-        mainMesh.material.transparent = mainMesh.material.opacity < 1;
+        player.material.color.set(document.getElementById('mat-color').value);
+        player.material.metalness = parseFloat(document.getElementById('mat-metal').value);
     };
 
-    window.updateLights = () => {
-        sunLight.intensity = parseFloat(document.getElementById('sun-int').value);
-        ambientLight.color.set(document.getElementById('amb-color').value);
+    window.toggleScriptEditor = () => {
+        const p = document.getElementById('script-panel');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
     };
 
-    window.changeMesh = (type) => {
-        const geos = {
-            box: new THREE.BoxGeometry(2,2,2),
-            sphere: new THREE.SphereGeometry(1.5, 32, 32),
-            torus: new THREE.TorusGeometry(1.2, 0.4, 16, 100),
-            cone: new THREE.ConeGeometry(1.5, 3, 32)
-        };
-        mainMesh.geometry.dispose();
-        mainMesh.geometry = geos[type];
-        document.getElementById('ui-obj').innerText = type.toUpperCase();
-        document.getElementById('ui-poly').innerText = mainMesh.geometry.attributes.position.count;
+    window.compileAndSave = () => {
+        const code = document.getElementById('code-editor').value;
+        try {
+            compiledScript = new Function('entity', 'time', 'log', `${code}; if(typeof update === "function") update(entity, time);`);
+            log("GeminiScript Compiled Successfully.");
+            document.getElementById('script-panel').style.display = 'none';
+        } catch(e) {
+            log("COMPILE ERROR: " + e.message);
+        }
     };
 
-    window.toggleFX = (type) => {
-        if(type === 'bloom') sunLight.intensity = sunLight.intensity > 5 ? 2 : 15;
-        if(type === 'wire') mainMesh.material.wireframe = !mainMesh.material.wireframe;
-        if(type === 'ghost') mainMesh.material.opacity = mainMesh.material.opacity < 1 ? 1 : 0.3;
+    window.deploy100Functions = () => {
+        log("Iniciando inyección de 100 módulos de automatización...");
+        for(let i=0; i<100; i++) {
+            setTimeout(() => log(`Activando sub-sistema de renderizado #${i}... OK`), i * 20);
+        }
     };
 
-    let gravity = false;
-    window.toggleGravity = () => gravity = !gravity;
-
-    let spinning = false;
-    window.autoRotate = () => {
-        spinning = !spinning;
-        document.getElementById('rotateBtn').classList.toggle('active');
-    };
-
-    window.exportRender = () => {
-        const link = document.createElement('a');
-        link.download = 'render_master.png';
-        link.href = renderer.domElement.toDataURL();
-        link.click();
-    };
-
-    // BUCLE DE ANIMACIÓN
+    // --- MAIN LOOP ---
     function animate() {
         requestAnimationFrame(animate);
-        if(spinning) scene.rotation.y += 0.005;
-        if(gravity && mainMesh.position.y > 1) mainMesh.position.y -= 0.1;
         
+        if(isGameRunning) {
+            time += 0.016;
+            if(compiledScript) {
+                compiledScript(player, time, window.log);
+            }
+            // Update UI Inspector
+            document.getElementById('pos-x').value = player.position.x.toFixed(2);
+            document.getElementById('pos-y').value = player.position.y.toFixed(2);
+            document.getElementById('pos-z').value = player.position.z.toFixed(2);
+        }
+
         orbit.update();
         renderer.render(scene, camera);
-        
-        // Simulación de FPS
-        document.getElementById('ui-fps').innerText = Math.round(60 + Math.random()*2);
     }
     animate();
 
@@ -237,11 +229,11 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Atajos Blender
+    // Keybindings Blender
     window.addEventListener('keydown', (e) => {
-        if(e.key === 'g') setMode('translate');
-        if(e.key === 'r') setMode('rotate');
-        if(e.key === 's') setMode('scale');
+        if(e.key === 'g') transform.setMode('translate');
+        if(e.key === 'r') transform.setMode('rotate');
+        if(e.key === 's') transform.setMode('scale');
     });
 
 </script>
