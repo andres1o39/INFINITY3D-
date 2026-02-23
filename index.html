@@ -1,165 +1,328 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Warzone HTML5 - Color & Jump</title>
-    <style>
-        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
-        #gui { position: absolute; bottom: 20px; left: 20px; color: white; text-shadow: 2px 2px 4px black; }
-        #crosshair { 
-            position: absolute; top: 50%; left: 50%; 
-            width: 12px; height: 12px; border: 2px solid #00ff00;
-            border-radius: 50%; transform: translate(-50%, -50%); 
-            pointer-events: none;
-        }
-        #instructions {
-            position: absolute; top: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.5); color: white; cursor: pointer; z-index: 10;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatOS GOD 3.0</title>
+
+<style>
+body{
+margin:0;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+font-family:sans-serif;
+}
+
+#device{
+width:380px;
+height:720px;
+background:#111;
+border-radius:45px;
+overflow:hidden;
+position:relative;
+box-shadow:0 0 50px black;
+transition:0.3s;
+}
+
+.status{
+height:30px;
+background:#000;
+color:white;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 10px;
+font-size:12px;
+}
+
+.screen{
+position:absolute;
+top:30px;
+width:100%;
+height:690px;
+display:none;
+color:white;
+overflow:auto;
+animation:fade .3s ease;
+}
+
+@keyframes fade{
+from{opacity:0; transform:scale(.95)}
+to{opacity:1; transform:scale(1)}
+}
+
+#lock{
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+background:linear-gradient(45deg,#141e30,#243b55);
+}
+
+#home{
+display:flex;
+flex-wrap:wrap;
+gap:20px;
+padding:20px;
+justify-content:center;
+background-size:cover;
+background-position:center;
+}
+
+.icon{
+width:70px;
+height:70px;
+background:#333;
+border-radius:20px;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:28px;
+cursor:pointer;
+transition:.2s;
+}
+.icon:hover{transform:scale(1.1)}
+
+.app{
+padding:20px;
+background:#222;
+}
+
+button,input{
+padding:8px;
+margin:5px;
+border:none;
+border-radius:8px;
+}
+
+.notification{
+position:absolute;
+top:40px;
+left:10px;
+right:10px;
+background:#333;
+padding:10px;
+border-radius:10px;
+display:none;
+}
+
+.controlCenter{
+position:absolute;
+bottom:0;
+width:100%;
+background:#111;
+padding:10px;
+display:none;
+}
+
+video,canvas,iframe{
+width:100%;
+border-radius:10px;
+}
+</style>
 </head>
+
 <body>
 
-    <div id="instructions">
-        <h1>MODO COMBATE ACTIVADO</h1>
-        <p>CLICK PARA EMPEZAR</p>
-        <p>W,A,S,D: Mover | ESPACIO: Saltar | SHIFT: Correr | CLICK: Disparar</p>
-    </div>
+<div id="device">
 
-    <div id="crosshair"></div>
-    <div id="gui">
-        <h2>M4A1 - VERDANSK EDITION</h2>
-        <p>ESTADO: <span style="color: #00ff00;">LISTO</span></p>
-    </div>
+<div class="status">
+<span id="signal">📶</span>
+<span id="time"></span>
+<span id="battery">🔋100%</span>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+<div id="notification" class="notification"></div>
 
-    <script type="module">
-        import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
+<!-- LOCK -->
+<div id="lock" class="screen" style="display:flex">
+<h1 id="lockTime"></h1>
+<input type="password" id="pinInput" placeholder="PIN">
+<button onclick="unlock()">Unlock</button>
+<button onclick="finger()">Fingerprint</button>
+</div>
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Cielo azul claro
-        scene.fog = new THREE.Fog(0x87CEEB, 0, 500);
+<!-- LOGIN -->
+<div id="login" class="screen">
+<h2>Login</h2>
+<input id="username" placeholder="User">
+<button onclick="login()">Enter</button>
+</div>
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+<!-- HOME -->
+<div id="home" class="screen"></div>
 
-        // --- LUCES PARA MÁS COLOR ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-        sunLight.position.set(50, 100, 50);
-        scene.add(sunLight);
+<!-- CONTROL CENTER -->
+<div id="controls" class="controlCenter">
+<button onclick="toggleWifi()">WiFi</button>
+<button onclick="toggleData()">Data</button>
+<button onclick="toggleAir()">Airplane</button>
+<button onclick="closeControls()">Close</button>
+</div>
 
-        // --- MAPA CON COLOR ---
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
-        const floorMat = new THREE.MeshPhongMaterial({ color: 0x348C31 }); // Pasto verde
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        scene.add(floor);
+</div>
 
-        // Edificios de colores
-        for(let i=0; i<60; i++) {
-            const h = Math.random() * 30 + 5;
-            const boxGeo = new THREE.BoxGeometry(10, h, 10);
-            const boxMat = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-            const building = new THREE.Mesh(boxGeo, boxMat);
-            building.position.set(Math.random()*400-200, h/2, Math.random()*400-200);
-            scene.add(building);
-        }
+<script>
 
-        // --- ARMA Y FLASH DE DISPARO ---
-        const weaponGroup = new THREE.Group();
-        const gunMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
-        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), gunMat);
-        weaponGroup.add(gunBody);
+// ---------- SYSTEM ----------
+let currentUser=null
+let battery=100
+let wifi=true
+let data=true
+let airplane=false
 
-        const flash = new THREE.PointLight(0xffaa00, 0, 5); // Luz del disparo
-        flash.position.set(0, 0, -0.6);
-        weaponGroup.add(flash);
+// Time
+function updateTime(){
+let t=new Date().toLocaleTimeString()
+time.innerText=t
+lockTime.innerText=t
+}
+setInterval(updateTime,1000)
 
-        weaponGroup.position.set(0.4, -0.4, -0.6);
-        camera.add(weaponGroup);
-        scene.add(camera);
+// Battery
+setInterval(()=>{
+battery--
+if(battery<=0) battery=100
+batteryDisplay()
+},6000)
 
-        // --- FÍSICAS DE MOVIMIENTO Y SALTO ---
-        const controls = new PointerLockControls(camera, document.body);
-        document.getElementById('instructions').addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => document.getElementById('instructions').style.display = 'none');
-        controls.addEventListener('unlock', () => document.getElementById('instructions').style.display = 'flex');
+function batteryDisplay(){
+battery.innerText="🔋"+battery+"%"
+}
 
-        let moveF = false, moveB = false, moveL = false, moveR = false, canJump = false;
-        let velocity = new THREE.Vector3();
-        let direction = new THREE.Vector3();
+// Notifications
+function notify(text){
+notification.innerText=text
+notification.style.display="block"
+setTimeout(()=>notification.style.display="none",3000)
+}
 
-        document.addEventListener('keydown', (e) => {
-            if(e.code === 'KeyW') moveF = true;
-            if(e.code === 'KeyS') moveB = true;
-            if(e.code === 'KeyA') moveL = true;
-            if(e.code === 'KeyD') moveR = true;
-            if(e.code === 'Space' && canJump) {
-                velocity.y += 15; // Fuerza del salto
-                canJump = false;
-            }
-        });
+// ---------- AUTH ----------
+if(!localStorage.getItem("pin")) localStorage.setItem("pin","1234")
 
-        document.addEventListener('keyup', (e) => {
-            if(e.code === 'KeyW') moveF = false;
-            if(e.code === 'KeyS') moveB = false;
-            if(e.code === 'KeyA') moveL = false;
-            if(e.code === 'KeyD') moveR = false;
-        });
+function unlock(){
+if(pinInput.value===localStorage.getItem("pin")){
+show("login")
+}else alert("Wrong PIN")
+}
 
-        // --- ACCIÓN DE DISPARO ---
-        window.addEventListener('mousedown', () => {
-            if(!controls.isLocked) return;
-            
-            // Animación retroceso
-            gsap.to(weaponGroup.position, { z: -0.45, duration: 0.04, yoyo: true, repeat: 1 });
-            
-            // Flash de luz
-            flash.intensity = 5;
-            setTimeout(() => { flash.intensity = 0; }, 50);
-        });
+function finger(){
+notify("Fingerprint Accepted")
+show("login")
+}
 
-        // --- LOOP PRINCIPAL ---
-        const clock = new THREE.Clock();
-        function animate() {
-            requestAnimationFrame(animate);
-            if(controls.isLocked) {
-                const delta = clock.getDelta();
+function login(){
+currentUser=username.value
+if(!currentUser) return
+notify("Welcome "+currentUser)
+initHome()
+show("home")
+}
 
-                // Fricción y Gravedad
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 9.8 * 4.0 * delta; // Gravedad (9.8 m/s^2)
+// ---------- NAV ----------
+function show(id){
+document.querySelectorAll(".screen").forEach(s=>s.style.display="none")
+document.getElementById(id).style.display="flex"
+}
 
-                direction.z = Number(moveF) - Number(moveB);
-                direction.x = Number(moveR) - Number(moveL);
-                direction.normalize();
+function initHome(){
+home.innerHTML=""
 
-                if (moveF || moveB) velocity.z -= direction.z * 400.0 * delta;
-                if (moveL || moveR) velocity.x -= direction.x * 400.0 * delta;
+addApp("📞","Phone",phoneApp)
+addApp("💬","Chat",chatApp)
+addApp("📷","Camera",cameraApp)
+addApp("🌐","Browser",browserApp)
+addApp("📝","Notes",notesApp)
+addApp("🎮","Game",gameApp)
+addApp("🤖","AI",aiApp)
+addApp("🛒","Store",storeApp)
+addApp("⚙️","Settings",settingsApp)
+}
 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+function addApp(icon,name,func){
+let div=document.createElement("div")
+div.className="icon"
+div.innerText=icon
+div.onclick=func
+home.appendChild(div)
+}
 
-                camera.position.y += (velocity.y * delta);
+// ---------- APPS ----------
 
-                // Detectar suelo
-                if (camera.position.y < 2) {
-                    velocity.y = 0;
-                    camera.position.y = 2;
-                    canJump = true;
-                }
-            }
-            renderer.render(scene, camera);
-        }
-        animate();
-    </script>
+function phoneApp(){
+notify("Calling...")
+}
+
+function chatApp(){
+let msg=prompt("Message:")
+if(msg){
+localStorage.setItem("chat",msg)
+notify("Saved")
+}
+}
+
+function cameraApp(){
+let win=window.open()
+win.document.write("<video autoplay></video><button onclick='snap()'>Snap</button><canvas></canvas><script>navigator.mediaDevices.getUserMedia({video:true}).then(s=>document.querySelector(\"video\").srcObject=s);function snap(){let v=document.querySelector(\"video\");let c=document.querySelector(\"canvas\");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext(\"2d\").drawImage(v,0,0);}</script>")
+}
+
+function browserApp(){
+let url=prompt("Enter URL")
+if(url) window.open(url)
+}
+
+function notesApp(){
+let note=prompt("Write note:")
+if(note){
+localStorage.setItem("note",note)
+notify("Note saved")
+}
+}
+
+function gameApp(){
+let score=0
+let timeLeft=5
+let game=window.open()
+game.document.write("<h1>Tap Fast!</h1><button onclick='score++'>Tap</button><p id='t'></p><script>let score=0;let t=5;let i=setInterval(()=>{t--;document.getElementById(\"t\").innerText=\"Time:\"+t;if(t<=0){clearInterval(i);alert(\"Score:\"+score)}},1000)</script>")
+}
+
+function aiApp(){
+let q=prompt("Ask AI:")
+let r="I don't know."
+if(q.includes("hello")) r="Hi "+currentUser
+if(q.includes("time")) r=new Date().toLocaleTimeString()
+alert(r)
+}
+
+function storeApp(){
+notify("Installing Random App...")
+setTimeout(()=>{
+addApp("⭐","NewApp",()=>alert("New App Running"))
+},2000)
+}
+
+function settingsApp(){
+let bg=prompt("Background image URL:")
+if(bg) home.style.backgroundImage="url("+bg+")"
+}
+
+// ---------- CONTROL CENTER ----------
+device.addEventListener("dblclick",()=>controls.style.display="block")
+
+function toggleWifi(){wifi=!wifi; notify("WiFi "+(wifi?"ON":"OFF"))}
+function toggleData(){data=!data; notify("Data "+(data?"ON":"OFF"))}
+function toggleAir(){airplane=!airplane; notify("Airplane "+(airplane?"ON":"OFF"))}
+function closeControls(){controls.style.display="none"}
+
+// ---------- AUTO LOCK ----------
+setTimeout(()=>show("lock"),120000)
+
+updateTime()
+batteryDisplay()
+</script>
+
 </body>
 </html>
