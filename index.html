@@ -2,240 +2,178 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini Game Engine | Master Edition</title>
+    <title>Warzone HTML5 - Prototipo Avanzado</title>
     <style>
-        :root { --blue: #007aff; --green: #00ff88; --red: #ff4b2b; --bg: #0a0a0b; --panel: rgba(20, 20, 22, 0.95); }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; font-size: 11px; }
-        
-        /* UI ESTRUCTURA */
-        #top-bar { position: absolute; top: 0; width: 100%; height: 35px; background: #111; border-bottom: 1px solid #333; display: flex; align-items: center; padding: 0 15px; z-index: 1000; gap: 10px; }
-        .panel { position: absolute; background: var(--panel); border: 1px solid #333; backdrop-filter: blur(10px); border-radius: 6px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* PANELES */
-        #hierarchy { left: 10px; top: 45px; width: 180px; bottom: 210px; padding: 10px; }
-        #inspector { right: 10px; top: 45px; width: 260px; bottom: 10px; padding: 15px; overflow-y: auto; }
-        #console { bottom: 10px; left: 200px; right: 280px; height: 120px; padding: 10px; font-family: monospace; }
-        #script-panel { left: 200px; right: 280px; top: 45px; height: 350px; display: none; border: 1px solid var(--blue); }
-
-        /* BOTONES */
-        button { background: #222; border: 1px solid #444; color: #eee; padding: 6px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 10px; }
-        button:hover { background: var(--blue); color: #fff; }
-        .btn-play { background: var(--green); color: #000; font-weight: bold; padding: 4px 20px; border: none; }
-        .btn-stop { background: var(--red); color: #fff; font-weight: bold; padding: 4px 20px; border: none; }
-        
-        /* INPUTS */
-        input, textarea { background: #000; border: 1px solid #333; color: var(--green); padding: 5px; width: 100%; box-sizing: border-box; }
-        h4 { margin: 15px 0 5px 0; color: var(--blue); text-transform: uppercase; font-size: 9px; letter-spacing: 1px; }
-        .node { padding: 5px; background: #1a1a1c; margin-bottom: 2px; border-radius: 3px; cursor: pointer; }
+        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
+        #gui { position: absolute; bottom: 20px; left: 20px; color: white; text-shadow: 2px 2px 4px black; }
+        #crosshair { 
+            position: absolute; top: 50%; left: 50%; 
+            width: 10px; height: 10px; border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%; transform: translate(-50%, -50%); 
+            pointer-events: none; transition: all 0.1s;
+        }
+        #instructions {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; background: rgba(0,0,0,0.7); padding: 20px; text-align: center;
+            border-radius: 10px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-<div id="top-bar">
-    <span style="font-weight: 900; letter-spacing: 2px; color: var(--blue)">GEMINI ENGINE CORE</span>
-    <div style="margin: 0 auto; display: flex; gap: 10px;">
-        <button class="btn-play" onclick="gameMode(true)">▶ RUN GAME</button>
-        <button class="btn-stop" onclick="gameMode(false)">■ STOP</button>
-    </div>
-    <button onclick="deploy100Functions()" id="btn-deploy">PROGRAMAR APP (100+ MODS)</button>
-</div>
-
-<div id="hierarchy" class="panel">
-    <h4 style="margin-top:0">World Hierarchy</h4>
-    <div class="node">🎥 Main Camera</div>
-    <div class="node">☀️ Directional Light</div>
-    <div class="node" onclick="selectPlayer()" style="border-left: 2px solid var(--blue)">📦 Player_Entity (Active)</div>
-    <button style="margin-top: 10px" onclick="addObject('sphere')">+ Spawn Sphere</button>
-</div>
-
-<div id="inspector" class="panel">
-    <h4 style="margin-top:0">Entity Inspector</h4>
-    <label>Transform Position</label>
-    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <input type="number" id="pos-x" step="0.1" value="0">
-        <input type="number" id="pos-y" step="0.1" value="1">
-        <input type="number" id="pos-z" step="0.1" value="0">
+    <div id="instructions">
+        <h1>WARZONE HTML</h1>
+        <p>Click para Jugar</p>
+        <p>(W,A,S,D para moverte | Click para disparar | Shift para correr)</p>
     </div>
 
-    <h4>Material Physical</h4>
-    <input type="color" id="mat-color" value="#007aff" oninput="updateMaterial()">
-    <label>Metalness</label>
-    <input type="range" id="mat-metal" min="0" max="1" step="0.01" value="0.9" oninput="updateMaterial()">
+    <div id="crosshair"></div>
     
-    <h4>Behavior Scripts</h4>
-    <div style="background: #111; padding: 10px; border-radius: 4px;">
-        <div style="margin-bottom: 5px;">📜 <b>movement.gs</b></div>
-        <button onclick="toggleScriptEditor()" style="width: 100%; background: var(--blue)">EDITAR LENGUAJE GS</button>
+    <div id="gui">
+        <h2 id="weapon-name">M4A1 - CUSTOM SKIN</h2>
+        <p>MUNICIÓN: <span id="ammo">30</span> / ∞</p>
     </div>
 
-    <h4>Engine Features</h4>
-    <button onclick="toggleGrid()">Alternar Grilla</button>
-    <button onclick="exportRender()">Renderizar Frame (PNG)</button>
-</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
 
-<div id="script-panel" class="panel">
-    <div style="padding: 10px; background: #111; display: flex; justify-content: space-between;">
-        <b>SCRIPTING EDITOR - GeminiScript v2.0</b>
-        <button onclick="compileAndSave()" style="background: var(--green); color: #000;">SAVE & COMPILE</button>
-    </div>
-    <textarea id="code-editor">
-// Lenguaje: GeminiScript (JS Based)
-// Función de actualización por frame
+    <script type="module">
+        import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/PointerLockControls.js';
 
-function update(entity, time) {
-    // 1. Crear rotación constante
-    entity.rotation.y += 0.02;
-    
-    // 2. Levitar suavemente
-    entity.position.y = 1 + Math.sin(time * 3) * 0.5;
-    
-    // 3. Log de telemetría
-    if(time % 5 < 0.02) {
-        log("Entity Status: Stabilized at Y: " + entity.position.y.toFixed(2));
-    }
-}
-    </textarea>
-</div>
+        // --- CONFIGURACIÓN DE ESCENA ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x222222);
+        scene.fog = new THREE.FogExp2(0x222222, 0.02); // Niebla estilo Warzone
 
-<div id="console" class="panel">
-    <div style="color: var(--blue); font-weight: bold; margin-bottom: 5px;">Engine Debug Console</div>
-    <div id="console-logs" style="height: 80px; overflow-y: auto; font-size: 10px; color: #888;"></div>
-</div>
-
-<script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
-</script>
-
-<script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { TransformControls } from 'three/addons/controls/TransformControls.js';
-
-    // --- ENGINE INITIALIZATION ---
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050506);
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(6, 6, 6);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.shadowMap.enabled = true;
-    document.body.appendChild(renderer.domElement);
-
-    // --- LIGHTING ---
-    const sun = new THREE.DirectionalLight(0xffffff, 2);
-    sun.position.set(10, 15, 10);
-    sun.castShadow = true;
-    scene.add(sun);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-
-    // --- OBJECTS ---
-    const grid = new THREE.GridHelper(50, 50, 0x222222, 0x111111);
-    scene.add(grid);
-
-    const mat = new THREE.MeshPhysicalMaterial({ color: 0x007aff, metalness: 0.9, roughness: 0.1 });
-    const player = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
-    player.position.y = 1;
-    player.castShadow = true;
-    scene.add(player);
-
-    // --- CONTROLS ---
-    const orbit = new OrbitControls(camera, renderer.domElement);
-    const transform = new TransformControls(camera, renderer.domElement);
-    transform.attach(player);
-    scene.add(transform);
-    transform.addEventListener('dragging-changed', (e) => orbit.enabled = !e.value);
-
-    // --- ENGINE LOGIC ---
-    let isGameRunning = false;
-    let compiledScript = null;
-    let time = 0;
-
-    window.gameMode = (state) => {
-        isGameRunning = state;
-        log(state ? "GAME RUNNING" : "GAME STOPPED");
-        if(!state) { 
-            player.position.set(0,1,0); 
-            player.rotation.set(0,0,0);
-        }
-    };
-
-    window.log = (msg) => {
-        const div = document.createElement('div');
-        div.innerText = `> ${msg}`;
-        const container = document.getElementById('console-logs');
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    };
-
-    window.updateMaterial = () => {
-        player.material.color.set(document.getElementById('mat-color').value);
-        player.material.metalness = parseFloat(document.getElementById('mat-metal').value);
-    };
-
-    window.toggleScriptEditor = () => {
-        const p = document.getElementById('script-panel');
-        p.style.display = p.style.display === 'none' ? 'block' : 'none';
-    };
-
-    window.compileAndSave = () => {
-        const code = document.getElementById('code-editor').value;
-        try {
-            compiledScript = new Function('entity', 'time', 'log', `${code}; if(typeof update === "function") update(entity, time);`);
-            log("GeminiScript Compiled Successfully.");
-            document.getElementById('script-panel').style.display = 'none';
-        } catch(e) {
-            log("COMPILE ERROR: " + e.message);
-        }
-    };
-
-    window.deploy100Functions = () => {
-        log("Iniciando inyección de 100 módulos de automatización...");
-        for(let i=0; i<100; i++) {
-            setTimeout(() => log(`Activando sub-sistema de renderizado #${i}... OK`), i * 20);
-        }
-    };
-
-    // --- MAIN LOOP ---
-    function animate() {
-        requestAnimationFrame(animate);
-        
-        if(isGameRunning) {
-            time += 0.016;
-            if(compiledScript) {
-                compiledScript(player, time, window.log);
-            }
-            // Update UI Inspector
-            document.getElementById('pos-x').value = player.position.x.toFixed(2);
-            document.getElementById('pos-y').value = player.position.y.toFixed(2);
-            document.getElementById('pos-z').value = player.position.z.toFixed(2);
-        }
-
-        orbit.update();
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    // Resize
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+        document.body.appendChild(renderer.domElement);
 
-    // Keybindings Blender
-    window.addEventListener('keydown', (e) => {
-        if(e.key === 'g') transform.setMode('translate');
-        if(e.key === 'r') transform.setMode('rotate');
-        if(e.key === 's') transform.setMode('scale');
-    });
+        // --- ILUMINACIÓN ---
+        const light = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(light);
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(10, 20, 10);
+        scene.add(sun);
 
-</script>
+        // --- EL MUNDO (MAPA) ---
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Generar "Edificios" aleatorios para el mapa
+        for(let i=0; i<50; i++) {
+            const h = Math.random() * 20 + 5;
+            const boxGeo = new THREE.BoxGeometry(10, h, 10);
+            const boxMat = new THREE.MeshPhongMaterial({ color: 0x666666 });
+            const building = new THREE.Mesh(boxGeo, boxMat);
+            building.position.set(Math.random()*400-200, h/2, Math.random()*400-200);
+            scene.add(building);
+        }
+
+        // --- EL ARMA (VIEWMODEL) ---
+        const weaponGroup = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(0.1, 0.2, 0.8);
+        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        weaponGroup.add(body);
+        
+        // Skin (Detalle estético)
+        const barrelGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.5);
+        const barrelMat = new THREE.MeshPhongMaterial({ color: 0xffd700 }); // "Gold Skin"
+        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+        barrel.rotation.x = Math.PI / 2;
+        barrel.position.z = -0.5;
+        weaponGroup.add(barrel);
+
+        weaponGroup.position.set(0.4, -0.4, -0.6); // Posición en pantalla
+        camera.add(weaponGroup);
+        scene.add(camera);
+
+        // --- CONTROLES Y LÓGICA ---
+        const controls = new PointerLockControls(camera, document.body);
+        const instructions = document.getElementById('instructions');
+
+        instructions.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => instructions.style.display = 'none');
+        controls.addEventListener('unlock', () => instructions.style.display = 'block');
+
+        let moveF = false, moveB = false, moveL = false, moveR = false, isSprinting = false;
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyW') moveF = true;
+            if(e.code === 'KeyS') moveB = true;
+            if(e.code === 'KeyA') moveL = true;
+            if(e.code === 'KeyD') moveR = true;
+            if(e.shiftKey) isSprinting = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW') moveF = false;
+            if(e.code === 'KeyS') moveB = false;
+            if(e.code === 'KeyA') moveL = false;
+            if(e.code === 'KeyD') moveR = false;
+            if(!e.shiftKey) isSprinting = false;
+        });
+
+        // --- SISTEMA DE DISPARO ---
+        let ammo = 30;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(0, 0);
+
+        window.addEventListener('mousedown', (e) => {
+            if(!controls.isLocked || ammo <= 0) return;
+
+            // Animación de Retroceso (Recoil) con GSAP
+            gsap.to(weaponGroup.position, { z: -0.4, duration: 0.05, yoyo: true, repeat: 1 });
+            gsap.to(weaponGroup.rotation, { x: 0.1, duration: 0.05, yoyo: true, repeat: 1 });
+
+            // Raycast (Detección de impacto)
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+            
+            if (intersects.length > 1) { // 0 es el suelo o el arma
+                const target = intersects[1].object;
+                if(target.geometry.type === "BoxGeometry") {
+                    target.material.color.set(0xff0000); // "Sangre" o daño
+                }
+            }
+
+            ammo--;
+            document.getElementById('ammo').innerText = ammo;
+        });
+
+        // --- BUCLE DE ANIMACIÓN ---
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            if(controls.isLocked) {
+                const delta = clock.getDelta();
+                const speed = isSprinting ? 15 : 7;
+                
+                if(moveF) controls.moveForward(speed * delta);
+                if(moveB) controls.moveForward(-speed * delta);
+                if(moveL) controls.moveRight(-speed * delta);
+                if(moveR) controls.moveRight(speed * delta);
+
+                // Efecto de balanceo al caminar (Bobbing)
+                if(moveF || moveB || moveL || moveR) {
+                    const timer = Date.now() * 0.008;
+                    weaponGroup.position.y = -0.4 + Math.sin(timer) * 0.01;
+                }
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Ajuste de ventana
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
