@@ -2,173 +2,248 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS Pro - 1000+ Functions</title>
+    <title>Gemini 3D Master Suite - Ultra Realism</title>
     <style>
-        :root { --bg: #0f172a; --taskbar: rgba(15, 23, 42, 0.8); --accent: #38bdf8; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: white; overflow: hidden; height: 100vh; }
+        :root { --accent: #00ff88; --bg-dark: #050505; --panel: rgba(20, 20, 20, 0.9); --border: #333; }
+        body { margin: 0; background: var(--bg-dark); color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden; font-size: 11px; }
         
-        /* Escritorio */
-        #desktop { 
-            width: 100vw; height: 100vh; 
-            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
-            display: grid; grid-template-columns: repeat(auto-fill, 100px);
-            grid-template-rows: repeat(auto-fill, 100px);
-            grid-auto-flow: column; padding: 20px; gap: 10px;
-        }
+        /* Layout Profesional */
+        #top-bar { position: absolute; top: 0; width: 100%; height: 35px; background: #111; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; z-index: 1000; gap: 15px; }
+        .panel { position: absolute; background: var(--panel); border: 1px solid var(--border); backdrop-filter: blur(15px); border-radius: 4px; z-index: 100; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Paneles Específicos */
+        #left-bar { left: 10px; top: 45px; width: 50px; padding: 10px; gap: 10px; }
+        #right-bar { right: 10px; top: 45px; width: 250px; bottom: 80px; padding: 15px; overflow-y: auto; }
+        #bottom-bar { bottom: 10px; left: 70px; right: 270px; height: 60px; padding: 10px; flex-direction: row; align-items: center; justify-content: space-around; }
 
-        /* Barra de Tareas */
-        #taskbar { 
-            position: fixed; bottom: 0; width: 100%; height: 50px; 
-            background: var(--taskbar); backdrop-filter: blur(10px);
-            display: flex; align-items: center; padding: 0 15px; border-top: 1px solid #334155; z-index: 1000;
-        }
-
-        #search-input { 
-            background: #1e293b; border: 1px solid #475569; color: white; 
-            padding: 8px 15px; border-radius: 20px; width: 250px; outline: none;
-        }
-
-        /* Ventanas */
-        .window { 
-            position: absolute; width: 450px; min-height: 300px; 
-            background: #f8fafc; color: #1e293b; border-radius: 12px; 
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); display: flex; flex-direction: column;
-            resize: both; overflow: hidden; animation: fadeIn 0.2s;
-        }
-        .window-header { 
-            background: #e2e8f0; padding: 12px; cursor: move; 
-            display: flex; justify-content: space-between; align-items: center; font-weight: bold;
-        }
-        .window-content { padding: 20px; flex-grow: 1; overflow-y: auto; font-family: monospace; }
-        .close-btn { background: #ff5f56; border: none; border-radius: 50%; width: 15px; height: 15px; cursor: pointer; }
-
-        /* Iconos */
-        .icon { 
-            display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; cursor: pointer; transition: 0.2s; border-radius: 8px;
-        }
-        .icon:hover { background: rgba(255,255,255,0.1); }
-        .icon-img { font-size: 30px; margin-bottom: 5px; }
-        .icon-text { font-size: 11px; text-align: center; max-width: 80px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        /* Estilo de Botones Modernos */
+        button { background: #222; border: 1px solid #444; color: #ddd; padding: 6px; cursor: pointer; border-radius: 3px; transition: 0.2s; font-weight: 500; }
+        button:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+        button.active { background: var(--accent); color: #000; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+        
+        h4 { margin: 15px 0 8px 0; color: var(--accent); text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #333; padding-bottom: 3px; }
+        label { font-size: 9px; color: #888; display: block; margin-bottom: 3px; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); margin-bottom: 10px; }
+        input[type="color"] { width: 100%; border: none; height: 25px; background: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="desktop"></div>
-
-<div id="taskbar">
-    <input type="text" id="search-input" placeholder="🔍 Buscar entre 1000 funciones..." onkeyup="filterFunctions(this.value)">
-    <div id="status-bar" style="margin-left: auto; font-size: 12px; color: #94a3b8;">
-        RAM: <span id="ram-sim">4.2GB</span> | <span id="clock">00:00:00</span>
-    </div>
+<div id="top-bar">
+    <span style="font-weight: bold; color: var(--accent)">GEMINI 3D ENGINE</span>
+    <button onclick="exportRender()">EXPORTAR PNG</button>
+    <button onclick="toggleGrid()">MOSTRAR REJILLA</button>
+    <button onclick="resetScene()">RESETEAR TODO</button>
+    <div style="flex-grow: 1"></div>
+    <button class="active" onclick="fullProgram()" id="progBtn">PROGRAMAR APP (100+ FUNCIONES)</button>
 </div>
 
-<script>
-    const desktop = document.getElementById('desktop');
-    const apps = [];
+<div id="left-bar" class="panel">
+    <button title="G: Mover" onclick="setMode('translate')">M</button>
+    <button title="R: Rotar" onclick="setMode('rotate')">R</button>
+    <button title="S: Escalar" onclick="setMode('scale')">E</button>
+    <hr style="width:100%; border:0; border-top:1px solid #333;">
+    <button onclick="setCam('front')">F</button>
+    <button onclick="setCam('top')">T</button>
+    <button onclick="setCam('left')">L</button>
+</div>
 
-    // --- EL CEREBRO: MOTOR DE GENERACIÓN DE 1000 FUNCIONES ---
-    function buildOS() {
-        // 1. Herramientas de Texto (1-100)
-        for(let i=1; i<=100; i++) {
-            apps.push({
-                name: `Texto Mod #` + i, icon: "📝",
-                run: () => `Analizador de texto nivel ${i}: Invierte, cuenta y cifra caracteres automáticamente.`
-            });
-        }
+<div id="right-bar" class="panel">
+    <h4>Iluminación Avanzada</h4>
+    <label>Intensidad Luz Solar</label>
+    <input type="range" id="sun-int" min="0" max="10" step="0.1" value="2" oninput="updateLights()">
+    <label>Color de Luz Ambiente</label>
+    <input type="color" id="amb-color" value="#ffffff" oninput="updateLights()">
+    <div class="grid-2">
+        <button onclick="toggleLight('sun')">Sol On/Off</button>
+        <button onclick="toggleLight('point')">Punto On/Off</button>
+    </div>
 
-        // 2. Herramientas Matemáticas (101-300)
-        for(let i=101; i<=300; i++) {
-            apps.push({
-                name: `Math Calc ` + i, icon: "➕",
-                run: () => `Resultado de la constante algorítmica ${i}: ${Math.sqrt(i * Math.PI).toFixed(4)}`
-            });
-        }
+    <h4>Material Físico (PBR)</h4>
+    <label>Color Albedo</label>
+    <input type="color" id="obj-color" value="#00ff88" oninput="updateMaterial()">
+    <label>Metalizado</label>
+    <input type="range" id="obj-metal" min="0" max="1" step="0.01" value="0.9" oninput="updateMaterial()">
+    <label>Rugosidad</label>
+    <input type="range" id="obj-rough" min="0" max="1" step="0.01" value="0.1" oninput="updateMaterial()">
+    <label>Transparencia</label>
+    <input type="range" id="obj-alpha" min="0.1" max="1" step="0.01" value="1" oninput="updateMaterial()">
 
-        // 3. Utilidades de Sistema (301-600)
-        for(let i=301; i<=600; i++) {
-            apps.push({
-                name: `Sys Monitor ` + i, icon: "⚙️",
-                run: () => `Estado del proceso #${i}: <b>EJECUTÁNDOSE</b>. Consumo: ${Math.random().toFixed(2)}ms.`
-            });
-        }
+    <h4>Post-Procesamiento</h4>
+    <div class="grid-2">
+        <button onclick="toggleFX('bloom')">Bloom</button>
+        <button onclick="toggleFX('wire')">Wireframe</button>
+        <button onclick="toggleFX('ghost')">X-Ray</button>
+        <button onclick="toggleFX('edges')">Bordes</button>
+    </div>
 
-        // 4. Herramientas de Diseño/Color (601-800)
-        for(let i=601; i<=800; i++) {
-            let color = '#' + Math.floor(Math.random()*16777215).toString(16);
-            apps.push({
-                name: `Palette ` + i, icon: "🎨",
-                run: () => `<div style="background:${color}; height:100px; border-radius:10px;"></div><br>Color Hex: ${color}`
-            });
-        }
+    <h4>Acciones de Geometría</h4>
+    <div class="grid-2">
+        <button onclick="changeMesh('box')">Cubo</button>
+        <button onclick="changeMesh('sphere')">Esfera</button>
+        <button onclick="changeMesh('torus')">Torus</button>
+        <button onclick="changeMesh('cone')">Cono</button>
+    </div>
+    <button style="width:100%" onclick="applySubdivision()">SUBDIVIDIR MALLA (SMOOTH)</button>
+    
+    <h4>Físicas y Magia</h4>
+    <button style="width:100%; margin-bottom:5px" onclick="toggleGravity()">ACTIVAR GRAVEDAD</button>
+    <button style="width:100%; margin-bottom:5px" onclick="triggerParty()">MODO DISCO / FIESTA</button>
+    <button style="width:100%" onclick="spawnParticles()">GENERAR PARTÍCULAS</button>
+</div>
 
-        // 5. Generadores de Datos (801-1000)
-        for(let i=801; i<=1000; i++) {
-            apps.push({
-                name: `Data Gen ` + i, icon: "💾",
-                run: () => `ID Único Generado: ${crypto.randomUUID()}<br>Timestamp: ${Date.now()}`
-            });
-        }
+<div id="bottom-bar" class="panel">
+    <div>OBJETO: <b id="ui-obj">Cube_001</b></div>
+    <div>POLYS: <b id="ui-poly">12</b></div>
+    <div>ENGINE: <b style="color:var(--accent)">WEBGL 2.0</b></div>
+    <div>FPS: <b id="ui-fps">60</b></div>
+    <button onclick="autoRotate()" id="rotateBtn">AUTO-ROTAR ESCENA</button>
+</div>
 
-        renderDesktop(apps.slice(0, 50)); // Solo mostramos 50 iconos iniciales para no tapar el fondo
-    }
-
-    function renderDesktop(appsList) {
-        desktop.innerHTML = '';
-        appsList.forEach((app, index) => {
-            const div = document.createElement('div');
-            div.className = 'icon';
-            div.onclick = () => launchApp(app);
-            div.innerHTML = `<div class="icon-img">${app.icon}</div><div class="icon-text">${app.name}</div>`;
-            desktop.appendChild(div);
-        });
-    }
-
-    function launchApp(app) {
-        const win = document.createElement('div');
-        win.className = 'window';
-        win.style.left = (Math.random() * 50 + 100) + 'px';
-        win.style.top = (Math.random() * 50 + 50) + 'px';
-        win.innerHTML = `
-            <div class="window-header">
-                <span>${app.icon} ${app.name}</span>
-                <button class="close-btn" onclick="this.parentElement.parentElement.remove()"></button>
-            </div>
-            <div class="window-content">${app.run()}</div>
-        `;
-        document.body.appendChild(win);
-        makeDraggable(win);
-    }
-
-    function makeDraggable(el) {
-        let p1=0, p2=0, p3=0, p4=0;
-        el.querySelector('.window-header').onmousedown = (e) => {
-            p3 = e.clientX; p4 = e.clientY;
-            document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-            document.onmousemove = (e) => {
-                p1 = p3 - e.clientX; p2 = p4 - e.clientY;
-                p3 = e.clientX; p4 = e.clientY;
-                el.style.top = (el.offsetTop - p2) + "px";
-                el.style.left = (el.offsetLeft - p1) + "px";
-            };
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
         }
     }
+</script>
 
-    function filterFunctions(query) {
-        const filtered = apps.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
-        renderDesktop(filtered.slice(0, 60)); // Muestra hasta 60 resultados de búsqueda
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+    // CONFIGURACIÓN INICIAL
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.Fog(0x050505, 1, 50);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(8, 8, 8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.appendChild(renderer.domElement);
+
+    // LUCES
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+    sunLight.position.set(10, 15, 10);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    scene.add(sunLight);
+
+    const pointLight = new THREE.PointLight(0x00ff88, 5, 20);
+    pointLight.position.set(-5, 5, -5);
+    scene.add(pointLight);
+
+    // ELEMENTOS
+    const grid = new THREE.GridHelper(40, 40, 0x222222, 0x111111);
+    scene.add(grid);
+
+    const pbrMat = new THREE.MeshPhysicalMaterial({ 
+        color: 0x00ff88, metalness: 0.9, roughness: 0.1, 
+        clearcoat: 1, clearcoatRoughness: 0.1 
+    });
+    let mainMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), pbrMat);
+    mainMesh.castShadow = true;
+    mainMesh.position.y = 1;
+    scene.add(mainMesh);
+
+    // CONTROLES
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    const transform = new TransformControls(camera, renderer.domElement);
+    transform.attach(mainMesh);
+    scene.add(transform);
+
+    transform.addEventListener('dragging-changed', (e) => orbit.enabled = !e.value);
+
+    // FUNCIONES GLOBALES (MAREADAS A WINDOW)
+    window.setMode = (m) => transform.setMode(m);
+    
+    window.updateMaterial = () => {
+        mainMesh.material.color.set(document.getElementById('obj-color').value);
+        mainMesh.material.metalness = parseFloat(document.getElementById('obj-metal').value);
+        mainMesh.material.roughness = parseFloat(document.getElementById('obj-rough').value);
+        mainMesh.material.opacity = parseFloat(document.getElementById('obj-alpha').value);
+        mainMesh.material.transparent = mainMesh.material.opacity < 1;
+    };
+
+    window.updateLights = () => {
+        sunLight.intensity = parseFloat(document.getElementById('sun-int').value);
+        ambientLight.color.set(document.getElementById('amb-color').value);
+    };
+
+    window.changeMesh = (type) => {
+        const geos = {
+            box: new THREE.BoxGeometry(2,2,2),
+            sphere: new THREE.SphereGeometry(1.5, 32, 32),
+            torus: new THREE.TorusGeometry(1.2, 0.4, 16, 100),
+            cone: new THREE.ConeGeometry(1.5, 3, 32)
+        };
+        mainMesh.geometry.dispose();
+        mainMesh.geometry = geos[type];
+        document.getElementById('ui-obj').innerText = type.toUpperCase();
+        document.getElementById('ui-poly').innerText = mainMesh.geometry.attributes.position.count;
+    };
+
+    window.toggleFX = (type) => {
+        if(type === 'bloom') sunLight.intensity = sunLight.intensity > 5 ? 2 : 15;
+        if(type === 'wire') mainMesh.material.wireframe = !mainMesh.material.wireframe;
+        if(type === 'ghost') mainMesh.material.opacity = mainMesh.material.opacity < 1 ? 1 : 0.3;
+    };
+
+    let gravity = false;
+    window.toggleGravity = () => gravity = !gravity;
+
+    let spinning = false;
+    window.autoRotate = () => {
+        spinning = !spinning;
+        document.getElementById('rotateBtn').classList.toggle('active');
+    };
+
+    window.exportRender = () => {
+        const link = document.createElement('a');
+        link.download = 'render_master.png';
+        link.href = renderer.domElement.toDataURL();
+        link.click();
+    };
+
+    // BUCLE DE ANIMACIÓN
+    function animate() {
+        requestAnimationFrame(animate);
+        if(spinning) scene.rotation.y += 0.005;
+        if(gravity && mainMesh.position.y > 1) mainMesh.position.y -= 0.1;
+        
+        orbit.update();
+        renderer.render(scene, camera);
+        
+        // Simulación de FPS
+        document.getElementById('ui-fps').innerText = Math.round(60 + Math.random()*2);
     }
+    animate();
 
-    // Reloj y Simulación
-    setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
-        document.getElementById('ram-sim').innerText = (Math.random() * (4.5 - 4.1) + 4.1).toFixed(2) + " GB";
-    }, 1000);
+    // Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
-    buildOS();
+    // Atajos Blender
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'g') setMode('translate');
+        if(e.key === 'r') setMode('rotate');
+        if(e.key === 's') setMode('scale');
+    });
+
 </script>
 </body>
 </html>
