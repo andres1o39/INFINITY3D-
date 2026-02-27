@@ -2,110 +2,120 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>FNAF HTML5 Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini OS v2</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
-        #gameContainer { position: relative; width: 1024px; height: 768px; margin: auto; top: 50px; border: 2px solid #333; }
-        canvas { width: 100%; height: 100%; image-rendering: pixelated; }
-        .ui-overlay { position: absolute; color: white; pointer-events: none; width: 100%; height: 100%; }
-        #power { position: absolute; bottom: 20px; left: 20px; font-size: 24px; }
-        #camera-btn { 
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            width: 400px; height: 50px; background: rgba(255,255,255,0.2); 
-            border: 2px solid white; cursor: pointer; pointer-events: all;
+        :root {
+            --primary: #2980b9;
+            --taskbar: rgba(20, 20, 20, 0.9);
         }
-        #camera-btn:hover { background: rgba(255,255,255,0.4); }
+        body { 
+            margin: 0; font-family: sans-serif; height: 100vh; overflow: hidden;
+            background: url('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?auto=format&fit=crop&w=1350&q=80') no-repeat center center;
+            background-size: cover;
+        }
+        
+        /* Escritorio */
+        #desktop { width: 100%; height: calc(100% - 45px); position: relative; }
+
+        /* Ventanas */
+        .window {
+            position: absolute; width: 350px; background: white; border-radius: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); display: none; flex-direction: column;
+            min-width: 200px; min-height: 150px;
+        }
+        .window-header {
+            padding: 10px; background: #eee; cursor: move; border-radius: 5px 5px 0 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .window-body { padding: 15px; flex-grow: 1; overflow-y: auto; }
+        
+        /* Barra de tareas */
+        #taskbar {
+            height: 45px; background: var(--taskbar); backdrop-filter: blur(10px);
+            position: fixed; bottom: 0; width: 100%; display: flex; align-items: center; padding: 0 10px;
+        }
+        .btn {
+            background: #34495e; color: white; border: none; padding: 8px 15px;
+            margin-right: 5px; cursor: pointer; border-radius: 4px;
+        }
+        .btn:hover { background: var(--primary); }
     </style>
 </head>
 <body>
 
-<div id="gameContainer">
-    <canvas id="gameCanvas" width="1024" height="768"></canvas>
-    <div class="ui-overlay">
-        <div id="power">Energía: 100%</div>
-        <div id="camera-btn" onclick="toggleCams()">MONITOR</div>
+<div id="desktop">
+    <div id="app-notes" class="window" style="top: 50px; left: 50px; z-index: 1;">
+        <div class="window-header" onmousedown="dragElement(this.parentElement)">
+            <span>📝 Bloc de Notas</span>
+            <button onclick="closeApp('app-notes')">×</button>
+        </div>
+        <div class="window-body">
+            <textarea style="width: 100%; height: 100%; border: none; outline: none;" placeholder="Escribe algo..."></textarea>
+        </div>
+    </div>
+
+    <div id="app-settings" class="window" style="top: 100px; left: 100px; z-index: 1;">
+        <div class="window-header" onmousedown="dragElement(this.parentElement)">
+            <span>⚙️ Ajustes</span>
+            <button onclick="closeApp('app-settings')">×</button>
+        </div>
+        <div class="window-body">
+            <label>Color de fondo:</label>
+            <input type="color" onchange="document.body.style.background = this.value">
+        </div>
     </div>
 </div>
 
+<div id="taskbar">
+    <button class="btn" style="background: #27ae60;" onclick="toggleMenu()">Inicio</button>
+    <button class="btn" onclick="openApp('app-notes')">Notas</button>
+    <button class="btn" onclick="openApp('app-settings')">Ajustes</button>
+    <div id="clock" style="color: white; margin-left: auto; font-size: 14px;"></div>
+</div>
+
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const pwrDisplay = document.getElementById('power');
+    let highestZ = 10;
 
-    // Estado del Juego
-    let state = {
-        officePos: 0,
-        isCamOpen: false,
-        power: 100,
-        leftDoor: false,
-        rightDoor: false,
-        currentCam: 1
-    };
+    function openApp(id) {
+        const app = document.getElementById(id);
+        app.style.display = 'flex';
+        app.style.zIndex = ++highestZ;
+    }
 
-    // "Assets" (Simulados con colores para que el código funcione de inmediato)
-    function drawOffice() {
-        // Fondo de la oficina (Movimiento panorámico)
-        ctx.fillStyle = "#1a1a1a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function closeApp(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    // Lógica para arrastrar (Drag and Drop)
+    function dragElement(elmnt) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        elmnt.style.zIndex = ++highestZ;
         
-        // Puerta Izquierda
-        ctx.fillStyle = state.leftDoor ? "#444" : "#000";
-        ctx.fillRect(50, 100, 100, 500);
-        
-        // Puerta Derecha
-        ctx.fillStyle = state.rightDoor ? "#444" : "#000";
-        ctx.fillRect(874, 100, 100, 500);
+        document.onmousemove = (e) => {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        };
 
-        // Estática ambiental (Efecto de "laptop potente" con partículas)
-        drawStatic(0.05);
+        document.onmouseup = () => {
+            document.onmousemove = null;
+            document.onmouseup = null;
+        };
+
+        pos3 = window.event.clientX;
+        pos4 = window.event.clientY;
     }
 
-    function drawCams() {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#0f0";
-        ctx.font = "30px Arial";
-        ctx.fillText("CÁMARA 0" + state.currentCam, 50, 50);
-        drawStatic(0.2);
-    }
-
-    function drawStatic(alpha) {
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * alpha})`;
-        for(let i=0; i<20; i++) {
-            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
-        }
-    }
-
-    function toggleCams() {
-        state.isCamOpen = !state.isCamOpen;
-    }
-
-    // Bucle principal
-    function update() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        if (state.isCamOpen) {
-            drawCams();
-        } else {
-            drawOffice();
-        }
-
-        // Consumo de energía
-        if (Math.random() > 0.99) {
-            state.power -= (state.leftDoor || state.rightDoor) ? 0.5 : 0.1;
-            pwrDisplay.innerText = `Energía: ${Math.floor(state.power)}%`;
-        }
-
-        requestAnimationFrame(update);
-    }
-
-    // Controles de teclado
-    window.addEventListener('keydown', (e) => {
-        if(e.key === 'a') state.leftDoor = !state.leftDoor;
-        if(e.key === 'd') state.rightDoor = !state.rightDoor;
-    });
-
-    update();
+    // Reloj dinámico
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+    }, 1000);
 </script>
+
 </body>
 </html>
