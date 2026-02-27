@@ -1,328 +1,526 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatOS GOD 3.0</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFINITY 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-dark: #121212;
+            --panel-bg: #1e1e1e;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-dim: #a0a0a0;
+            --border: #333;
+        }
 
-<style>
-body{
-margin:0;
-background:black;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-font-family:sans-serif;
-}
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: var(--bg-dark); 
+            color: #ffffff; 
+            font-family: 'Inter', sans-serif; 
+        }
 
-#device{
-width:380px;
-height:720px;
-background:#111;
-border-radius:45px;
-overflow:hidden;
-position:relative;
-box-shadow:0 0 50px black;
-transition:0.3s;
-}
+        .panel { background: var(--panel-bg); border: 1px solid var(--border); }
+        .active-tool { background-color: var(--accent) !important; color: white; }
+        
+        /* Timeline Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-top: -6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(59,130,246,0.5);
+        }
 
-.status{
-height:30px;
-background:#000;
-color:white;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 10px;
-font-size:12px;
-}
+        .keyframe-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #f59e0b;
+            transform: rotate(45deg);
+            top: 50%;
+            margin-top: -4px;
+            border: 1px solid white;
+            z-index: 5;
+        }
 
-.screen{
-position:absolute;
-top:30px;
-width:100%;
-height:690px;
-display:none;
-color:white;
-overflow:auto;
-animation:fade .3s ease;
-}
+        .viewport-label {
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
 
-@keyframes fade{
-from{opacity:0; transform:scale(.95)}
-to{opacity:1; transform:scale(1)}
-}
-
-#lock{
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-background:linear-gradient(45deg,#141e30,#243b55);
-}
-
-#home{
-display:flex;
-flex-wrap:wrap;
-gap:20px;
-padding:20px;
-justify-content:center;
-background-size:cover;
-background-position:center;
-}
-
-.icon{
-width:70px;
-height:70px;
-background:#333;
-border-radius:20px;
-display:flex;
-justify-content:center;
-align-items:center;
-font-size:28px;
-cursor:pointer;
-transition:.2s;
-}
-.icon:hover{transform:scale(1.1)}
-
-.app{
-padding:20px;
-background:#222;
-}
-
-button,input{
-padding:8px;
-margin:5px;
-border:none;
-border-radius:8px;
-}
-
-.notification{
-position:absolute;
-top:40px;
-left:10px;
-right:10px;
-background:#333;
-padding:10px;
-border-radius:10px;
-display:none;
-}
-
-.controlCenter{
-position:absolute;
-bottom:0;
-width:100%;
-background:#111;
-padding:10px;
-display:none;
-}
-
-video,canvas,iframe{
-width:100%;
-border-radius:10px;
-}
-</style>
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+    </style>
 </head>
-
 <body>
 
-<div id="device">
+    <!-- Main Header -->
+    <header class="fixed top-0 left-0 w-full h-12 panel flex items-center justify-between px-6 z-50">
+        <div class="flex items-center space-x-6">
+            <h1 class="text-lg font-extrabold tracking-tighter text-blue-500">INFINITY 3D</h1>
+            <nav class="hidden md:flex space-x-4 text-xs font-medium text-gray-400">
+                <button onclick="addObject('box')" class="hover:text-white transition">Añadir Cubo</button>
+                <button onclick="addObject('sphere')" class="hover:text-white transition">Esfera</button>
+                <button onclick="addObject('torus')" class="hover:text-white transition">Toroide</button>
+                <div class="w-px h-4 bg-gray-700"></div>
+                <button class="text-red-400 hover:text-red-300" onclick="deleteSelected()">Borrar</button>
+            </nav>
+        </div>
+        <div class="flex items-center space-x-4 text-[10px] text-gray-500">
+            <span id="obj-count">Objetos: 1</span>
+            <span id="fps-counter">FPS: 60</span>
+        </div>
+    </header>
 
-<div class="status">
-<span id="signal">📶</span>
-<span id="time"></span>
-<span id="battery">🔋100%</span>
-</div>
+    <!-- Left Toolbar -->
+    <aside class="fixed left-4 top-20 flex flex-col space-y-3 z-40">
+        <div class="panel p-1.5 rounded-xl shadow-2xl flex flex-col space-y-2">
+            <button id="btn-translate" onclick="setTransformMode('translate')" class="p-2.5 rounded-lg hover:bg-gray-700 transition active-tool" title="Mover (G)">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+            </button>
+            <button id="btn-rotate" onclick="setTransformMode('rotate')" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Rotar (R)">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+            <button id="btn-scale" onclick="setTransformMode('scale')" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Escalar (S)">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+        </div>
+        <div class="panel p-1.5 rounded-xl shadow-2xl">
+            <button onclick="resetCamera()" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Reset Cámara">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+        </div>
+    </aside>
 
-<div id="notification" class="notification"></div>
+    <!-- Right Properties Inspector -->
+    <aside class="fixed right-0 top-12 w-72 h-[calc(100vh-160px)] panel border-l border-gray-800 z-40 flex flex-col">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Inspector</span>
+            <span id="selected-name" class="text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded">Ninguno</span>
+        </div>
+        
+        <div class="flex-grow overflow-y-auto p-4 space-y-6">
+            <!-- Transform Section -->
+            <section>
+                <h3 class="text-[11px] font-bold text-blue-400 mb-3 uppercase">Transformación</h3>
+                <div class="grid grid-cols-3 gap-2 text-[10px]">
+                    <div class="bg-gray-800 p-2 rounded">
+                        <label class="text-red-500 block">X Pos</label>
+                        <span id="val-x">0.00</span>
+                    </div>
+                    <div class="bg-gray-800 p-2 rounded">
+                        <label class="text-green-500 block">Y Pos</label>
+                        <span id="val-y">0.00</span>
+                    </div>
+                    <div class="bg-gray-800 p-2 rounded">
+                        <label class="text-blue-500 block">Z Pos</label>
+                        <span id="val-z">0.00</span>
+                    </div>
+                </div>
+            </section>
 
-<!-- LOCK -->
-<div id="lock" class="screen" style="display:flex">
-<h1 id="lockTime"></h1>
-<input type="password" id="pinInput" placeholder="PIN">
-<button onclick="unlock()">Unlock</button>
-<button onclick="finger()">Fingerprint</button>
-</div>
+            <!-- Material Section -->
+            <section>
+                <h3 class="text-[11px] font-bold text-blue-400 mb-3 uppercase">Material & Shading</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <label>Base Color</label>
+                            <input type="color" id="prop-color" class="w-4 h-4 rounded-full border-none bg-transparent cursor-pointer">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <label>Rugosidad</label>
+                            <span id="label-rough">0.5</span>
+                        </div>
+                        <input type="range" id="prop-rough" min="0" max="1" step="0.01" value="0.5" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <label>Metálico</label>
+                            <span id="label-metal">0.0</span>
+                        </div>
+                        <input type="range" id="prop-metal" min="0" max="1" step="0.01" value="0" class="w-full">
+                    </div>
+                </div>
+            </section>
 
-<!-- LOGIN -->
-<div id="login" class="screen">
-<h2>Login</h2>
-<input id="username" placeholder="User">
-<button onclick="login()">Enter</button>
-</div>
+            <!-- Scene Settings -->
+            <section class="pt-4 border-t border-gray-800">
+                <h3 class="text-[11px] font-bold text-gray-500 mb-3 uppercase">Escena</h3>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="prop-grid" checked>
+                    <label class="text-[10px]">Mostrar Rejilla</label>
+                </div>
+            </section>
+        </div>
 
-<!-- HOME -->
-<div id="home" class="screen"></div>
+        <div class="p-4 bg-gray-900/50">
+            <button onclick="setKeyframe()" class="w-full py-3 bg-orange-600 hover:bg-orange-500 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-2">
+                <div class="w-2 h-2 bg-white rotate-45"></div>
+                <span>INSERTAR KEYFRAME (I)</span>
+            </button>
+        </div>
+    </aside>
 
-<!-- CONTROL CENTER -->
-<div id="controls" class="controlCenter">
-<button onclick="toggleWifi()">WiFi</button>
-<button onclick="toggleData()">Data</button>
-<button onclick="toggleAir()">Airplane</button>
-<button onclick="closeControls()">Close</button>
-</div>
+    <!-- Bottom Timeline -->
+    <footer class="fixed bottom-0 left-0 w-full h-36 panel border-t border-gray-800 z-50 flex flex-col">
+        <div class="h-10 flex items-center px-6 border-b border-gray-800 bg-black/20 justify-between">
+            <div class="flex items-center space-x-6">
+                <button id="btn-play" class="hover:text-blue-400 transition">
+                    <svg id="play-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <div class="text-[10px] font-mono text-blue-400">
+                    FRAME: <span id="ui-current-frame" class="text-white text-sm">0</span> / 250
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="clearKeys()" class="text-[10px] text-red-500 uppercase font-bold hover:underline">Limpiar Animación</button>
+            </div>
+        </div>
+        
+        <div class="relative flex-grow bg-gray-900/40 select-none overflow-hidden" id="timeline-area">
+            <!-- Playhead -->
+            <div id="playhead" class="absolute top-0 left-0 w-px h-full bg-blue-500 z-20">
+                <div class="absolute -top-1 -left-1.5 w-3 h-3 bg-blue-500 rotate-45 border border-white"></div>
+            </div>
+            <!-- Keyframes Container -->
+            <div id="keyframes-track" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+            <!-- Grid lines -->
+            <div id="timeline-grid" class="absolute inset-0 pointer-events-none flex justify-between px-0 opacity-10"></div>
+            <!-- Interactive Slider -->
+            <input type="range" id="timeline-slider" min="0" max="250" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30">
+        </div>
+    </footer>
 
-</div>
+    <!-- Viewport Info -->
+    <div class="fixed top-16 left-20 viewport-label text-[10px] uppercase tracking-widest text-gray-600 z-10 font-bold">
+        Perspectiva | Ciclo: <span id="cycle-type">Lineal</span>
+    </div>
 
-<script>
+    <script>
+        // --- INFINITY 3D ENGINE ---
+        let scene, camera, renderer, controls, transformControls;
+        let objects = [];
+        let selectedObject = null;
+        let isPlaying = false;
+        let currentFrame = 0;
+        const totalFrames = 250;
+        
+        // Anim Data: { objId: { frameNumber: { pos, rot, scale } } }
+        let animationData = {};
 
-// ---------- SYSTEM ----------
-let currentUser=null
-let battery=100
-let wifi=true
-let data=true
-let airplane=false
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x101010);
+            scene.fog = new THREE.Fog(0x101010, 10, 50);
 
-// Time
-function updateTime(){
-let t=new Date().toLocaleTimeString()
-time.innerText=t
-lockTime.innerText=t
-}
-setInterval(updateTime,1000)
+            // Camera
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 8, 10);
 
-// Battery
-setInterval(()=>{
-battery--
-if(battery<=0) battery=100
-batteryDisplay()
-},6000)
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
 
-function batteryDisplay(){
-battery.innerText="🔋"+battery+"%"
-}
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
 
-// Notifications
-function notify(text){
-notification.innerText=text
-notification.style.display="block"
-setTimeout(()=>notification.style.display="none",3000)
-}
+            const spot = new THREE.SpotLight(0xffffff, 1);
+            spot.position.set(15, 20, 10);
+            spot.castShadow = true;
+            spot.shadow.mapSize.width = 2048;
+            spot.shadow.mapSize.height = 2048;
+            scene.add(spot);
 
-// ---------- AUTH ----------
-if(!localStorage.getItem("pin")) localStorage.setItem("pin","1234")
+            // Floor Grid
+            const grid = new THREE.GridHelper(40, 40, 0x333333, 0x222222);
+            scene.add(grid);
+            window.gridHelper = grid;
 
-function unlock(){
-if(pinInput.value===localStorage.getItem("pin")){
-show("login")
-}else alert("Wrong PIN")
-}
+            // Base Object
+            addObject('box');
 
-function finger(){
-notify("Fingerprint Accepted")
-show("login")
-}
+            // Interaction
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
 
-function login(){
-currentUser=username.value
-if(!currentUser) return
-notify("Welcome "+currentUser)
-initHome()
-show("home")
-}
+            transformControls = new THREE.TransformControls(camera, renderer.domElement);
+            transformControls.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
+            transformControls.addEventListener('change', updateInspectorUI);
+            scene.add(transformControls);
 
-// ---------- NAV ----------
-function show(id){
-document.querySelectorAll(".screen").forEach(s=>s.style.display="none")
-document.getElementById(id).style.display="flex"
-}
+            setupUI();
+            setupTimeline();
+            animate();
+        }
 
-function initHome(){
-home.innerHTML=""
+        function addObject(type) {
+            let geometry;
+            if(type === 'box') geometry = new THREE.BoxGeometry(2, 2, 2);
+            if(type === 'sphere') geometry = new THREE.SphereGeometry(1.5, 32, 32);
+            if(type === 'torus') geometry = new THREE.TorusGeometry(1.2, 0.4, 16, 100);
 
-addApp("📞","Phone",phoneApp)
-addApp("💬","Chat",chatApp)
-addApp("📷","Camera",cameraApp)
-addApp("🌐","Browser",browserApp)
-addApp("📝","Notes",notesApp)
-addApp("🎮","Game",gameApp)
-addApp("🤖","AI",aiApp)
-addApp("🛒","Store",storeApp)
-addApp("⚙️","Settings",settingsApp)
-}
+            const material = new THREE.MeshStandardMaterial({ 
+                color: Math.random() * 0xffffff,
+                roughness: 0.4,
+                metalness: 0.2
+            });
 
-function addApp(icon,name,func){
-let div=document.createElement("div")
-div.className="icon"
-div.innerText=icon
-div.onclick=func
-home.appendChild(div)
-}
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.name = `${type.toUpperCase()}_${objects.length + 1}`;
+            
+            scene.add(mesh);
+            objects.push(mesh);
+            selectObject(mesh);
+            updateObjectCount();
+        }
 
-// ---------- APPS ----------
+        function selectObject(obj) {
+            selectedObject = obj;
+            transformControls.attach(obj);
+            document.getElementById('selected-name').innerText = obj.name;
+            
+            // Update Props UI
+            document.getElementById('prop-color').value = '#' + obj.material.color.getHexString();
+            document.getElementById('prop-rough').value = obj.material.roughness;
+            document.getElementById('prop-metal').value = obj.material.metalness;
+            updateInspectorUI();
+            renderKeyframeDots();
+        }
 
-function phoneApp(){
-notify("Calling...")
-}
+        function deleteSelected() {
+            if(!selectedObject) return;
+            transformControls.detach();
+            scene.remove(selectedObject);
+            objects = objects.filter(o => o !== selectedObject);
+            delete animationData[selectedObject.uuid];
+            selectedObject = null;
+            document.getElementById('selected-name').innerText = "Ninguno";
+            updateObjectCount();
+            renderKeyframeDots();
+        }
 
-function chatApp(){
-let msg=prompt("Message:")
-if(msg){
-localStorage.setItem("chat",msg)
-notify("Saved")
-}
-}
+        function setTransformMode(mode) {
+            transformControls.setMode(mode);
+            document.querySelectorAll('aside button').forEach(b => b.classList.remove('active-tool'));
+            document.getElementById(`btn-${mode}`).classList.add('active-tool');
+        }
 
-function cameraApp(){
-let win=window.open()
-win.document.write("<video autoplay></video><button onclick='snap()'>Snap</button><canvas></canvas><script>navigator.mediaDevices.getUserMedia({video:true}).then(s=>document.querySelector(\"video\").srcObject=s);function snap(){let v=document.querySelector(\"video\");let c=document.querySelector(\"canvas\");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext(\"2d\").drawImage(v,0,0);}</script>")
-}
+        function setupUI() {
+            document.getElementById('prop-color').oninput = (e) => {
+                if(selectedObject) selectedObject.material.color.set(e.target.value);
+            };
+            document.getElementById('prop-rough').oninput = (e) => {
+                if(selectedObject) {
+                    selectedObject.material.roughness = e.target.value;
+                    document.getElementById('label-rough').innerText = e.target.value;
+                }
+            };
+            document.getElementById('prop-metal').oninput = (e) => {
+                if(selectedObject) {
+                    selectedObject.material.metalness = e.target.value;
+                    document.getElementById('label-metal').innerText = e.target.value;
+                }
+            };
+            document.getElementById('prop-grid').onchange = (e) => {
+                window.gridHelper.visible = e.target.checked;
+            };
 
-function browserApp(){
-let url=prompt("Enter URL")
-if(url) window.open(url)
-}
+            window.onresize = () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            };
 
-function notesApp(){
-let note=prompt("Write note:")
-if(note){
-localStorage.setItem("note",note)
-notify("Note saved")
-}
-}
+            window.addEventListener('keydown', (e) => {
+                if(e.key.toLowerCase() === 'g') setTransformMode('translate');
+                if(e.key.toLowerCase() === 'r') setTransformMode('rotate');
+                if(e.key.toLowerCase() === 's') setTransformMode('scale');
+                if(e.key.toLowerCase() === 'i') setKeyframe();
+                if(e.key === ' ') { togglePlay(); e.preventDefault(); }
+                if(e.key === 'Delete') deleteSelected();
+            });
+        }
 
-function gameApp(){
-let score=0
-let timeLeft=5
-let game=window.open()
-game.document.write("<h1>Tap Fast!</h1><button onclick='score++'>Tap</button><p id='t'></p><script>let score=0;let t=5;let i=setInterval(()=>{t--;document.getElementById(\"t\").innerText=\"Time:\"+t;if(t<=0){clearInterval(i);alert(\"Score:\"+score)}},1000)</script>")
-}
+        function updateInspectorUI() {
+            if(!selectedObject) return;
+            document.getElementById('val-x').innerText = selectedObject.position.x.toFixed(2);
+            document.getElementById('val-y').innerText = selectedObject.position.y.toFixed(2);
+            document.getElementById('val-z').innerText = selectedObject.position.z.toFixed(2);
+        }
 
-function aiApp(){
-let q=prompt("Ask AI:")
-let r="I don't know."
-if(q.includes("hello")) r="Hi "+currentUser
-if(q.includes("time")) r=new Date().toLocaleTimeString()
-alert(r)
-}
+        function setupTimeline() {
+            const slider = document.getElementById('timeline-slider');
+            const grid = document.getElementById('timeline-grid');
+            
+            // Create grid markers
+            for(let i=0; i<=250; i+=25) {
+                const div = document.createElement('div');
+                div.className = "h-full border-l border-white/20 relative";
+                div.innerHTML = `<span class="absolute bottom-0 left-1 text-[8px] text-gray-600">${i}</span>`;
+                grid.appendChild(div);
+            }
 
-function storeApp(){
-notify("Installing Random App...")
-setTimeout(()=>{
-addApp("⭐","NewApp",()=>alert("New App Running"))
-},2000)
-}
+            slider.oninput = (e) => {
+                currentFrame = parseInt(e.target.value);
+                updateFrameUI();
+                applyAnimations();
+            };
 
-function settingsApp(){
-let bg=prompt("Background image URL:")
-if(bg) home.style.backgroundImage="url("+bg+")"
-}
+            document.getElementById('btn-play').onclick = togglePlay;
+        }
 
-// ---------- CONTROL CENTER ----------
-device.addEventListener("dblclick",()=>controls.style.display="block")
+        function updateFrameUI() {
+            document.getElementById('ui-current-frame').innerText = currentFrame;
+            document.getElementById('timeline-slider').value = currentFrame;
+            const pct = (currentFrame / totalFrames) * 100;
+            document.getElementById('playhead').style.left = `${pct}%`;
+        }
 
-function toggleWifi(){wifi=!wifi; notify("WiFi "+(wifi?"ON":"OFF"))}
-function toggleData(){data=!data; notify("Data "+(data?"ON":"OFF"))}
-function toggleAir(){airplane=!airplane; notify("Airplane "+(airplane?"ON":"OFF"))}
-function closeControls(){controls.style.display="none"}
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('play-icon').innerHTML = isPlaying ? 
+                '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : 
+                '<path d="M8 5v14l11-7z"/>';
+        }
 
-// ---------- AUTO LOCK ----------
-setTimeout(()=>show("lock"),120000)
+        function setKeyframe() {
+            if(!selectedObject) return;
+            const uuid = selectedObject.uuid;
+            if(!animationData[uuid]) animationData[uuid] = {};
+            
+            animationData[uuid][currentFrame] = {
+                pos: selectedObject.position.clone(),
+                rot: selectedObject.rotation.clone(),
+                sca: selectedObject.scale.clone()
+            };
+            
+            renderKeyframeDots();
+        }
 
-updateTime()
-batteryDisplay()
-</script>
+        function renderKeyframeDots() {
+            const track = document.getElementById('keyframes-track');
+            track.innerHTML = '';
+            if(!selectedObject || !animationData[selectedObject.uuid]) return;
 
+            const keys = Object.keys(animationData[selectedObject.uuid]);
+            keys.forEach(f => {
+                const dot = document.createElement('div');
+                dot.className = 'keyframe-dot';
+                dot.style.left = `${(f / totalFrames) * 100}%`;
+                track.appendChild(dot);
+            });
+        }
+
+        function applyAnimations() {
+            objects.forEach(obj => {
+                const data = animationData[obj.uuid];
+                if(!data) return;
+
+                const frames = Object.keys(data).map(Number).sort((a,b) => a - b);
+                if(frames.length === 0) return;
+
+                // Exact match
+                if(data[currentFrame]) {
+                    obj.position.copy(data[currentFrame].pos);
+                    obj.rotation.copy(data[currentFrame].rot);
+                    obj.scale.copy(data[currentFrame].sca);
+                    return;
+                }
+
+                // Find keyframes to interpolate
+                let prev = null, next = null;
+                for(let f of frames) {
+                    if(f < currentFrame) prev = f;
+                    if(f > currentFrame && next === null) next = f;
+                }
+
+                if(prev !== null && next !== null) {
+                    const t = (currentFrame - prev) / (next - prev);
+                    const k1 = data[prev];
+                    const k2 = data[next];
+                    
+                    obj.position.lerpVectors(k1.pos, k2.pos, t);
+                    obj.scale.lerpVectors(k1.sca, k2.sca, t);
+                    
+                    // Rotation Lerp (Euler simple)
+                    obj.rotation.x = THREE.MathUtils.lerp(k1.rot.x, k2.rot.x, t);
+                    obj.rotation.y = THREE.MathUtils.lerp(k1.rot.y, k2.rot.y, t);
+                    obj.rotation.z = THREE.MathUtils.lerp(k1.rot.z, k2.rot.z, t);
+                } else if (prev !== null) {
+                    obj.position.copy(data[prev].pos);
+                    obj.rotation.copy(data[prev].rot);
+                    obj.scale.copy(data[prev].sca);
+                }
+            });
+        }
+
+        function clearKeys() {
+            if(selectedObject) {
+                delete animationData[selectedObject.uuid];
+                renderKeyframeDots();
+            }
+        }
+
+        function resetCamera() {
+            camera.position.set(10, 8, 10);
+            controls.target.set(0, 0, 0);
+        }
+
+        function updateObjectCount() {
+            document.getElementById('obj-count').innerText = `Objetos: ${objects.length}`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(isPlaying) {
+                currentFrame++;
+                if(currentFrame > totalFrames) currentFrame = 0;
+                updateFrameUI();
+                applyAnimations();
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
 </body>
 </html>
+
