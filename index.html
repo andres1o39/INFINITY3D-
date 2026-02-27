@@ -3,379 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INFINITY ENGINE PRO</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>WARZONE COMMAND CENTER</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&display=swap');
-        
         :root {
-            --render-accent: #00f2ff;
-            --model-accent: #ff6a00;
-            --bg-base: #08080a;
-            --panel-bg: rgba(13, 13, 15, 0.95);
+            --neon-green: #00ff41;
+            --dark-bg: #0a0a0a;
+            --panel-bg: rgba(20, 20, 20, 0.8);
+            --military-blue: #1a2a3a;
         }
 
-        body { 
-            margin: 0; overflow: hidden; background: var(--bg-base); 
-            color: #d1d1d1; font-family: 'Inter', sans-serif; font-size: 11px;
-        }
-
-        /* Layout Principal */
-        .app-container {
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            overflow: hidden;
             display: grid;
-            grid-template-columns: 300px 1fr 320px;
-            grid-template-rows: 50px 1fr 40px;
+            grid-template-columns: 250px 1fr 300px;
+            grid-template-rows: 60px 1fr 200px;
             height: 100vh;
+            gap: 10px;
+            padding: 10px;
         }
 
-        .header { grid-column: 1 / -1; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; }
-        .sidebar { background: var(--panel-bg); border-right: 1px solid #1a1a1a; padding: 15px; display: flex; flex-direction: column; gap: 20px; }
-        .viewport { grid-column: 2 / 3; position: relative; background: #050505; }
-        .inspector { background: var(--panel-bg); border-left: 1px solid #1a1a1a; padding: 15px; }
-        .footer { grid-column: 1 / -1; background: #000; border-top: 1px solid #1a1a1a; display: flex; align-items: center; px: 20px; font-family: 'JetBrains Mono'; font-size: 9px; color: #555; }
+        /* Paneles Genéricos */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+        }
 
-        /* Botón Model Infinity */
-        .btn-master-mode {
-            padding: 8px 20px;
-            font-weight: 900;
+        /* Header / Status Bar */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--neon-green);
+        }
+
+        .glitch {
+            font-size: 24px;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            border-radius: 4px;
-            transition: 0.3s;
+            letter-spacing: 5px;
+        }
+
+        /* Sidebar - Recursos */
+        .sidebar {
+            grid-row: 2 / 4;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stat-bar {
+            height: 10px;
+            background: #222;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: var(--neon-green);
+            width: 70%;
+            animation: pulse 2s infinite;
+        }
+
+        /* Main Viewport - Mapa */
+        .main-view {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, #1a2a3a 0%, #000 100%);
+        }
+
+        .radar {
+            width: 300px;
+            height: 300px;
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .radar::after {
+            content: '';
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            border-right: 2px solid var(--neon-green);
+            top: 0; left: 0;
+            transform-origin: bottom right;
+            animation: scan 4s linear infinite;
+        }
+
+        /* Terminal de Logs */
+        .terminal {
+            grid-column: 2;
+            grid-row: 3;
+            font-size: 12px;
+            color: #00cc33;
+        }
+
+        /* Panel Derecho - Controles */
+        .controls {
+            grid-column: 3;
+            grid-row: 2 / 4;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: transparent;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            padding: 10px;
             cursor: pointer;
-            border: 1px solid transparent;
+            text-transform: uppercase;
         }
-        .mode-render .btn-master-mode { background: var(--render-accent); color: #000; box-shadow: 0 0 15px rgba(0,242,255,0.3); }
-        .mode-model .btn-master-mode { background: var(--model-accent); color: #fff; box-shadow: 0 0 15px rgba(255,106,0,0.3); }
 
-        /* UI Dinámica según modo */
-        .model-tool, .render-tool { display: none; }
-        .mode-model .model-tool { display: block; }
-        .mode-render .render-tool { display: block; }
-
-        /* Estilos de Inputs */
-        .prop-group { margin-bottom: 15px; }
-        .prop-label { display: block; font-size: 9px; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
-        .n-input { background: #000; border: 1px solid #222; color: #fff; width: 100%; padding: 6px; border-radius: 3px; font-family: 'JetBrains Mono'; }
-        
-        .btn-action {
-            width: 100%; padding: 10px; background: #1a1a1c; border: 1px solid #333; 
-            border-radius: 4px; font-weight: 700; font-size: 10px; color: #aaa; margin-bottom: 5px;
-            transition: 0.2s;
+        button:hover {
+            background: var(--neon-green);
+            color: black;
         }
-        .btn-action:hover { background: #252528; color: #fff; border-color: #555; }
 
-        /* Gizmos flotantes en Viewport */
-        .viewport-hud {
-            position: absolute; top: 20px; left: 20px; pointer-events: none;
+        /* Animaciones */
+        @keyframes scan {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        .status-pill {
-            background: rgba(0,0,0,0.7); padding: 5px 12px; border-radius: 20px; 
-            border: 1px solid rgba(255,255,255,0.1); font-size: 10px; font-weight: 800;
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
-<body class="mode-render" id="app-body">
+<body>
 
-    <div class="app-container">
-        <!-- HEADER -->
-        <header class="header">
-            <div class="flex items-center gap-10">
-                <div class="font-black text-xl italic tracking-tighter">INFINITY<span class="text-white/20">PRO</span></div>
-                <button onclick="toggleGlobalMode()" class="btn-master-mode" id="master-btn">MODEL INFINITY: OFF</button>
-            </div>
-            <div class="flex gap-4">
-                <button onclick="addObj('box')" class="btn-action px-4"> + CUBO </button>
-                <button onclick="addObj('sphere')" class="btn-action px-4"> + ESFERA </button>
-                <button onclick="addObj('terrain')" class="btn-action px-4 text-emerald-400"> + TERRENO </button>
-            </div>
-        </header>
+    <header class="panel">
+        <div class="glitch">SISTEMA WARZONE v4.0</div>
+        <div>ESTADO: <span style="color: red;">ACTIVO</span></div>
+        <div id="clock">00:00:00</div>
+    </header>
 
-        <!-- SIDEBAR IZQUIERDO -->
-        <aside class="sidebar">
-            <div>
-                <span class="prop-label">Jerarquía de Escena</span>
-                <div id="outliner" class="space-y-1 mt-2 max-h-64 overflow-y-auto pr-2">
-                    <!-- Dinámico -->
-                </div>
-            </div>
+    <aside class="sidebar panel">
+        <h3>RECURSOS</h3>
+        <div>
+            CPU: 42%
+            <div class="stat-bar"><div class="stat-fill" style="width: 42%;"></div></div>
+        </div>
+        <div>
+            GPU: 88%
+            <div class="stat-bar"><div class="stat-fill" style="width: 88%; background: red;"></div></div>
+        </div>
+        <div>
+            RAM: 12GB/32GB
+            <div class="stat-bar"><div class="stat-fill" style="width: 37%;"></div></div>
+        </div>
+        <hr style="border-color: var(--neon-green); width: 100%;">
+        <h3>RED TÁCTICA</h3>
+        <p>PING: 15ms</p>
+        <p>UPLINK: ESTABLE</p>
+    </aside>
 
-            <div class="model-tool">
-                <span class="prop-label text-orange-500">Herramientas de Modelado</span>
-                <div class="space-y-2 mt-2">
-                    <button onclick="deform(1.1)" class="btn-action">INFLAR MALLA</button>
-                    <button onclick="deform(0.9)" class="btn-action">DESINFLAR MALLA</button>
-                    <button onclick="smoothMesh()" class="btn-action">SUAVIZADO DIGITAL</button>
-                    <button onclick="resetMesh()" class="btn-action">RESET GEOMETRÍA</button>
-                </div>
-            </div>
+    <main class="main-view panel">
+        <div class="radar"></div>
+        <div style="position: absolute; bottom: 20px;">LOCALIZANDO OBJETIVOS...</div>
+    </main>
 
-            <div class="render-tool">
-                <span class="prop-label text-cyan-400">Configuración de Luces</span>
-                <div class="space-y-2 mt-2">
-                    <button onclick="toggleShadows()" class="btn-action">SOMBRAS: ON</button>
-                    <button onclick="changeEnv()" class="btn-action">CAMBIAR AMBIENTE</button>
-                </div>
-            </div>
-        </aside>
+    <section class="terminal panel">
+        <div id="log-content">
+            > Iniciando protocolo de combate...<br>
+            > Cargando mapas de calor...<br>
+            > Encriptación SSL-256 establecida...<br>
+            > Detectando intrusos en el sector 7...
+        </div>
+    </section>
 
-        <!-- VIEWPORT -->
-        <main class="viewport" id="viewport-container">
-            <div class="viewport-hud">
-                <div class="status-pill flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span id="mode-display">MODO RENDERIZADO ACTIVO</span>
-                </div>
-            </div>
-        </main>
-
-        <!-- INSPECTOR DERECHO -->
-        <aside class="inspector">
-            <span class="prop-label">Propiedades del Objeto</span>
-            <div id="no-selection" class="text-zinc-600 italic text-center py-10">Selecciona un objeto para editar</div>
-            
-            <div id="inspector-content" class="hidden">
-                <div class="prop-group">
-                    <span class="prop-label">Nombre</span>
-                    <input type="text" id="obj-name" class="n-input" onchange="updateObjName()">
-                </div>
-
-                <div class="prop-group grid grid-cols-3 gap-2">
-                    <div><span class="prop-label">Pos X</span><input type="number" id="p-x" class="n-input" step="0.1"></div>
-                    <div><span class="prop-label">Pos Y</span><input type="number" id="p-y" class="n-input" step="0.1"></div>
-                    <div><span class="prop-label">Pos Z</span><input type="number" id="p-z" class="n-input" step="0.1"></div>
-                </div>
-
-                <div class="render-tool">
-                    <span class="prop-label">Material PBR</span>
-                    <div class="space-y-4 mt-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px]">Color Base</span>
-                            <input type="color" id="m-color" class="bg-transparent border-none w-8 h-8">
-                        </div>
-                        <div>
-                            <span class="text-[9px] block mb-1">Metálico</span>
-                            <input type="range" id="m-metal" class="w-full accent-cyan-400" min="0" max="1" step="0.01">
-                        </div>
-                        <div>
-                            <span class="text-[9px] block mb-1">Rugosidad</span>
-                            <input type="range" id="m-rough" class="w-full accent-cyan-400" min="0" max="1" step="0.01">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="model-tool">
-                    <div class="p-4 bg-orange-500/10 border border-orange-500/20 rounded">
-                        <span class="text-[9px] text-orange-500 font-bold">INFO DE MALLA</span>
-                        <div class="mt-2 font-mono text-[10px] space-y-1">
-                            <div>Vértices: <span id="v-count">0</span></div>
-                            <div>Caras: <span id="f-count">0</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- FOOTER -->
-        <footer class="footer px-4 justify-between">
-            <div class="flex gap-6">
-                <span>GPU: <span class="text-white">PRO_READY</span></span>
-                <span>VRAM: <span class="text-white">OPTIMIZED</span></span>
-                <span>FPS: <span id="fps">120</span></span>
-            </div>
-            <div>© 2025 INFINITY MODELER - SISTEMA DE ALTO RENDIMIENTO</div>
-        </footer>
-    </div>
+    <section class="controls panel">
+        <h3>CONTROLES</h3>
+        <button onclick="alert('Desplegando Dron...')">Desplegar Dron</button>
+        <button onclick="alert('Escaneando Red...')">Escanear Área</button>
+        <button style="border-color: red; color: red;">MODO ATAQUE</button>
+        <div style="margin-top: auto; font-size: 10px;">
+            COORDENADAS: 40.7128° N, 74.0060° W
+        </div>
+    </section>
 
     <script>
-        // --- MOTOR CORE ---
-        let scene, camera, renderer, controls, transformControls;
-        let objects = [], selected = null;
-        let isModelMode = false;
+        // Reloj en tiempo real
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+        }, 1000);
 
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
+        // Simulación de logs
+        const log = document.getElementById('log-content');
+        const messages = [
+            "> Señal de satélite recuperada...",
+            "> Interceptando paquete de datos...",
+            "> Alerta: Movimiento detectado en zona norte.",
+            "> Actualizando base de datos táctica..."
+        ];
 
-            const container = document.getElementById('viewport-container');
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(15, 15, 15);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            container.appendChild(renderer.domElement);
-
-            // Luces
-            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-            scene.add(ambient);
-
-            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true;
-            scene.add(sun);
-
-            // Controles
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-
-            transformControls = new THREE.TransformControls(camera, renderer.domElement);
-            transformControls.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
-            transformControls.addEventListener('change', syncInspector);
-            scene.add(transformControls);
-
-            window.addEventListener('resize', onResize);
-            
-            // Iniciar escena con algo
-            addObj('box');
-            animate();
-        }
-
-        function toggleGlobalMode() {
-            isModelMode = !isModelMode;
-            const body = document.getElementById('app-body');
-            const btn = document.getElementById('master-btn');
-            const display = document.getElementById('mode-display');
-
-            if(isModelMode) {
-                body.className = "mode-model";
-                btn.innerText = "MODEL INFINITY: ON";
-                display.innerText = "MODO MODELADO (EDICIÓN DE MALLA)";
-                if(selected) {
-                    selected.material.wireframe = true;
-                }
-            } else {
-                body.className = "mode-render";
-                btn.innerText = "MODEL INFINITY: OFF";
-                display.innerText = "MODO RENDERIZADO (ILUMINACIÓN PBR)";
-                if(selected) {
-                    selected.material.wireframe = false;
-                }
-            }
-        }
-
-        function addObj(type) {
-            let geo;
-            if(type === 'box') geo = new THREE.BoxGeometry(4, 4, 4, 10, 10, 10);
-            else if(type === 'sphere') geo = new THREE.SphereGeometry(3, 32, 32);
-            else if(type === 'terrain') geo = new THREE.PlaneGeometry(20, 20, 50, 50);
-
-            const mat = new THREE.MeshPhysicalMaterial({ 
-                color: 0x888888, 
-                metalness: 0.5, 
-                roughness: 0.2,
-                wireframe: isModelMode
-            });
-
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.name = `${type.toUpperCase()}_${objects.length + 1}`;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            if(type === 'terrain') mesh.rotation.x = -Math.PI / 2;
-
-            scene.add(mesh);
-            objects.push(mesh);
-            selectObj(mesh);
-            updateOutliner();
-        }
-
-        function selectObj(obj) {
-            if(selected) selected.material.wireframe = isModelMode;
-            selected = obj;
-            transformControls.attach(obj);
-            
-            document.getElementById('no-selection').classList.add('hidden');
-            document.getElementById('inspector-content').classList.remove('hidden');
-            
-            syncInspector();
-            updateOutliner();
-        }
-
-        function syncInspector() {
-            if(!selected) return;
-            document.getElementById('obj-name').value = selected.name;
-            document.getElementById('p-x').value = selected.position.x.toFixed(2);
-            document.getElementById('p-y').value = selected.position.y.toFixed(2);
-            document.getElementById('p-z').value = selected.position.z.toFixed(2);
-            
-            document.getElementById('m-color').value = "#" + selected.material.color.getHexString();
-            document.getElementById('m-metal').value = selected.material.metalness;
-            document.getElementById('m-rough').value = selected.material.roughness;
-
-            if(selected.geometry.attributes.position) {
-                document.getElementById('v-count').innerText = selected.geometry.attributes.position.count;
-                document.getElementById('f-count').innerText = selected.geometry.index ? selected.geometry.index.count / 3 : 'N/A';
-            }
-        }
-
-        function deform(factor) {
-            if(!selected) return;
-            const pos = selected.geometry.attributes.position;
-            for(let i = 0; i < pos.count; i++) {
-                const x = pos.getX(i) * factor;
-                const y = pos.getY(i) * factor;
-                const z = pos.getZ(i) * factor;
-                pos.setXYZ(i, x, y, z);
-            }
-            pos.needsUpdate = true;
-            selected.geometry.computeVertexNormals();
-        }
-
-        function smoothMesh() {
-            if(!selected) return;
-            // Un suavizado simple moviendo vértices hacia el promedio
-            const pos = selected.geometry.attributes.position;
-            for(let i = 0; i < pos.count; i++) {
-                pos.setX(i, pos.getX(i) * 0.99 + (Math.random() - 0.5) * 0.01);
-            }
-            pos.needsUpdate = true;
-            selected.geometry.computeVertexNormals();
-        }
-
-        function updateOutliner() {
-            const list = document.getElementById('outliner');
-            list.innerHTML = '';
-            objects.forEach(obj => {
-                const el = document.createElement('div');
-                el.className = `p-2 rounded cursor-pointer text-[10px] font-bold ${selected === obj ? 'bg-white/10 text-white border border-white/20' : 'hover:bg-white/5 text-zinc-500'}`;
-                el.innerText = obj.name;
-                el.onclick = () => selectObj(obj);
-                list.appendChild(el);
-            });
-        }
-
-        function onResize() {
-            const container = document.getElementById('viewport-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-            if(Math.random() > 0.9) {
-                document.getElementById('fps').innerText = Math.floor(115 + Math.random() * 10);
-            }
-        }
-
-        // Eventos de Inputs manuales
-        document.getElementById('p-x').oninput = (e) => selected.position.x = parseFloat(e.target.value);
-        document.getElementById('p-y').oninput = (e) => selected.position.y = parseFloat(e.target.value);
-        document.getElementById('p-z').oninput = (e) => selected.position.z = parseFloat(e.target.value);
-        document.getElementById('m-color').oninput = (e) => selected.material.color.set(e.target.value);
-        document.getElementById('m-metal').oninput = (e) => selected.material.metalness = parseFloat(e.target.value);
-        document.getElementById('m-rough').oninput = (e) => selected.material.roughness = parseFloat(e.target.value);
-
-        init();
+        setInterval(() => {
+            const p = document.createElement('div');
+            p.innerText = messages[Math.floor(Math.random() * messages.length)];
+            log.appendChild(p);
+            if (log.children.length > 8) log.removeChild(log.firstChild);
+        }, 3000);
     </script>
 </body>
 </html>
-
