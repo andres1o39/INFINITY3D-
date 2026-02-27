@@ -2,120 +2,140 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini OS v2</title>
+    <title>Gemini OS - Versión Ejecutable 2026</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #2980b9;
-            --taskbar: rgba(20, 20, 20, 0.9);
-        }
-        body { 
-            margin: 0; font-family: sans-serif; height: 100vh; overflow: hidden;
-            background: url('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?auto=format&fit=crop&w=1350&q=80') no-repeat center center;
-            background-size: cover;
-        }
+        :root { --accent: #0078d7; --bg: #1a1a1a; --text: #fff; }
+        body.light-mode { --bg: #e2e2e2; --text: #333; }
         
-        /* Escritorio */
-        #desktop { width: 100%; height: calc(100% - 45px); position: relative; }
+        * { box-sizing: border-box; transition: background 0.3s; }
+        body, html { margin: 0; padding: 0; height: 100vh; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+        #desktop { height: calc(100% - 45px); position: relative; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-gap: 20px; }
+        
+        /* Iconos */
+        .icon { text-align: center; cursor: pointer; padding: 10px; border-radius: 5px; }
+        .icon:hover { background: rgba(255,255,255,0.1); }
+        .icon i { font-size: 35px; display: block; color: var(--accent); }
+        .icon span { font-size: 12px; margin-top: 5px; display: block; }
 
         /* Ventanas */
-        .window {
-            position: absolute; width: 350px; background: white; border-radius: 5px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); display: none; flex-direction: column;
-            min-width: 200px; min-height: 150px;
-        }
-        .window-header {
-            padding: 10px; background: #eee; cursor: move; border-radius: 5px 5px 0 0;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .window-body { padding: 15px; flex-grow: 1; overflow-y: auto; }
+        .window { position: absolute; min-width: 400px; min-height: 300px; background: white; border-radius: 10px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: none; flex-direction: column; overflow: hidden; z-index: 10; color: #333; border: 1px solid #999; }
+        .win-header { background: #f3f3f3; padding: 10px; cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+        .win-body { flex: 1; padding: 10px; overflow: auto; }
+        .controls i { padding: 0 5px; cursor: pointer; }
+
+        /* Apps Específicas */
+        .terminal-box { background: #000; color: #0f0; font-family: 'Courier New', monospace; height: 100%; padding: 10px; }
+        #browser-frame { width: 100%; height: 95%; border: none; }
         
-        /* Barra de tareas */
-        #taskbar {
-            height: 45px; background: var(--taskbar); backdrop-filter: blur(10px);
-            position: fixed; bottom: 0; width: 100%; display: flex; align-items: center; padding: 0 10px;
-        }
-        .btn {
-            background: #34495e; color: white; border: none; padding: 8px 15px;
-            margin-right: 5px; cursor: pointer; border-radius: 4px;
-        }
-        .btn:hover { background: var(--primary); }
+        /* Barra de Tareas */
+        #taskbar { position: fixed; bottom: 0; width: 100%; height: 45px; background: rgba(0,0,0,0.9); display: flex; align-items: center; padding: 0 15px; color: white; }
+        #start-menu-btn { font-size: 20px; color: #0078d7; margin-right: 20px; cursor: pointer; }
+        #clock { margin-left: auto; font-size: 13px; }
     </style>
 </head>
-<body>
+<body id="main-body">
 
 <div id="desktop">
-    <div id="app-notes" class="window" style="top: 50px; left: 50px; z-index: 1;">
-        <div class="window-header" onmousedown="dragElement(this.parentElement)">
-            <span>📝 Bloc de Notas</span>
-            <button onclick="closeApp('app-notes')">×</button>
-        </div>
-        <div class="window-body">
-            <textarea style="width: 100%; height: 100%; border: none; outline: none;" placeholder="Escribe algo..."></textarea>
-        </div>
-    </div>
+    <div class="icon" onclick="toggleWin('win-term')"><i class="fas fa-terminal"></i><span>Terminal</span></div>
+    <div class="icon" onclick="toggleWin('win-web')"><i class="fas fa-globe"></i><span>Navegador</span></div>
+    <div class="icon" onclick="toggleWin('win-settings')"><i class="fas fa-user-gear"></i><span>Ajustes</span></div>
+    <div class="icon" onclick="alert('Sistema de archivos: Disco C: vacio')"><i class="fas fa-hard-drive"></i><span>Disco C:</span></div>
+</div>
 
-    <div id="app-settings" class="window" style="top: 100px; left: 100px; z-index: 1;">
-        <div class="window-header" onmousedown="dragElement(this.parentElement)">
-            <span>⚙️ Ajustes</span>
-            <button onclick="closeApp('app-settings')">×</button>
-        </div>
-        <div class="window-body">
-            <label>Color de fondo:</label>
-            <input type="color" onchange="document.body.style.background = this.value">
-        </div>
+<div id="win-term" class="window" style="top:50px; left:100px;">
+    <div class="win-header" onmousedown="drag(this.parentElement)">
+        <span>Terminal de Comandos</span>
+        <div class="controls"><i onclick="toggleWin('win-term')" class="fas fa-times"></i></div>
+    </div>
+    <div class="win-body terminal-box" id="term-out">
+        <div>Escribe 'help' para comandos...</div>
+        <div style="display: flex;"><span>C:\></span><input type="text" id="term-in" autofocus style="background:transparent; border:none; color:#0f0; outline:none; width:100%"></div>
+    </div>
+</div>
+
+<div id="win-web" class="window" style="top:100px; left:150px; width: 800px; height: 500px;">
+    <div class="win-header" onmousedown="drag(this.parentElement)">
+        <input type="text" id="url-bar" value="https://www.wikipedia.org" style="width: 80%">
+        <div class="controls"><i onclick="loadUrl()" class="fas fa-sync"></i> <i onclick="toggleWin('win-web')" class="fas fa-times"></i></div>
+    </div>
+    <div class="win-body">
+        <iframe id="browser-frame" src="https://www.wikipedia.org"></iframe>
+    </div>
+</div>
+
+<div id="win-settings" class="window" style="top:200px; left:200px;">
+    <div class="win-header" onmousedown="drag(this.parentElement)">
+        <span>Configuración</span>
+        <div class="controls"><i onclick="toggleWin('win-settings')" class="fas fa-times"></i></div>
+    </div>
+    <div class="win-body">
+        <h3>Personalización</h3>
+        <button onclick="document.getElementById('main-body').classList.toggle('light-mode')">Cambiar Tema Día/Noche</button>
+        <hr>
+        <h3>Información del Sistema</h3>
+        <p>OS: Gemini Web Edition v3.0</p>
+        <p>Kernel: JavaScript Engine</p>
     </div>
 </div>
 
 <div id="taskbar">
-    <button class="btn" style="background: #27ae60;" onclick="toggleMenu()">Inicio</button>
-    <button class="btn" onclick="openApp('app-notes')">Notas</button>
-    <button class="btn" onclick="openApp('app-settings')">Ajustes</button>
-    <div id="clock" style="color: white; margin-left: auto; font-size: 14px;"></div>
+    <i class="fab fa-windows" id="start-menu-btn"></i>
+    <div id="active-apps"></div>
+    <div id="clock">00:00</div>
 </div>
 
 <script>
-    let highestZ = 10;
+    let zIdx = 100;
 
-    function openApp(id) {
-        const app = document.getElementById(id);
-        app.style.display = 'flex';
-        app.style.zIndex = ++highestZ;
+    function toggleWin(id) {
+        const w = document.getElementById(id);
+        w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
+        w.style.zIndex = ++zIdx;
     }
 
-    function closeApp(id) {
-        document.getElementById(id).style.display = 'none';
+    // Lógica de la Terminal
+    const termIn = document.getElementById('term-in');
+    const termOut = document.getElementById('term-out');
+
+    termIn.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const cmd = termIn.value.toLowerCase();
+            let res = "";
+            if(cmd === 'help') res = "Comandos: help, date, clear, echo, system";
+            else if(cmd === 'date') res = new Date().toString();
+            else if(cmd === 'clear') { termOut.innerHTML = ""; return; }
+            else if(cmd === 'system') res = "RAM: 16GB | CPU: i9-9900K WebSim";
+            else res = "Comando no reconocido.";
+            
+            const div = document.createElement('div');
+            div.innerHTML = `C:\\> ${cmd}<br>${res}`;
+            termOut.insertBefore(div, termIn.parentElement);
+            termIn.value = "";
+        }
+    });
+
+    // Navegador
+    function loadUrl() {
+        const url = document.getElementById('url-bar').value;
+        document.getElementById('browser-frame').src = url;
     }
 
-    // Lógica para arrastrar (Drag and Drop)
-    function dragElement(elmnt) {
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        elmnt.style.zIndex = ++highestZ;
-        
+    // Arrastrar ventanas
+    function drag(el) {
+        el.style.zIndex = ++zIdx;
         document.onmousemove = (e) => {
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        };
-
-        document.onmouseup = () => {
-            document.onmousemove = null;
-            document.onmouseup = null;
-        };
-
-        pos3 = window.event.clientX;
-        pos4 = window.event.clientY;
+            el.style.left = e.clientX - 100 + "px";
+            el.style.top = e.clientY - 20 + "px";
+        }
+        document.onmouseup = () => document.onmousemove = null;
     }
 
-    // Reloj dinámico
+    // Reloj
     setInterval(() => {
         document.getElementById('clock').innerText = new Date().toLocaleTimeString();
     }, 1000);
 </script>
-
 </body>
 </html>
