@@ -3,313 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INFINITY 3D - ULTIMATE MONSTER ENGINE</title>
+    <title>INFINITY MODELER PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lights/RectAreaLightUniformsLib.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/helpers/RectAreaLightHelper.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap');
         
         :root {
-            --accent: #00f2ff;
-            --accent-dim: #007a80;
-            --bg-ultra: #050506;
-            --panel-hex: #0d0e11;
-            --border: rgba(255,255,255,0.07);
+            --accent: #facc15;
+            --modeling-accent: #ff4d00;
+            --bg-dark: #0a0a0c;
+            --panel-bg: rgba(18, 18, 22, 0.9);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
         body { 
-            margin: 0; overflow: hidden; background: var(--bg-ultra); 
-            color: #d1d1d1; font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; background: var(--bg-dark); 
+            color: #ccc; font-family: 'Inter', sans-serif; 
             font-size: 11px; user-select: none;
         }
 
-        /* UI Structure */
-        .app-shell {
+        .app-grid {
             display: grid;
             grid-template-columns: 280px 1fr 340px;
-            grid-template-rows: 50px 1fr 220px;
+            grid-template-rows: 50px 1fr 200px;
             height: 100vh;
-            width: 100vw;
         }
 
-        .panel { background: var(--panel-hex); border: 1px solid var(--border); display: flex; flex-direction: column; }
-        .header { grid-column: 1 / -1; background: #000; display: flex; align-items: center; padding: 0 20px; z-index: 100; border-bottom: 1px solid var(--border); }
-        .sidebar-l { grid-row: 2 / 3; border-right: 1px solid var(--border); }
-        .viewport { grid-row: 2 / 3; position: relative; background: #000; overflow: hidden; cursor: crosshair; }
-        .sidebar-r { grid-row: 2 / 3; border-left: 1px solid var(--border); overflow-y: auto; }
-        .footer { grid-column: 1 / -1; border-top: 2px solid #1a1a1d; }
+        /* Header Styling */
+        .header {
+            grid-column: 1 / -1;
+            background: #000;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+        }
 
-        /* Custom UI Elements */
-        .tab-btn { padding: 10px; font-size: 9px; font-weight: 800; text-transform: uppercase; color: #555; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
-        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .btn-mode {
+            background: linear-gradient(135deg, #222, #000);
+            border: 1px solid #444;
+            padding: 8px 24px;
+            font-weight: 900;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #fff;
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+            transition: all 0.3s;
+        }
+        .btn-mode.modeling { border-color: var(--modeling-accent); color: var(--modeling-accent); }
+        .btn-mode.render { border-color: #00f2ff; color: #00f2ff; }
+        .btn-mode:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+        /* Panels */
+        .panel { background: var(--panel-bg); border: 1px solid var(--border); backdrop-filter: blur(20px); }
         
-        .prop-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); }
-        .prop-label { font-size: 9px; color: #888; text-transform: uppercase; font-weight: 600; }
+        /* Viewport Customization */
+        .viewport { grid-column: 2/3; grid-row: 2/3; position: relative; overflow: hidden; }
         
-        .n-input { background: #050505; border: 1px solid #222; color: #fff; font-family: 'JetBrains Mono'; font-size: 10px; padding: 3px 6px; border-radius: 2px; width: 60px; outline: none; }
+        .modeling-grid {
+            background-size: 40px 40px;
+            background-image: radial-gradient(circle, #222 1px, transparent 1px);
+            position: absolute; inset: 0; pointer-events: none; opacity: 0.3;
+        }
+
+        /* Sidebar Tabs */
+        .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3); }
+        .tab { flex: 1; padding: 12px; text-align: center; font-size: 9px; font-weight: 800; color: #666; cursor: pointer; transition: 0.2s; }
+        .tab.active { color: #fff; border-bottom: 2px solid var(--accent); background: rgba(255,255,255,0.02); }
+
+        /* Inputs */
+        .n-input { background: #000; border: 1px solid #333; color: #fff; font-family: 'JetBrains Mono'; font-size: 10px; padding: 4px; border-radius: 2px; }
         .n-input:focus { border-color: var(--accent); }
 
-        /* Buttons Monster */
-        .btn-m { background: #1a1b1f; border: 1px solid #333; padding: 5px 10px; font-size: 9px; font-weight: 700; color: #ccc; border-radius: 3px; transition: 0.2s; }
-        .btn-m:hover { background: #2a2b31; color: var(--accent); border-color: var(--accent); }
-        .btn-accent { background: var(--accent); color: #000; border: none; }
+        .slider { -webkit-appearance: none; width: 100%; height: 2px; background: #333; outline: none; margin: 10px 0; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #fff; border-radius: 50%; cursor: pointer; }
 
-        /* Scoped bars */
-        .cinemascope { position: absolute; inset: 0; pointer-events: none; z-index: 50; display: flex; flex-direction: column; justify-content: space-between; }
-        .c-bar { height: 10%; background: #000; transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1); }
-        .c-bar.hide { transform: translateY(-100%); }
-        .c-bar-bot.hide { transform: translateY(100%); }
+        /* HUD elements */
+        .badge { background: #1a1a1f; border: 1px solid #333; padding: 3px 8px; border-radius: 100px; font-size: 8px; font-weight: 800; color: #888; }
+        
+        /* Modeling Tools Float */
+        .tool-dock {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .tool-btn {
+            width: 44px; height: 44px; background: #111; border: 1px solid #222; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; color: #555; transition: 0.2s;
+        }
+        .tool-btn:hover { border-color: #fff; color: #fff; }
+        .tool-btn.active { background: var(--modeling-accent); color: #fff; border-color: var(--modeling-accent); box-shadow: 0 0 15px rgba(255, 77, 0, 0.4); }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        /* Mode visibility */
+        .mode-rendering .modeling-only { display: none; }
+        .mode-modeling .rendering-only { display: none; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body class="mode-rendering" oncontextmenu="return false;">
 
-    <div class="app-shell">
-        <!-- HEADER -->
-        <header class="header justify-between">
+    <div class="app-grid" id="main-layout">
+        <!-- HEADER MASTER -->
+        <header class="header">
             <div class="flex items-center gap-6">
-                <div class="flex flex-col">
-                    <span class="text-white font-black text-xl tracking-tighter leading-none">INFINITY <span class="text-[#00f2ff]">MONSTER</span></span>
-                    <span class="text-[8px] font-bold text-zinc-500 tracking-[0.3em] uppercase">Hyper-Performance Edition</span>
+                <div class="leading-none">
+                    <div class="text-white font-black italic text-lg tracking-tighter">INFINITY <span class="text-yellow-400">MODELER</span></div>
+                    <div class="text-[7px] text-zinc-600 font-bold tracking-[0.4em]">ADVANCED SUITE 2025</div>
                 </div>
-                <div class="h-6 w-px bg-white/10 mx-2"></div>
-                <div class="flex gap-1">
-                    <button onclick="spawn('cube')" class="btn-m">Cubo</button>
-                    <button onclick="spawn('sphere')" class="btn-m">Esfera</button>
-                    <button onclick="spawn('torus')" class="btn-m">Toroide</button>
-                    <button onclick="spawn('area-light')" class="btn-m text-yellow-400">Luz de Área</button>
-                    <button onclick="spawn('point-light')" class="btn-m text-orange-500">Punto de Luz</button>
+                <div class="flex gap-2">
+                    <button id="mode-render" onclick="setMode('render')" class="btn-mode render">RENDER ENGINE</button>
+                    <button id="mode-modeling" onclick="setMode('modeling')" class="btn-mode modeling">MODEL INFINITY</button>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="text-right">
-                    <div class="text-[8px] text-zinc-500 uppercase font-black">MEM_GPU: <span class="text-white" id="gpu-mem">0.4 GB</span></div>
-                    <div class="text-[10px] font-mono text-cyan-400" id="fps">FPS: 144</div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-end">
+                    <span class="text-[8px] font-bold text-zinc-500">SYSTEM PERFORMANCE</span>
+                    <div class="flex gap-2 items-center">
+                        <span class="text-xs font-mono text-green-500" id="fps-val">165.0 FPS</span>
+                        <div class="w-16 h-1.5 bg-zinc-900 rounded-full overflow-hidden"><div class="h-full bg-green-500 w-3/4"></div></div>
+                    </div>
                 </div>
-                <button class="btn-m btn-accent px-6 py-2 uppercase font-black tracking-widest italic">Render Engine High</button>
+                <button class="bg-white text-black px-6 py-2.5 rounded-sm font-black text-[10px] uppercase hover:bg-yellow-400 transition">EXPORT FBX/OBJ</button>
             </div>
         </header>
 
-        <!-- SIDEBAR LEFT: SCENE GRAPH -->
-        <aside class="panel sidebar-l">
-            <div class="p-3 border-b border-white/5 bg-black/40 flex justify-between items-center">
-                <span class="text-[9px] font-black uppercase tracking-widest text-zinc-400">Explorador de Nodos</span>
-                <span class="text-[8px] opacity-40">AUTO-SAVE: ON</span>
+        <!-- LEFT SIDEBAR: HIERARCHY & TOOLS -->
+        <aside class="panel">
+            <div class="tab-bar">
+                <div class="tab active">ESCENA</div>
+                <div class="tab">ACTIVOS</div>
+                <div class="tab">CAPAS</div>
             </div>
-            <div id="outliner" class="flex-grow overflow-y-auto p-2 space-y-1">
-                <!-- Objects List -->
-            </div>
-            <div class="p-4 border-t border-white/5 bg-black/40">
-                <span class="prop-label mb-3 block">Entornos HDRI</span>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setEnv('void')" class="btn-m">Vacio</button>
-                    <button onclick="setEnv('nebula')" class="btn-m">Nebulosa</button>
-                    <button onclick="setEnv('showroom')" class="btn-m btn-accent">Showroom</button>
-                    <button onclick="setEnv('sunset')" class="btn-m">Atardecer</button>
+            
+            <div class="p-4 space-y-6">
+                <div class="rendering-only">
+                    <span class="text-[9px] font-black text-zinc-600 tracking-widest uppercase">Primitivas</span>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="spawn('cube')" class="btn-tool py-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800">Cubo</button>
+                        <button onclick="spawn('sphere')" class="btn-tool py-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800">Esfera</button>
+                        <button onclick="spawn('torus')" class="btn-tool py-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800">Toro</button>
+                        <button onclick="spawn('terrain')" class="btn-tool py-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-cyan-400">Terreno</button>
+                    </div>
+                </div>
+
+                <div class="modeling-only">
+                    <span class="text-[9px] font-black text-orange-600 tracking-widest uppercase">Herramientas Modelado</span>
+                    <div class="space-y-2 mt-2">
+                        <button onclick="modAction('extrude')" class="w-full py-3 bg-orange-600/10 border border-orange-600/30 text-orange-400 font-bold text-[9px] rounded">EXTRUDED MESH</button>
+                        <button onclick="modAction('subdivide')" class="w-full py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold text-[9px] rounded">SUBDIVIDE SURFACE</button>
+                        <button onclick="modAction('smooth')" class="w-full py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold text-[9px] rounded">SMOOTHING (LAPLACE)</button>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-[9px] font-black text-zinc-600 tracking-widest uppercase">Jerarquía</span>
+                    <div id="outliner" class="bg-black/40 rounded p-1 max-h-60 overflow-y-auto">
+                        <!-- Dynamic content -->
+                    </div>
                 </div>
             </div>
         </aside>
 
-        <!-- VIEWPORT -->
-        <main class="viewport" id="viewport">
-            <div class="cinemascope">
-                <div id="bar-top" class="c-bar"></div>
-                <div id="bar-bot" class="c-bar c-bar-bot"></div>
-            </div>
+        <!-- VIEWPORT MASTER -->
+        <main class="viewport" id="viewport-main">
+            <div class="modeling-grid modeling-only"></div>
             
-            <div class="absolute top-6 left-6 z-20 pointer-events-none">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_red]"></div>
-                    <span class="text-[12px] font-black tracking-[0.2em] text-white italic">MONSTER RENDERER 1.0</span>
-                </div>
-                <div class="font-mono text-[9px] text-white/40 leading-relaxed">
-                    FRAME: <span id="hud-frame">0</span> / 240<br>
-                    RESOLUTION: 3840x2160 (UPSCALED)<br>
-                    SAMPLES: 256 SPP
-                </div>
+            <!-- Floating Dock Rendering Mode -->
+            <div class="tool-dock rendering-only">
+                <button onclick="setTMode('translate')" class="tool-btn active" id="t-move">M</button>
+                <button onclick="setTMode('rotate')" class="tool-btn" id="t-rotate">R</button>
+                <button onclick="setTMode('scale')" class="tool-btn" id="t-scale">S</button>
+                <div class="h-px bg-white/5 my-2"></div>
+                <button onclick="toggleLight()" class="tool-btn">L</button>
             </div>
 
-            <div class="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
-                <button onclick="toggleCinema()" class="w-10 h-10 bg-black/80 border border-white/10 rounded flex items-center justify-center hover:bg-cyan-500/20 transition">
-                    <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
-                </button>
-                <button onclick="toggleGrid()" class="w-10 h-10 bg-black/80 border border-white/10 rounded flex items-center justify-center hover:bg-cyan-500/20 transition">
-                    <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg>
-                </button>
+            <!-- Modeling HUD -->
+            <div class="absolute bottom-6 left-6 pointer-events-none">
+                <div class="modeling-only bg-orange-600/90 text-black px-4 py-1.5 font-black italic skew-x-[-12deg] text-xs">MODELING_ACTIVE_ENV</div>
+                <div class="rendering-only bg-cyan-500/90 text-black px-4 py-1.5 font-black italic skew-x-[-12deg] text-xs">CINEMA_RENDER_ENV</div>
+            </div>
+
+            <!-- Stats Overlay -->
+            <div class="absolute top-6 right-6 text-right font-mono text-[9px] text-white/40 space-y-1 pointer-events-none">
+                <div>POLYCOUNT: <span id="poly-val">0</span></div>
+                <div>VERTS: <span id="vert-val">0</span></div>
+                <div>RENDER_ENGINE: WEBGL_2_HYPER</div>
             </div>
         </main>
 
-        <!-- SIDEBAR RIGHT: PROPERTIES -->
-        <aside class="panel sidebar-r">
-            <div class="flex bg-black/60 border-b border-white/5">
-                <div class="tab-btn active flex-1 text-center">Material</div>
-                <div class="tab-btn flex-1 text-center">Fisica</div>
-                <div class="tab-btn flex-1 text-center">Post</div>
+        <!-- RIGHT SIDEBAR: PROPERTIES -->
+        <aside class="panel">
+            <div class="tab-bar">
+                <div class="tab active">PROPIEDADES</div>
+                <div class="tab">MATERIAL</div>
+                <div class="tab">RENDER</div>
             </div>
 
-            <div class="p-4 space-y-6">
-                <!-- Object Info -->
+            <div class="p-5 space-y-8 overflow-y-auto max-h-[calc(100vh-250px)]">
+                <!-- Transform Section -->
                 <section>
-                    <span class="prop-label">Transformación</span>
-                    <div class="space-y-2 mt-3">
-                        <div class="prop-row">
-                            <span class="text-[9px]">Posición</span>
-                            <div class="flex gap-1">
-                                <input type="number" id="t-px" class="n-input" step="0.1">
-                                <input type="number" id="t-py" class="n-input" step="0.1">
-                                <input type="number" id="t-pz" class="n-input" step="0.1">
-                            </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black uppercase text-zinc-500">Transformación</span>
+                        <div class="badge">LOCAL</div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] text-zinc-400">Position X</span>
+                            <input type="number" id="p-x" class="n-input w-20" step="0.1" value="0">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] text-zinc-400">Position Y</span>
+                            <input type="number" id="p-y" class="n-input w-20" step="0.1" value="0">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] text-zinc-400">Scale</span>
+                            <input type="range" id="scale-all" class="slider w-32" min="0.1" max="10" step="0.1">
                         </div>
                     </div>
                 </section>
 
-                <!-- ADVANCED MATERIAL PBR -->
-                <section class="bg-black/30 p-3 rounded-lg border border-white/10">
-                    <span class="prop-label text-cyan-400">Monster PBR Shaders</span>
-                    <div class="space-y-4 mt-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px]">Albedo / Color</span>
-                            <input type="color" id="m-color" class="w-10 h-6 bg-transparent border-none cursor-pointer">
+                <!-- PBR Material Modeling Mode -->
+                <section class="rendering-only space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-black uppercase text-zinc-500">Surface Shader</span>
+                        <div class="badge text-cyan-500">PBR++</div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-[9px] mb-1"><span>Metalness</span><span id="v-metal">0.9</span></div>
+                            <input type="range" id="m-metal" class="slider" min="0" max="1" step="0.01" value="0.9">
                         </div>
                         <div>
-                            <div class="flex justify-between text-[9px]"><span>Metalicidad</span><span id="v-metal">0.0</span></div>
-                            <input type="range" id="m-metal" min="0" max="1" step="0.01" value="0">
+                            <div class="flex justify-between text-[9px] mb-1"><span>Roughness</span><span id="v-rough">0.1</span></div>
+                            <input type="range" id="m-rough" class="slider" min="0" max="1" step="0.01" value="0.1">
                         </div>
                         <div>
-                            <div class="flex justify-between text-[9px]"><span>Rugosidad</span><span id="v-rough">0.5</span></div>
-                            <input type="range" id="m-rough" min="0" max="1" step="0.01" value="0.5">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[9px]"><span>Transmisión (Vidrio)</span><span id="v-trans">0.0</span></div>
-                            <input type="range" id="m-trans" min="0" max="1" step="0.01" value="0">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[9px]"><span>Emisión (Glow)</span><span id="v-glow">0.0</span></div>
-                            <input type="range" id="m-glow" min="0" max="20" step="0.1" value="0">
+                            <div class="flex justify-between text-[9px] mb-1"><span>Clearcoat</span><span id="v-coat">1.0</span></div>
+                            <input type="range" id="m-coat" class="slider" min="0" max="1" step="0.01" value="1.0">
                         </div>
                     </div>
                 </section>
 
-                <!-- OPTICAL FX -->
-                <section>
-                    <span class="prop-label text-red-500">Parámetros de Lente</span>
-                    <div class="space-y-4 mt-4">
-                        <div>
-                            <div class="flex justify-between text-[9px]"><span>Longitud Focal</span><span id="v-focal">50</span>mm</div>
-                            <input type="range" id="c-focal" min="15" max="200" value="50">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[9px]"><span>Vignette</span><span id="v-vign">0.5</span></div>
-                            <input type="range" id="c-vign" min="0" max="1" step="0.01" value="0.5">
-                        </div>
+                <!-- Modeling Tool Props -->
+                <section class="modeling-only space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-black uppercase text-orange-500">Topology Control</span>
+                        <div class="badge text-orange-500">MESH</div>
+                    </div>
+                    <div class="space-y-2">
+                        <button onclick="sculpt('inflate')" class="w-full py-2 bg-zinc-900 text-xs font-bold border border-white/5 hover:bg-orange-600 transition">INFLAR MALLA (SCULPT)</button>
+                        <button onclick="sculpt('flatten')" class="w-full py-2 bg-zinc-900 text-xs font-bold border border-white/5 hover:bg-orange-600 transition">APLANAR CARAS</button>
                     </div>
                 </section>
-            </div>
-
-            <div class="p-4 mt-auto">
-                <button onclick="addKeyframe()" class="w-full py-4 bg-cyan-500 text-black font-black uppercase text-[11px] rounded italic shadow-[0_0_20px_rgba(0,242,255,0.3)]">Keyframe Global (K)</button>
             </div>
         </aside>
 
-        <!-- TIMELINE MASTER -->
-        <footer class="panel footer bg-[#080809]">
-            <div class="h-12 border-b border-white/5 bg-black flex items-center justify-between px-6">
-                <div class="flex items-center gap-6">
-                    <button id="play-btn" class="w-9 h-9 flex items-center justify-center rounded-full bg-cyan-500 text-black shadow-lg">
-                        <svg id="play-svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </button>
-                    <div class="font-mono text-xl font-black text-cyan-400" id="timer">00:00:00:00</div>
-                </div>
-                <div class="flex gap-3">
-                    <button class="btn-m">Limpiar Pistas</button>
-                    <button class="btn-m btn-accent">Exportar ProRes</button>
-                </div>
-            </div>
-
-            <div class="relative flex-grow bg-black/40 overflow-hidden" id="timeline-container">
-                <div class="absolute inset-0 grid grid-cols-[repeat(24,1fr)] opacity-5 pointer-events-none">
-                    <div class="border-l border-white h-full"></div>
-                </div>
-                <!-- Track List -->
-                <div class="p-3 space-y-2">
-                    <div class="h-8 bg-white/5 rounded relative group border border-white/0 hover:border-white/10" id="track-pos">
-                        <span class="absolute -top-3 left-0 text-[8px] font-black text-zinc-600">POSICIÓN / ROTACIÓN</span>
+        <!-- FOOTER: TIMELINE & CONSOLE -->
+        <footer class="panel grid-column: 1 / -1">
+            <div class="flex h-full">
+                <div class="w-72 border-r border-white/5 flex flex-col p-4 bg-black/50">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-black text-zinc-500">CONSOLA_OUTPUT</span>
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                     </div>
-                    <div class="h-8 bg-white/5 rounded relative group border border-white/0 hover:border-white/10" id="track-mat">
-                        <span class="absolute -top-3 left-0 text-[8px] font-black text-zinc-600">MATERIAL / SHADER</span>
+                    <div class="font-mono text-[9px] text-zinc-500 space-y-1 overflow-y-auto">
+                        <div>[SYSTEM]: Infinity Modeler Inicializado.</div>
+                        <div>[GPU]: NVIDIA/RTX Virtual Driver OK.</div>
+                        <div>[MESH]: Escena cargada correctamente.</div>
                     </div>
                 </div>
-
-                <!-- Playhead -->
-                <div id="playhead" class="absolute top-0 left-0 w-px h-full bg-red-500 shadow-[0_0_10px_red] z-50">
-                    <div class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-red-500 rotate-45 border border-white"></div>
+                <div class="flex-grow flex flex-col">
+                    <div class="h-8 bg-black flex items-center px-4 justify-between border-b border-white/5">
+                        <div class="flex gap-4">
+                            <span class="text-[9px] font-black text-zinc-500">TIMELINE</span>
+                            <span class="text-[9px] font-black text-yellow-500">240 FPS MASTER</span>
+                        </div>
+                        <div class="text-[10px] font-mono text-cyan-400">00:00:02:14</div>
+                    </div>
+                    <div class="flex-grow p-4 relative">
+                        <div class="h-10 bg-white/5 rounded w-full flex items-center px-2 relative">
+                            <div class="h-full w-px bg-red-600 shadow-[0_0_10px_red] absolute left-1/3"></div>
+                            <div class="flex gap-1">
+                                <div class="w-3 h-3 bg-cyan-500 rotate-45 border border-black"></div>
+                                <div class="w-3 h-3 bg-zinc-700 rotate-45 border border-black"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <input type="range" id="timeline-slider" min="0" max="240" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-[60]">
             </div>
         </footer>
     </div>
 
     <script>
-        // --- MONSTER ENGINE GLOBAL STATE ---
+        // --- INFINITY MODELER CORE ENGINE ---
         let scene, camera, renderer, controls, transformControls;
-        let objects = [], selected = null;
-        let isPlaying = false, frame = 0;
-        const totalFrames = 240;
-        let animationData = new Map();
-        let gridHelper;
+        let actors = [], selected = null;
+        let mode = 'render'; // 'render' or 'modeling'
 
         function init() {
             THREE.RectAreaLightUniformsLib.init();
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050506);
-            scene.fog = new THREE.FogExp2(0x050506, 0.015);
+            scene.background = new THREE.Color(0x0a0a0c);
+            scene.fog = new THREE.FogExp2(0x0a0a0c, 0.008);
 
-            const w = window.innerWidth - 620;
-            const h = window.innerHeight - 270;
-            camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 2000);
-            camera.position.set(15, 12, 15);
+            const v = document.getElementById('viewport-main');
+            camera = new THREE.PerspectiveCamera(40, v.clientWidth / v.clientHeight, 0.1, 5000);
+            camera.position.set(25, 20, 25);
 
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: true, 
-                powerPreference: "high-performance",
-                alpha: true
-            });
-            renderer.setSize(w, h);
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(v.clientWidth, v.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
+            renderer.toneMappingExposure = 1.2;
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            v.appendChild(renderer.domElement);
 
-            document.getElementById('viewport').appendChild(renderer.domElement);
+            // -- LIGHTING --
+            const amb = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(amb);
 
-            // -- MONSTER LIGHTING STACK --
-            const ambient = new THREE.AmbientLight(0x202025, 0.5);
-            scene.add(ambient);
-
-            // Key Light (Área Pro)
-            const areaLight = new THREE.RectAreaLight(0xffffff, 5, 10, 10);
-            areaLight.position.set(10, 10, 10);
-            areaLight.lookAt(0,0,0);
-            scene.add(areaLight);
-            
-            // Rim Light
-            const rim = new THREE.DirectionalLight(0x00f2ff, 1.2);
-            rim.position.set(-15, 5, -15);
-            scene.add(rim);
-
-            gridHelper = new THREE.GridHelper(60, 60, 0x222222, 0x111111);
-            scene.add(gridHelper);
+            const mainLight = new THREE.RectAreaLight(0xffffff, 15, 20, 20);
+            mainLight.position.set(15, 20, 15);
+            mainLight.lookAt(0,0,0);
+            scene.add(mainLight);
 
             // Controls
             controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -318,251 +341,162 @@
 
             transformControls = new THREE.TransformControls(camera, renderer.domElement);
             transformControls.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
-            transformControls.addEventListener('change', syncInspector);
+            transformControls.addEventListener('change', () => { if(selected) updateUIProps(); });
             scene.add(transformControls);
 
-            setupInputs();
+            window.addEventListener('resize', onWindowResize);
+            setupInputSync();
             spawn('cube');
-            renderLoop();
+            animate();
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            document.body.className = `mode-${mode}`;
+            
+            // Visual feedback for modes
+            if(mode === 'modeling') {
+                scene.background = new THREE.Color(0x111115);
+                actors.forEach(a => {
+                    if(a.material) {
+                        a.material.wireframe = true;
+                        a.material.emissive.set(0xff4400);
+                        a.material.emissiveIntensity = 0.2;
+                    }
+                });
+            } else {
+                scene.background = new THREE.Color(0x0a0a0c);
+                actors.forEach(a => {
+                    if(a.material) {
+                        a.material.wireframe = false;
+                        a.material.emissiveIntensity = 0;
+                    }
+                });
+            }
         }
 
         function spawn(type) {
-            let geometry, mesh;
-            const material = new THREE.MeshPhysicalMaterial({ 
-                color: 0x888888, 
-                metalness: 0.1, 
-                roughness: 0.4, 
-                reflectivity: 0.5,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1
+            let geo, mesh;
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: 0x222222,
+                metalness: 0.9,
+                roughness: 0.1,
+                clearcoat: 1,
+                envMapIntensity: 1
             });
 
-            if(type === 'cube') geometry = new THREE.BoxGeometry(4, 4, 4);
-            else if(type === 'sphere') geometry = new THREE.SphereGeometry(2.5, 128, 128); // High poly
-            else if(type === 'torus') geometry = new THREE.TorusGeometry(3, 1, 64, 128);
-            else if(type === 'area-light') {
-                mesh = new THREE.RectAreaLight(0x00f2ff, 15, 8, 8);
-                mesh.position.set(0, 10, 0);
-                const visual = new THREE.Mesh(new THREE.PlaneGeometry(8,8), new THREE.MeshBasicMaterial({color: 0x00f2ff, side: 2}));
-                mesh.add(visual);
-            } else if(type === 'point-light') {
-                mesh = new THREE.PointLight(0xffaa00, 30, 50);
-                mesh.position.set(0, 5, 0);
-                mesh.add(new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffaa00})));
+            if(type === 'cube') geo = new THREE.BoxGeometry(6, 6, 6, 4, 4, 4);
+            else if(type === 'sphere') geo = new THREE.SphereGeometry(4, 64, 64);
+            else if(type === 'torus') geo = new THREE.TorusGeometry(4, 1.5, 32, 64);
+            else if(type === 'terrain') {
+                geo = new THREE.PlaneGeometry(60, 60, 100, 100);
+                const pos = geo.attributes.position;
+                for(let i=0; i<pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = pos.getY(i);
+                    pos.setZ(i, Math.sin(x*0.1) * Math.cos(y*0.1) * 4);
+                }
+                geo.computeVertexNormals();
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.rotation.x = -Math.PI / 2;
             }
 
-            if(!mesh) mesh = new THREE.Mesh(geometry, material);
-            
-            mesh.name = `${type.toUpperCase()}_${objects.length + 1}`;
-            mesh.position.y = mesh.geometry?.parameters?.height / 2 || 2;
+            if(!mesh) mesh = new THREE.Mesh(geo, mat);
+            mesh.name = `${type.toUpperCase()}_${actors.length + 1}`;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-
+            
             scene.add(mesh);
-            objects.push(mesh);
-            selectObj(mesh);
+            actors.push(mesh);
+            select(mesh);
             updateOutliner();
         }
 
-        function selectObj(obj) {
+        function select(obj) {
             selected = obj;
             transformControls.attach(obj);
-            if(obj.material) {
-                document.getElementById('m-color').value = '#' + obj.material.color.getHexString();
-                document.getElementById('m-metal').value = obj.material.metalness;
-                document.getElementById('m-rough').value = obj.material.roughness;
-                document.getElementById('m-trans').value = obj.material.transmission || 0;
-                document.getElementById('m-glow').value = obj.material.emissiveIntensity || 0;
-            }
-            syncInspector();
+            updateUIProps();
             updateOutliner();
-            drawKeys();
         }
 
-        function syncInspector() {
+        function updateUIProps() {
             if(!selected) return;
-            document.getElementById('t-px').value = selected.position.x.toFixed(2);
-            document.getElementById('t-py').value = selected.position.y.toFixed(2);
-            document.getElementById('t-pz').value = selected.position.z.toFixed(2);
+            document.getElementById('p-x').value = selected.position.x.toFixed(2);
+            document.getElementById('p-y').value = selected.position.y.toFixed(2);
+            document.getElementById('scale-all').value = selected.scale.x;
+            
+            // Stats
+            if(selected.geometry) {
+                document.getElementById('poly-val').innerText = selected.geometry.index ? selected.geometry.index.count / 3 : 0;
+                document.getElementById('vert-val').innerText = selected.geometry.attributes.position.count;
+            }
         }
 
-        function setupInputs() {
-            // Material Sliders
-            document.getElementById('m-color').oninput = (e) => { if(selected?.material) selected.material.color.set(e.target.value); };
-            document.getElementById('m-metal').oninput = (e) => { 
-                if(selected?.material) { selected.material.metalness = e.target.value; document.getElementById('v-metal').innerText = e.target.value; }
-            };
-            document.getElementById('m-rough').oninput = (e) => { 
-                if(selected?.material) { selected.material.roughness = e.target.value; document.getElementById('v-rough').innerText = e.target.value; }
-            };
-            document.getElementById('m-trans').oninput = (e) => { 
-                if(selected?.material) { 
-                    selected.material.transmission = e.target.value; 
-                    selected.material.thickness = 2; // Realism thickness
-                    document.getElementById('v-trans').innerText = e.target.value; 
+        function setupInputSync() {
+            document.getElementById('p-x').oninput = (e) => { if(selected) selected.position.x = parseFloat(e.target.value); };
+            document.getElementById('p-y').oninput = (e) => { if(selected) selected.position.y = parseFloat(e.target.value); };
+            document.getElementById('scale-all').oninput = (e) => { 
+                if(selected) {
+                    const s = parseFloat(e.target.value);
+                    selected.scale.set(s, s, s);
                 }
             };
-            document.getElementById('m-glow').oninput = (e) => { 
-                if(selected?.material) { 
-                    selected.material.emissive.set(selected.material.color);
-                    selected.material.emissiveIntensity = e.target.value; 
-                    document.getElementById('v-glow').innerText = e.target.value; 
+            
+            document.getElementById('m-metal').oninput = (e) => {
+                if(selected?.material) {
+                    selected.material.metalness = parseFloat(e.target.value);
+                    document.getElementById('v-metal').innerText = e.target.value;
                 }
             };
-
-            // Lens
-            document.getElementById('c-focal').oninput = (e) => {
-                camera.fov = 2 * Math.atan(18 / e.target.value) * (180 / Math.PI);
-                camera.updateProjectionMatrix();
-                document.getElementById('v-focal').innerText = e.target.value;
-            };
-
-            // Timeline
-            const slider = document.getElementById('timeline-slider');
-            slider.oninput = (e) => {
-                frame = parseInt(e.target.value);
-                updateTimeline();
-                applyAnimation();
-            };
-
-            document.getElementById('play-btn').onclick = () => {
-                isPlaying = !isPlaying;
-                document.getElementById('play-svg').innerHTML = isPlaying ? 
-                    '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
-            };
-
-            // Shortcuts
-            window.addEventListener('keydown', (e) => {
-                if(e.key.toLowerCase() === 'k') addKeyframe();
-                if(e.key.toLowerCase() === 'g') transformControls.setMode('translate');
-                if(e.key.toLowerCase() === 'r') transformControls.setMode('rotate');
-                if(e.key.toLowerCase() === 's') transformControls.setMode('scale');
-                if(e.key === 'Delete') deleteSelection();
-            });
-
-            window.addEventListener('resize', () => {
-                const w = window.innerWidth - 620;
-                const h = window.innerHeight - 270;
-                camera.aspect = w / h;
-                camera.updateProjectionMatrix();
-                renderer.setSize(w, h);
-            });
         }
 
-        function addKeyframe() {
-            if(!selected) return;
-            const uuid = selected.uuid;
-            if(!animationData.has(uuid)) animationData.set(uuid, {});
-            const frames = animationData.get(uuid);
-            frames[frame] = {
-                p: selected.position.clone(),
-                r: selected.rotation.clone(),
-                s: selected.scale.clone()
-            };
-            drawKeys();
+        function sculpt(type) {
+            if(!selected || !selected.geometry) return;
+            const pos = selected.geometry.attributes.position;
+            const factor = type === 'inflate' ? 1.05 : 0.95;
+            
+            for(let i=0; i<pos.count; i++) {
+                pos.setX(i, pos.getX(i) * factor);
+                pos.setY(i, pos.getY(i) * factor);
+                pos.setZ(i, pos.getZ(i) * factor);
+            }
+            pos.needsUpdate = true;
+            selected.geometry.computeVertexNormals();
         }
 
-        function drawKeys() {
-            document.querySelectorAll('.keyframe').forEach(k => k.remove());
-            if(!selected || !animationData.has(selected.uuid)) return;
-            const track = document.getElementById('track-pos');
-            const data = animationData.get(selected.uuid);
-            Object.keys(data).forEach(f => {
-                const marker = document.createElement('div');
-                marker.className = 'keyframe absolute w-2 h-4 bg-cyan-500 top-2 rounded-full border border-black';
-                marker.style.left = `${(f / totalFrames) * 100}%`;
-                track.appendChild(marker);
-            });
-        }
-
-        function applyAnimation() {
-            objects.forEach(obj => {
-                const keys = animationData.get(obj.uuid);
-                if(!keys) return;
-                const fKeys = Object.keys(keys).map(Number).sort((a,b)=>a-b);
-                if(fKeys.length === 0) return;
-
-                if(keys[frame]) {
-                    obj.position.copy(keys[frame].p);
-                    obj.rotation.copy(keys[frame].r);
-                } else {
-                    let prev = null, next = null;
-                    for(let k of fKeys) {
-                        if(k < frame) prev = k;
-                        if(k > frame && next === null) next = k;
-                    }
-                    if(prev !== null && next !== null) {
-                        const t = (frame - prev) / (next - prev);
-                        const ease = t * t * (3 - 2 * t);
-                        obj.position.lerpVectors(keys[prev].p, keys[next].p, ease);
-                        const q1 = new THREE.Quaternion().setFromEuler(keys[prev].r);
-                        const q2 = new THREE.Quaternion().setFromEuler(keys[next].r);
-                        obj.quaternion.slerpQuaternions(q1, q2, ease);
-                    }
-                }
-            });
-        }
-
-        function updateTimeline() {
-            document.getElementById('playhead').style.left = `${(frame / totalFrames) * 100}%`;
-            document.getElementById('timeline-slider').value = frame;
-            document.getElementById('hud-frame').innerText = frame;
-            const mm = Math.floor(frame / 1440);
-            const ss = Math.floor(frame / 24) % 60;
-            const ff = frame % 24;
-            document.getElementById('timer').innerText = `00:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}:${String(ff).padStart(2,'0')}`;
+        function setTMode(m) {
+            transformControls.setMode(m);
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`t-${m === 'translate' ? 'move' : m}`).classList.add('active');
         }
 
         function updateOutliner() {
             const list = document.getElementById('outliner');
             list.innerHTML = '';
-            objects.forEach(o => {
-                const item = document.createElement('div');
-                item.className = `p-2 flex justify-between items-center rounded cursor-pointer ${selected === o ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'hover:bg-white/5'}`;
-                item.innerHTML = `<span>${o.name}</span><span class="text-[7px] font-black opacity-30">PBR_NODE</span>`;
-                item.onclick = () => selectObj(o);
-                list.appendChild(item);
+            actors.forEach(a => {
+                const div = document.createElement('div');
+                div.className = `p-2 text-[10px] flex justify-between cursor-pointer rounded ${selected === a ? 'bg-orange-600/20 text-orange-400' : 'hover:bg-white/5'}`;
+                div.innerHTML = `<span>${a.name}</span><span class="opacity-20 italic">MESH</span>`;
+                div.onclick = () => select(a);
+                list.appendChild(div);
             });
         }
 
-        function toggleCinema() {
-            document.getElementById('bar-top').classList.toggle('hide');
-            document.getElementById('bar-bot').classList.toggle('hide');
+        function onWindowResize() {
+            const v = document.getElementById('viewport-main');
+            camera.aspect = v.clientWidth / v.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(v.clientWidth, v.clientHeight);
         }
 
-        function toggleGrid() { gridHelper.visible = !gridHelper.visible; }
-
-        function deleteSelection() {
-            if(!selected) return;
-            scene.remove(selected);
-            objects = objects.filter(o => o !== selected);
-            animationData.delete(selected.uuid);
-            transformControls.detach();
-            selected = null;
-            updateOutliner();
-        }
-
-        function setEnv(type) {
-            if(type === 'nebula') scene.background = new THREE.Color(0x0a001a);
-            else if(type === 'void') scene.background = new THREE.Color(0x000000);
-            else if(type === 'showroom') scene.background = new THREE.Color(0x050506);
-            else if(type === 'sunset') scene.background = new THREE.Color(0x1a0a00);
-        }
-
-        function renderLoop() {
-            requestAnimationFrame(renderLoop);
-            if(isPlaying) {
-                frame++;
-                if(frame > totalFrames) frame = 0;
-                updateTimeline();
-                applyAnimation();
-            }
+        function animate() {
+            requestAnimationFrame(animate);
             controls.update();
             renderer.render(scene, camera);
             
-            // Stats fake (for vibe)
-            if(frame % 30 === 0) {
-                document.getElementById('fps').innerText = `FPS: ${Math.floor(Math.random()*10) + 135}`;
+            // Stats fake smooth
+            if(Math.random() > 0.95) {
+                document.getElementById('fps-val').innerText = (160 + Math.random() * 5).toFixed(1) + " FPS";
             }
         }
 
