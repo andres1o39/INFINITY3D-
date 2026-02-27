@@ -3,57 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INFINITY 3D</title>
+    <title>INFINITY 3D - CINEMA PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=JetBrains+Mono&display=swap');
         
         :root {
-            --bg-dark: #121212;
-            --panel-bg: #1e1e1e;
+            --bg: #0f0f11;
+            --panel: #18181b;
             --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --text-dim: #a0a0a0;
-            --border: #333;
+            --border: #27272a;
         }
 
         body { 
             margin: 0; 
             overflow: hidden; 
-            background-color: var(--bg-dark); 
-            color: #ffffff; 
+            background-color: var(--bg); 
+            color: #e4e4e7; 
             font-family: 'Inter', sans-serif; 
+            user-select: none;
         }
 
-        .panel { background: var(--panel-bg); border: 1px solid var(--border); }
-        .active-tool { background-color: var(--accent) !important; color: white; }
+        .ui-panel { background: var(--panel); border: 1px solid var(--border); }
         
-        /* Timeline Styling */
-        input[type="range"] {
-            -webkit-appearance: none;
-            background: transparent;
+        /* Custom Context Menu */
+        #context-menu {
+            position: absolute;
+            display: none;
+            z-index: 1000;
+            width: 180px;
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+            border-radius: 6px;
+            padding: 4px;
         }
-        input[type="range"]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: var(--accent);
-            margin-top: -6px;
+        .menu-item {
+            padding: 8px 12px;
+            font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(59,130,246,0.5);
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
         }
+        .menu-item:hover { background: var(--accent); color: white; }
+        .menu-sep { height: 1px; background: #3f3f46; margin: 4px 0; }
 
-        .keyframe-dot {
+        /* Animation Keyframes */
+        .key-marker {
             position: absolute;
             width: 8px;
             height: 8px;
@@ -62,302 +62,223 @@
             top: 50%;
             margin-top: -4px;
             border: 1px solid white;
-            z-index: 5;
         }
 
-        .viewport-label {
-            pointer-events: none;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+        input[type="range"] { accent-color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <!-- Main Header -->
-    <header class="fixed top-0 left-0 w-full h-12 panel flex items-center justify-between px-6 z-50">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 w-full h-12 ui-panel flex items-center justify-between px-6 z-50">
         <div class="flex items-center space-x-6">
-            <h1 class="text-lg font-extrabold tracking-tighter text-blue-500">INFINITY 3D</h1>
-            <nav class="hidden md:flex space-x-4 text-xs font-medium text-gray-400">
-                <button onclick="addObject('box')" class="hover:text-white transition">Añadir Cubo</button>
-                <button onclick="addObject('sphere')" class="hover:text-white transition">Esfera</button>
-                <button onclick="addObject('torus')" class="hover:text-white transition">Toroide</button>
-                <div class="w-px h-4 bg-gray-700"></div>
-                <button class="text-red-400 hover:text-red-300" onclick="deleteSelected()">Borrar</button>
-            </nav>
+            <h1 class="text-lg font-black tracking-tighter text-blue-500">INFINITY 3D</h1>
+            <div class="h-4 w-px bg-zinc-800"></div>
+            <div class="flex space-x-4 text-[11px] font-semibold text-zinc-500">
+                <button onclick="spawn('box')" class="hover:text-white transition">Añadir Cubo</button>
+                <button onclick="spawn('sphere')" class="hover:text-white transition">Esfera</button>
+                <button onclick="spawn('light')" class="hover:text-white transition text-yellow-500">Luz de Punto</button>
+            </div>
         </div>
-        <div class="flex items-center space-x-4 text-[10px] text-gray-500">
-            <span id="obj-count">Objetos: 1</span>
-            <span id="fps-counter">FPS: 60</span>
+        <div class="flex items-center space-x-4 text-[10px] font-mono text-zinc-500">
+            <span id="stats-fps">FPS: 60</span>
+            <span id="stats-objs">Objetos: 0</span>
         </div>
     </header>
 
-    <!-- Left Toolbar -->
-    <aside class="fixed left-4 top-20 flex flex-col space-y-3 z-40">
-        <div class="panel p-1.5 rounded-xl shadow-2xl flex flex-col space-y-2">
-            <button id="btn-translate" onclick="setTransformMode('translate')" class="p-2.5 rounded-lg hover:bg-gray-700 transition active-tool" title="Mover (G)">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
-            </button>
-            <button id="btn-rotate" onclick="setTransformMode('rotate')" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Rotar (R)">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-            <button id="btn-scale" onclick="setTransformMode('scale')" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Escalar (S)">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            </button>
-        </div>
-        <div class="panel p-1.5 rounded-xl shadow-2xl">
-            <button onclick="resetCamera()" class="p-2.5 rounded-lg hover:bg-gray-700 transition" title="Reset Cámara">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </button>
-        </div>
+    <!-- Context Menu -->
+    <div id="context-menu" class="ui-panel">
+        <div class="menu-item" onclick="spawn('box')"><span>Añadir Cubo</span><span class="opacity-40">Shift+A</span></div>
+        <div class="menu-item" onclick="spawn('sphere')"><span>Añadir Esfera</span></div>
+        <div class="menu-item" onclick="spawn('light')"><span>Luz Cinematográfica</span></div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" onclick="deleteSelected()"><span>Borrar Seleccionado</span><span class="opacity-40">Del</span></div>
+        <div class="menu-item" onclick="resetCamera()"><span>Resetear Cámara</span></div>
+    </div>
+
+    <!-- Inspector -->
+    <aside class="fixed right-0 top-12 w-72 h-[calc(100vh-160px)] ui-panel border-l z-40 flex flex-col p-4 space-y-6 overflow-y-auto">
+        <section>
+            <h3 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Transformación</h3>
+            <div class="grid grid-cols-3 gap-2 text-[10px] font-mono">
+                <div class="bg-zinc-900 p-2 border border-zinc-800 rounded">
+                    <label class="text-red-500 block mb-1">X</label>
+                    <span id="pos-x">0.00</span>
+                </div>
+                <div class="bg-zinc-900 p-2 border border-zinc-800 rounded">
+                    <label class="text-green-500 block mb-1">Y</label>
+                    <span id="pos-y">0.00</span>
+                </div>
+                <div class="bg-zinc-900 p-2 border border-zinc-800 rounded">
+                    <label class="text-blue-500 block mb-1">Z</label>
+                    <span id="pos-z">0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Material Cinema</h3>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-[11px] mb-2"><span>Albedo Color</span></div>
+                    <input type="color" id="m-color" value="#ffffff" class="w-full h-8 bg-transparent border-none cursor-pointer">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] mb-2"><span>Roughness</span><span id="v-rough">0.5</span></div>
+                    <input type="range" id="m-rough" min="0" max="1" step="0.01" value="0.5" class="w-full">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] mb-2"><span>Metalic</span><span id="v-metal">0.0</span></div>
+                    <input type="range" id="m-metal" min="0" max="1" step="0.01" value="0" class="w-full">
+                </div>
+            </div>
+        </section>
+
+        <section class="flex-grow">
+            <h3 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Jerarquía</h3>
+            <div id="outliner" class="text-[11px] space-y-1 overflow-y-auto h-40"></div>
+        </section>
+
+        <button onclick="insertKeyframe()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center space-x-2">
+            <span class="w-2 h-2 bg-white rotate-45"></span>
+            <span>INSERTAR KEYFRAME (I)</span>
+        </button>
     </aside>
 
-    <!-- Right Properties Inspector -->
-    <aside class="fixed right-0 top-12 w-72 h-[calc(100vh-160px)] panel border-l border-gray-800 z-40 flex flex-col">
-        <div class="p-4 border-b border-gray-800 flex justify-between items-center">
-            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Inspector</span>
-            <span id="selected-name" class="text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded">Ninguno</span>
-        </div>
-        
-        <div class="flex-grow overflow-y-auto p-4 space-y-6">
-            <!-- Transform Section -->
-            <section>
-                <h3 class="text-[11px] font-bold text-blue-400 mb-3 uppercase">Transformación</h3>
-                <div class="grid grid-cols-3 gap-2 text-[10px]">
-                    <div class="bg-gray-800 p-2 rounded">
-                        <label class="text-red-500 block">X Pos</label>
-                        <span id="val-x">0.00</span>
-                    </div>
-                    <div class="bg-gray-800 p-2 rounded">
-                        <label class="text-green-500 block">Y Pos</label>
-                        <span id="val-y">0.00</span>
-                    </div>
-                    <div class="bg-gray-800 p-2 rounded">
-                        <label class="text-blue-500 block">Z Pos</label>
-                        <span id="val-z">0.00</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Material Section -->
-            <section>
-                <h3 class="text-[11px] font-bold text-blue-400 mb-3 uppercase">Material & Shading</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-1">
-                            <label>Base Color</label>
-                            <input type="color" id="prop-color" class="w-4 h-4 rounded-full border-none bg-transparent cursor-pointer">
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-1">
-                            <label>Rugosidad</label>
-                            <span id="label-rough">0.5</span>
-                        </div>
-                        <input type="range" id="prop-rough" min="0" max="1" step="0.01" value="0.5" class="w-full">
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] mb-1">
-                            <label>Metálico</label>
-                            <span id="label-metal">0.0</span>
-                        </div>
-                        <input type="range" id="prop-metal" min="0" max="1" step="0.01" value="0" class="w-full">
-                    </div>
-                </div>
-            </section>
-
-            <!-- Scene Settings -->
-            <section class="pt-4 border-t border-gray-800">
-                <h3 class="text-[11px] font-bold text-gray-500 mb-3 uppercase">Escena</h3>
-                <div class="flex items-center space-x-2">
-                    <input type="checkbox" id="prop-grid" checked>
-                    <label class="text-[10px]">Mostrar Rejilla</label>
-                </div>
-            </section>
-        </div>
-
-        <div class="p-4 bg-gray-900/50">
-            <button onclick="setKeyframe()" class="w-full py-3 bg-orange-600 hover:bg-orange-500 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-2">
-                <div class="w-2 h-2 bg-white rotate-45"></div>
-                <span>INSERTAR KEYFRAME (I)</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- Bottom Timeline -->
-    <footer class="fixed bottom-0 left-0 w-full h-36 panel border-t border-gray-800 z-50 flex flex-col">
-        <div class="h-10 flex items-center px-6 border-b border-gray-800 bg-black/20 justify-between">
+    <!-- Timeline -->
+    <footer class="fixed bottom-0 left-0 w-full h-32 ui-panel border-t z-50 flex flex-col">
+        <div class="h-10 border-b border-zinc-800 flex items-center px-6 justify-between bg-zinc-900/50">
             <div class="flex items-center space-x-6">
-                <button id="btn-play" class="hover:text-blue-400 transition">
-                    <svg id="play-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <button id="play-btn" class="text-zinc-400 hover:text-white transition">
+                    <svg id="play-svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>
-                <div class="text-[10px] font-mono text-blue-400">
-                    FRAME: <span id="ui-current-frame" class="text-white text-sm">0</span> / 250
+                <div class="text-[11px] font-mono">
+                    FRAME: <span id="cur-frame" class="text-blue-400 font-bold">0</span> / 250
                 </div>
             </div>
-            <div class="flex space-x-4">
-                <button onclick="clearKeys()" class="text-[10px] text-red-500 uppercase font-bold hover:underline">Limpiar Animación</button>
-            </div>
+            <button onclick="clearAnimation()" class="text-[10px] text-red-500 font-bold uppercase hover:underline">Limpiar Secuencia</button>
         </div>
-        
-        <div class="relative flex-grow bg-gray-900/40 select-none overflow-hidden" id="timeline-area">
-            <!-- Playhead -->
-            <div id="playhead" class="absolute top-0 left-0 w-px h-full bg-blue-500 z-20">
-                <div class="absolute -top-1 -left-1.5 w-3 h-3 bg-blue-500 rotate-45 border border-white"></div>
+        <div class="relative flex-grow bg-zinc-950 overflow-hidden" id="timeline-box">
+            <div id="playhead" class="absolute top-0 left-0 w-[2px] h-full bg-blue-500 z-20 pointer-events-none">
+                <div class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-blue-500 rotate-45 border border-white"></div>
             </div>
-            <!-- Keyframes Container -->
-            <div id="keyframes-track" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
-            <!-- Grid lines -->
-            <div id="timeline-grid" class="absolute inset-0 pointer-events-none flex justify-between px-0 opacity-10"></div>
-            <!-- Interactive Slider -->
+            <div id="key-container" class="absolute inset-0 pointer-events-none"></div>
             <input type="range" id="timeline-slider" min="0" max="250" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30">
         </div>
     </footer>
 
-    <!-- Viewport Info -->
-    <div class="fixed top-16 left-20 viewport-label text-[10px] uppercase tracking-widest text-gray-600 z-10 font-bold">
-        Perspectiva | Ciclo: <span id="cycle-type">Lineal</span>
-    </div>
-
     <script>
-        // --- INFINITY 3D ENGINE ---
+        // --- INFINITY 3D ENGINE CORE ---
         let scene, camera, renderer, controls, transformControls;
-        let objects = [];
-        let selectedObject = null;
+        let actors = [];
+        let selectedActor = null;
         let isPlaying = false;
-        let currentFrame = 0;
+        let frame = 0;
         const totalFrames = 250;
         
-        // Anim Data: { objId: { frameNumber: { pos, rot, scale } } }
-        let animationData = {};
+        // Data: actorUUID -> { frame: { pos, rot, sca } }
+        let animData = new Map();
 
         function init() {
-            // Scene Setup
+            // Escena y Niebla Cinematográfica
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x101010);
-            scene.fog = new THREE.Fog(0x101010, 10, 50);
+            scene.background = new THREE.Color(0x0a0a0b);
+            scene.fog = new THREE.Fog(0x0a0a0b, 15, 60);
 
-            // Camera
+            // Cámara
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(10, 8, 10);
+            camera.position.set(12, 8, 12);
 
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.body.appendChild(renderer.domElement);
 
-            // Lights
-            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            // Iluminación
+            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
             scene.add(ambient);
 
-            const spot = new THREE.SpotLight(0xffffff, 1);
-            spot.position.set(15, 20, 10);
-            spot.castShadow = true;
-            spot.shadow.mapSize.width = 2048;
-            spot.shadow.mapSize.height = 2048;
-            scene.add(spot);
+            const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+            scene.add(hemi);
 
-            // Floor Grid
-            const grid = new THREE.GridHelper(40, 40, 0x333333, 0x222222);
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(10, 20, 10);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            scene.add(sun);
+
+            // Grid
+            const grid = new THREE.GridHelper(40, 40, 0x222222, 0x18181b);
             scene.add(grid);
-            window.gridHelper = grid;
 
-            // Base Object
-            addObject('box');
-
-            // Interaction
+            // Controles de Cámara
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
 
+            // Transform Gizmo
             transformControls = new THREE.TransformControls(camera, renderer.domElement);
             transformControls.addEventListener('dragging-changed', (e) => controls.enabled = !e.value);
-            transformControls.addEventListener('change', updateInspectorUI);
+            transformControls.addEventListener('change', updateTransformUI);
             scene.add(transformControls);
 
-            setupUI();
-            setupTimeline();
-            animate();
+            // Events
+            setupEvents();
+            spawn('box');
+            loop();
         }
 
-        function addObject(type) {
-            let geometry;
-            if(type === 'box') geometry = new THREE.BoxGeometry(2, 2, 2);
-            if(type === 'sphere') geometry = new THREE.SphereGeometry(1.5, 32, 32);
-            if(type === 'torus') geometry = new THREE.TorusGeometry(1.2, 0.4, 16, 100);
-
-            const material = new THREE.MeshStandardMaterial({ 
-                color: Math.random() * 0xffffff,
-                roughness: 0.4,
-                metalness: 0.2
+        function setupEvents() {
+            // Clic Derecho - Menú Contextual
+            window.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const menu = document.getElementById('context-menu');
+                menu.style.display = 'block';
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
             });
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            mesh.name = `${type.toUpperCase()}_${objects.length + 1}`;
-            
-            scene.add(mesh);
-            objects.push(mesh);
-            selectObject(mesh);
-            updateObjectCount();
-        }
+            window.addEventListener('click', () => {
+                document.getElementById('context-menu').style.display = 'none';
+            });
 
-        function selectObject(obj) {
-            selectedObject = obj;
-            transformControls.attach(obj);
-            document.getElementById('selected-name').innerText = obj.name;
-            
-            // Update Props UI
-            document.getElementById('prop-color').value = '#' + obj.material.color.getHexString();
-            document.getElementById('prop-rough').value = obj.material.roughness;
-            document.getElementById('prop-metal').value = obj.material.metalness;
-            updateInspectorUI();
-            renderKeyframeDots();
-        }
-
-        function deleteSelected() {
-            if(!selectedObject) return;
-            transformControls.detach();
-            scene.remove(selectedObject);
-            objects = objects.filter(o => o !== selectedObject);
-            delete animationData[selectedObject.uuid];
-            selectedObject = null;
-            document.getElementById('selected-name').innerText = "Ninguno";
-            updateObjectCount();
-            renderKeyframeDots();
-        }
-
-        function setTransformMode(mode) {
-            transformControls.setMode(mode);
-            document.querySelectorAll('aside button').forEach(b => b.classList.remove('active-tool'));
-            document.getElementById(`btn-${mode}`).classList.add('active-tool');
-        }
-
-        function setupUI() {
-            document.getElementById('prop-color').oninput = (e) => {
-                if(selectedObject) selectedObject.material.color.set(e.target.value);
+            // Materiales
+            document.getElementById('m-color').oninput = (e) => {
+                if(selectedActor && selectedActor.material) selectedActor.material.color.set(e.target.value);
             };
-            document.getElementById('prop-rough').oninput = (e) => {
-                if(selectedObject) {
-                    selectedObject.material.roughness = e.target.value;
-                    document.getElementById('label-rough').innerText = e.target.value;
+            document.getElementById('m-rough').oninput = (e) => {
+                if(selectedActor && selectedActor.material) {
+                    selectedActor.material.roughness = e.target.value;
+                    document.getElementById('v-rough').innerText = e.target.value;
                 }
             };
-            document.getElementById('prop-metal').oninput = (e) => {
-                if(selectedObject) {
-                    selectedObject.material.metalness = e.target.value;
-                    document.getElementById('label-metal').innerText = e.target.value;
+            document.getElementById('m-metal').oninput = (e) => {
+                if(selectedActor && selectedActor.material) {
+                    selectedActor.material.metalness = e.target.value;
+                    document.getElementById('v-metal').innerText = e.target.value;
                 }
             };
-            document.getElementById('prop-grid').onchange = (e) => {
-                window.gridHelper.visible = e.target.checked;
+
+            // Timeline
+            const slider = document.getElementById('timeline-slider');
+            slider.oninput = (e) => {
+                frame = parseInt(e.target.value);
+                updateTimelineUI();
+                applyAnim();
+            };
+
+            document.getElementById('play-btn').onclick = togglePlay;
+
+            // Atajos
+            window.onkeydown = (e) => {
+                if(e.key.toLowerCase() === 'g') transformControls.setMode('translate');
+                if(e.key.toLowerCase() === 'r') transformControls.setMode('rotate');
+                if(e.key.toLowerCase() === 's') transformControls.setMode('scale');
+                if(e.key.toLowerCase() === 'i') insertKeyframe();
+                if(e.key === 'Delete') deleteSelected();
+                if(e.key === ' ') { togglePlay(); e.preventDefault(); }
             };
 
             window.onresize = () => {
@@ -365,161 +286,178 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             };
+        }
 
-            window.addEventListener('keydown', (e) => {
-                if(e.key.toLowerCase() === 'g') setTransformMode('translate');
-                if(e.key.toLowerCase() === 'r') setTransformMode('rotate');
-                if(e.key.toLowerCase() === 's') setTransformMode('scale');
-                if(e.key.toLowerCase() === 'i') setKeyframe();
-                if(e.key === ' ') { togglePlay(); e.preventDefault(); }
-                if(e.key === 'Delete') deleteSelected();
+        function spawn(type) {
+            let mesh;
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+            if(type === 'box') mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
+            else if(type === 'sphere') mesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), mat);
+            else if(type === 'light') {
+                mesh = new THREE.PointLight(0xffaa00, 2, 20);
+                mesh.add(new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffaa00})));
+            }
+
+            mesh.position.set(Math.random()*4-2, 1, Math.random()*4-2);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.name = `${type.toUpperCase()}_${actors.length + 1}`;
+            
+            scene.add(mesh);
+            actors.push(mesh);
+            select(mesh);
+            updateOutliner();
+            document.getElementById('stats-objs').innerText = `Objetos: ${actors.length}`;
+        }
+
+        function select(obj) {
+            selectedActor = obj;
+            transformControls.attach(obj);
+            if(obj.material) {
+                document.getElementById('m-color').value = '#' + obj.material.color.getHexString();
+                document.getElementById('m-rough').value = obj.material.roughness;
+                document.getElementById('m-metal').value = obj.material.metalness;
+                document.getElementById('v-rough').innerText = obj.material.roughness;
+                document.getElementById('v-metal').innerText = obj.material.metalness;
+            }
+            updateOutliner();
+            renderKeys();
+        }
+
+        function updateTransformUI() {
+            if(!selectedActor) return;
+            document.getElementById('pos-x').innerText = selectedActor.position.x.toFixed(2);
+            document.getElementById('pos-y').innerText = selectedActor.position.y.toFixed(2);
+            document.getElementById('pos-z').innerText = selectedActor.position.z.toFixed(2);
+        }
+
+        function updateOutliner() {
+            const container = document.getElementById('outliner');
+            container.innerHTML = '';
+            actors.forEach(a => {
+                const el = document.createElement('div');
+                el.className = `p-2 rounded cursor-pointer ${selectedActor === a ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-zinc-800'}`;
+                el.innerText = a.name;
+                el.onclick = () => select(a);
+                container.appendChild(el);
             });
         }
 
-        function updateInspectorUI() {
-            if(!selectedObject) return;
-            document.getElementById('val-x').innerText = selectedObject.position.x.toFixed(2);
-            document.getElementById('val-y').innerText = selectedObject.position.y.toFixed(2);
-            document.getElementById('val-z').innerText = selectedObject.position.z.toFixed(2);
+        function deleteSelected() {
+            if(!selectedActor) return;
+            scene.remove(selectedActor);
+            actors = actors.filter(a => a !== selectedActor);
+            animData.delete(selectedActor.uuid);
+            transformControls.detach();
+            selectedActor = null;
+            updateOutliner();
+            document.getElementById('stats-objs').innerText = `Objetos: ${actors.length}`;
         }
 
-        function setupTimeline() {
-            const slider = document.getElementById('timeline-slider');
-            const grid = document.getElementById('timeline-grid');
+        function resetCamera() {
+            controls.reset();
+            camera.position.set(12, 8, 12);
+        }
+
+        function insertKeyframe() {
+            if(!selectedActor) return;
+            const id = selectedActor.uuid;
+            if(!animData.has(id)) animData.set(id, {});
             
-            // Create grid markers
-            for(let i=0; i<=250; i+=25) {
-                const div = document.createElement('div');
-                div.className = "h-full border-l border-white/20 relative";
-                div.innerHTML = `<span class="absolute bottom-0 left-1 text-[8px] text-gray-600">${i}</span>`;
-                grid.appendChild(div);
-            }
-
-            slider.oninput = (e) => {
-                currentFrame = parseInt(e.target.value);
-                updateFrameUI();
-                applyAnimations();
+            const frames = animData.get(id);
+            frames[frame] = {
+                p: selectedActor.position.clone(),
+                r: selectedActor.rotation.clone(),
+                s: selectedActor.scale.clone()
             };
-
-            document.getElementById('btn-play').onclick = togglePlay;
+            renderKeys();
         }
 
-        function updateFrameUI() {
-            document.getElementById('ui-current-frame').innerText = currentFrame;
-            document.getElementById('timeline-slider').value = currentFrame;
-            const pct = (currentFrame / totalFrames) * 100;
-            document.getElementById('playhead').style.left = `${pct}%`;
+        function renderKeys() {
+            const container = document.getElementById('key-container');
+            container.innerHTML = '';
+            if(!selectedActor || !animData.has(selectedActor.uuid)) return;
+
+            const frames = animData.get(selectedActor.uuid);
+            Object.keys(frames).forEach(f => {
+                const dot = document.createElement('div');
+                dot.className = 'key-marker';
+                dot.style.left = `${(f / totalFrames) * 100}%`;
+                container.appendChild(dot);
+            });
+        }
+
+        function applyAnim() {
+            actors.forEach(a => {
+                const data = animData.get(a.uuid);
+                if(!data) return;
+
+                const sorted = Object.keys(data).map(Number).sort((a,b)=>a-b);
+                if(sorted.length === 0) return;
+
+                if(data[frame]) {
+                    a.position.copy(data[frame].p);
+                    a.rotation.copy(data[frame].r);
+                    a.scale.copy(data[frame].s);
+                    return;
+                }
+
+                let prev = null, next = null;
+                for(let f of sorted) {
+                    if(f < frame) prev = f;
+                    if(f > frame && next === null) next = f;
+                }
+
+                if(prev !== null && next !== null) {
+                    const t = (frame - prev) / (next - prev);
+                    // Smooth lerp
+                    const smoothT = t * t * (3 - 2 * t);
+                    a.position.lerpVectors(data[prev].p, data[next].p, smoothT);
+                    a.scale.lerpVectors(data[prev].s, data[next].s, smoothT);
+                    
+                    const q1 = new THREE.Quaternion().setFromEuler(data[prev].r);
+                    const q2 = new THREE.Quaternion().setFromEuler(data[next].r);
+                    a.quaternion.slerpQuaternions(q1, q2, smoothT);
+                } else if(prev !== null) {
+                    a.position.copy(data[prev].p);
+                    a.rotation.copy(data[prev].r);
+                    a.scale.copy(data[prev].s);
+                }
+            });
+        }
+
+        function updateTimelineUI() {
+            document.getElementById('cur-frame').innerText = frame;
+            document.getElementById('timeline-slider').value = frame;
+            document.getElementById('playhead').style.left = `${(frame / totalFrames) * 100}%`;
         }
 
         function togglePlay() {
             isPlaying = !isPlaying;
-            document.getElementById('play-icon').innerHTML = isPlaying ? 
+            document.getElementById('play-svg').innerHTML = isPlaying ? 
                 '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : 
                 '<path d="M8 5v14l11-7z"/>';
         }
 
-        function setKeyframe() {
-            if(!selectedObject) return;
-            const uuid = selectedObject.uuid;
-            if(!animationData[uuid]) animationData[uuid] = {};
-            
-            animationData[uuid][currentFrame] = {
-                pos: selectedObject.position.clone(),
-                rot: selectedObject.rotation.clone(),
-                sca: selectedObject.scale.clone()
-            };
-            
-            renderKeyframeDots();
+        function clearAnimation() {
+            if(selectedActor) animData.delete(selectedActor.uuid);
+            renderKeys();
         }
 
-        function renderKeyframeDots() {
-            const track = document.getElementById('keyframes-track');
-            track.innerHTML = '';
-            if(!selectedObject || !animationData[selectedObject.uuid]) return;
-
-            const keys = Object.keys(animationData[selectedObject.uuid]);
-            keys.forEach(f => {
-                const dot = document.createElement('div');
-                dot.className = 'keyframe-dot';
-                dot.style.left = `${(f / totalFrames) * 100}%`;
-                track.appendChild(dot);
-            });
-        }
-
-        function applyAnimations() {
-            objects.forEach(obj => {
-                const data = animationData[obj.uuid];
-                if(!data) return;
-
-                const frames = Object.keys(data).map(Number).sort((a,b) => a - b);
-                if(frames.length === 0) return;
-
-                // Exact match
-                if(data[currentFrame]) {
-                    obj.position.copy(data[currentFrame].pos);
-                    obj.rotation.copy(data[currentFrame].rot);
-                    obj.scale.copy(data[currentFrame].sca);
-                    return;
-                }
-
-                // Find keyframes to interpolate
-                let prev = null, next = null;
-                for(let f of frames) {
-                    if(f < currentFrame) prev = f;
-                    if(f > currentFrame && next === null) next = f;
-                }
-
-                if(prev !== null && next !== null) {
-                    const t = (currentFrame - prev) / (next - prev);
-                    const k1 = data[prev];
-                    const k2 = data[next];
-                    
-                    obj.position.lerpVectors(k1.pos, k2.pos, t);
-                    obj.scale.lerpVectors(k1.sca, k2.sca, t);
-                    
-                    // Rotation Lerp (Euler simple)
-                    obj.rotation.x = THREE.MathUtils.lerp(k1.rot.x, k2.rot.x, t);
-                    obj.rotation.y = THREE.MathUtils.lerp(k1.rot.y, k2.rot.y, t);
-                    obj.rotation.z = THREE.MathUtils.lerp(k1.rot.z, k2.rot.z, t);
-                } else if (prev !== null) {
-                    obj.position.copy(data[prev].pos);
-                    obj.rotation.copy(data[prev].rot);
-                    obj.scale.copy(data[prev].sca);
-                }
-            });
-        }
-
-        function clearKeys() {
-            if(selectedObject) {
-                delete animationData[selectedObject.uuid];
-                renderKeyframeDots();
-            }
-        }
-
-        function resetCamera() {
-            camera.position.set(10, 8, 10);
-            controls.target.set(0, 0, 0);
-        }
-
-        function updateObjectCount() {
-            document.getElementById('obj-count').innerText = `Objetos: ${objects.length}`;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
+        function loop() {
+            requestAnimationFrame(loop);
             if(isPlaying) {
-                currentFrame++;
-                if(currentFrame > totalFrames) currentFrame = 0;
-                updateFrameUI();
-                applyAnimations();
+                frame++;
+                if(frame > totalFrames) frame = 0;
+                updateTimelineUI();
+                applyAnim();
             }
-
             controls.update();
             renderer.render(scene, camera);
         }
 
-        window.onload = init;
+        init();
     </script>
 </body>
 </html>
