@@ -3,338 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INFINITY 3D - ULTIMATE</title>
+    <title>INFINITY 3D - CINEMA MASTER</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lights/RectAreaLightUniformsLib.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;600;900&display=swap');
         
         :root {
-            --bg-deep: #050506;
-            --panel-bg: #121214;
-            --panel-border: #222226;
-            --accent-blue: #0070f3;
-            --accent-green: #00dfd8;
-            --accent-orange: #f5a623;
-            --text-main: #ededed;
-            --text-muted: #888888;
+            --accent: #e5c07b;
+            --bg: #0a0a0b;
+            --panel: #121214;
+            --border: rgba(255,255,255,0.05);
         }
 
         body { 
             margin: 0; 
             overflow: hidden; 
-            background-color: var(--bg-deep); 
-            color: var(--text-main); 
-            font-family: 'Inter', sans-serif; 
-            font-size: 11px;
+            background: var(--bg); 
+            color: #d1d1d1; 
+            font-family: 'Inter', sans-serif;
+            user-select: none;
         }
 
-        /* UI Overlays */
-        .glass { background: rgba(18, 18, 20, 0.8); backdrop-filter: blur(10px); }
-        .border-main { border: 1px solid var(--panel-border); }
-        .sidebar { width: 300px; height: 100vh; position: fixed; top: 0; z-index: 40; display: flex; flex-direction: column; }
+        /* UI Layout */
+        .editor-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 340px;
+            grid-template-rows: 48px 1fr 200px;
+            height: 100vh;
+        }
+
+        .panel { background: var(--panel); border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; }
+        .header { grid-column: 1 / -1; background: #000; display: flex; items-center: center; padding: 0 20px; z-index: 100; }
+        .viewport { grid-column: 2 / 3; grid-row: 2 / 3; position: relative; background: #050505; }
+        .sidebar-left { grid-column: 1 / 2; grid-row: 2 / 3; }
+        .sidebar-right { grid-column: 3 / 4; grid-row: 2 / 3; overflow-y: auto; }
+        .timeline { grid-column: 1 / -1; grid-row: 3 / 4; border-top: 2px solid #1a1a1d; }
+
+        /* Cinema Elements */
+        .cinemascope {
+            position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .black-bar { height: 12%; background: #000; transition: 0.5s ease; }
+        .hidden-bar { height: 0%; }
+
+        /* Inputs */
+        .n-input { background: #000; border: 1px solid #222; color: var(--accent); font-family: 'JetBrains Mono'; font-size: 11px; padding: 4px; border-radius: 3px; width: 100%; }
+        .label { font-size: 9px; font-weight: 800; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
         
-        /* Custom Inputs */
-        input[type="number"], input[type="text"], select {
-            background: #1a1a1d;
-            border: 1px solid #333;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-        }
-        
-        input[type="range"] {
-            -webkit-appearance: none;
-            background: #333;
-            height: 4px;
-            border-radius: 2px;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
-            background: var(--accent-blue);
-            border-radius: 50%;
-            cursor: pointer;
-        }
+        input[type="range"] { -webkit-appearance: none; background: #222; height: 2px; border-radius: 5px; width: 100%; margin: 10px 0; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }
 
-        /* Context Menu */
-        #ctx-menu {
-            position: fixed; display: none; z-index: 1000;
-            background: #18181b; border: 1px solid #3f3f46;
-            border-radius: 6px; padding: 5px; min-width: 200px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        .ctx-item { padding: 8px 12px; cursor: pointer; border-radius: 4px; display: flex; justify-content: space-between; }
-        .ctx-item:hover { background: var(--accent-blue); }
+        /* Buttons */
+        .btn-cinema { background: #1a1a1d; border: 1px solid #333; padding: 6px 12px; font-size: 10px; font-weight: 700; color: #aaa; border-radius: 4px; transition: 0.3s; }
+        .btn-cinema:hover { border-color: var(--accent); color: #fff; background: #252529; }
+        .btn-active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-        /* Tabs */
-        .tab-btn { padding: 8px 16px; border-bottom: 2px solid transparent; opacity: 0.5; transition: 0.2s; }
-        .tab-btn.active { border-color: var(--accent-blue); opacity: 1; }
-
-        .viewport-label { pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        /* Timeline Marker */
+        .keyframe { position: absolute; width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); top: 50%; margin-top: -4px; border: 1px solid #000; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-    <!-- Main Viewport Labels -->
-    <div class="fixed top-16 left-[320px] viewport-label z-10 space-y-1">
-        <div class="flex items-center space-x-2">
-            <span class="bg-blue-600 text-[9px] px-1.5 py-0.5 rounded-sm font-black uppercase">Perspectiva</span>
-            <span class="text-white/50 text-[10px]">Render: PBR Realtime</span>
-        </div>
-        <div class="text-[9px] text-white/30 font-mono" id="render-stats">Vértices: 0 | Caras: 0 | Objetos: 0</div>
-    </div>
-
-    <!-- Top Toolbar -->
-    <header class="fixed top-0 left-0 w-full h-12 glass border-b border-main flex items-center justify-between px-4 z-50">
-        <div class="flex items-center space-x-8">
-            <div class="flex flex-col">
-                <h1 class="text-lg font-black tracking-tighter text-white leading-none">INFINITY <span class="text-blue-500">3D</span></h1>
-                <span class="text-[8px] uppercase tracking-[0.3em] text-blue-400 font-bold">Ultimate Studio v5.0</span>
-            </div>
-            <div class="flex space-x-1">
-                <button onclick="spawn('box')" class="px-3 py-1.5 hover:bg-white/10 rounded transition text-[10px] font-bold">Cubo</button>
-                <button onclick="spawn('sphere')" class="px-3 py-1.5 hover:bg-white/10 rounded transition text-[10px] font-bold">Esfera</button>
-                <button onclick="spawn('plane')" class="px-3 py-1.5 hover:bg-white/10 rounded transition text-[10px] font-bold">Plano</button>
-                <div class="w-px h-4 bg-zinc-800 self-center mx-2"></div>
-                <button onclick="spawn('light')" class="px-3 py-1.5 text-yellow-500 hover:bg-yellow-500/10 rounded transition text-[10px] font-bold">Luz Punto</button>
-                <button onclick="spawn('spot')" class="px-3 py-1.5 text-orange-500 hover:bg-orange-500/10 rounded transition text-[10px] font-bold">Spotlight</button>
-            </div>
-        </div>
-
-        <div class="flex items-center space-x-6">
-            <div class="flex items-center bg-black/40 rounded-full px-4 py-1.5 border border-white/5 space-x-4">
-                <div class="flex flex-col items-center">
-                    <span class="text-[8px] text-zinc-500 font-bold uppercase">CPU</span>
-                    <span class="text-[10px] text-green-400 font-mono">12%</span>
-                </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-[8px] text-zinc-500 font-bold uppercase">FPS</span>
-                    <span class="text-[10px] text-blue-400 font-mono" id="fps-counter">60</span>
+    <div class="editor-container">
+        <!-- TOP NAV -->
+        <header class="header border-b border-white/5 flex justify-between">
+            <div class="flex items-center gap-10">
+                <h1 class="font-black text-white text-lg tracking-tighter">INFINITY <span class="text-[#e5c07b]">PRO</span></h1>
+                <div class="flex gap-2">
+                    <button onclick="spawn('cube')" class="btn-cinema">+ Cubo</button>
+                    <button onclick="spawn('sphere')" class="btn-cinema">+ Esfera</button>
+                    <button onclick="spawn('light-panel')" class="btn-cinema text-blue-400">+ Panel LED</button>
+                    <button onclick="spawn('spotlight')" class="btn-cinema text-yellow-500">+ Foco Focal</button>
                 </div>
             </div>
-            <button class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-md text-[10px] font-black uppercase transition-all shadow-lg shadow-blue-900/30">Render 4K</button>
-        </div>
-    </header>
-
-    <!-- Context Menu -->
-    <div id="ctx-menu" class="glass shadow-2xl">
-        <div class="ctx-item" onclick="spawn('box')"><span>Añadir Geometría</span><span class="opacity-30">Shift+A</span></div>
-        <div class="ctx-item" onclick="spawn('light')"><span>Añadir Luz</span><span class="opacity-30">L</span></div>
-        <div class="menu-sep h-px bg-white/10 my-1"></div>
-        <div class="ctx-item" onclick="duplicateSelected()"><span>Duplicar</span><span class="opacity-30">Ctrl+D</span></div>
-        <div class="ctx-item text-red-400" onclick="deleteSelected()"><span>Borrar</span><span class="opacity-30">Del</span></div>
-        <div class="menu-sep h-px bg-white/10 my-1"></div>
-        <div class="ctx-item" onclick="focusCamera()"><span>Enfocar Selección</span><span class="opacity-30">F</span></div>
-    </div>
-
-    <!-- Left Sidebar: Outliner & Assets -->
-    <aside class="sidebar left-0 border-r border-main glass pt-14">
-        <div class="flex border-b border-main">
-            <button class="tab-btn active text-[10px] font-bold uppercase tracking-widest">Escena</button>
-            <button class="tab-btn text-[10px] font-bold uppercase tracking-widest">Activos</button>
-        </div>
-        
-        <!-- Outliner -->
-        <div class="flex-grow overflow-y-auto p-4 custom-scroll">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-[10px] font-black text-zinc-500 uppercase">Jerarquía</h3>
-                <span class="text-[9px] text-zinc-600" id="obj-total">0 Objetos</span>
+            <div class="flex items-center gap-4">
+                <div class="text-[9px] font-mono text-zinc-500">ENGINE: V12.4 | FPS: <span id="fps-counter">60</span></div>
+                <button class="bg-[#e5c07b] text-black px-4 py-1.5 rounded font-black text-[11px] uppercase shadow-lg shadow-yellow-900/20">Render Final</button>
             </div>
-            <div id="outliner-list" class="space-y-0.5">
-                <!-- Dinámico -->
+        </header>
+
+        <!-- OUTLINER (Left) -->
+        <aside class="panel sidebar-left">
+            <div class="p-3 bg-black/40 border-b border-white/5 flex justify-between items-center">
+                <span class="text-[10px] font-black uppercase tracking-widest text-zinc-400">Escena</span>
+                <span class="text-[9px] bg-zinc-800 px-1 rounded" id="obj-total">0</span>
             </div>
-        </div>
-
-        <!-- Mini Preview Area -->
-        <div class="h-48 border-t border-main p-4 bg-black/20">
-            <h3 class="text-[10px] font-black text-zinc-500 uppercase mb-2">Previsualización PBR</h3>
-            <div id="asset-preview" class="w-full h-32 rounded bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-700 text-[9px] uppercase italic">
-                No hay selección
+            <div id="outliner" class="flex-grow p-2 space-y-0.5 overflow-y-auto">
+                <!-- Objects appear here -->
             </div>
-        </div>
-    </aside>
-
-    <!-- Right Sidebar: Inspector -->
-    <aside class="sidebar right-0 border-l border-main glass pt-14 w-[320px]">
-        <div class="flex border-b border-main">
-            <button class="tab-btn active text-[10px] font-bold uppercase tracking-widest">Objeto</button>
-            <button class="tab-btn text-[10px] font-bold uppercase tracking-widest">Entorno</button>
-            <button class="tab-btn text-[10px] font-bold uppercase tracking-widest">Render</button>
-        </div>
-
-        <div class="flex-grow overflow-y-auto p-5 space-y-8 custom-scroll">
-            <!-- Transform Section -->
-            <section>
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-[10px] font-black text-blue-500 uppercase">Transformación</h3>
-                    <button class="text-[9px] text-zinc-600 hover:text-white underline">Reset</button>
+            <div class="p-4 bg-black/20 border-t border-white/5">
+                <span class="label">Atmósfera</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setWorld('day')" class="btn-cinema">Día Claro</button>
+                    <button onclick="setWorld('night')" class="btn-cinema">Noche Azul</button>
+                    <button onclick="setWorld('sunset')" class="btn-cinema">Atardecer</button>
+                    <button onclick="setWorld('studio')" class="btn-cinema btn-active" id="btn-studio">Estudio</button>
                 </div>
-                <div class="space-y-3">
-                    <div class="grid grid-cols-4 items-center gap-2">
-                        <span class="text-[9px] text-zinc-500 uppercase">Pos</span>
-                        <input type="number" id="t-px" value="0" step="0.1" class="w-full">
-                        <input type="number" id="t-py" value="0" step="0.1" class="w-full">
-                        <input type="number" id="t-pz" value="0" step="0.1" class="w-full">
-                    </div>
-                    <div class="grid grid-cols-4 items-center gap-2">
-                        <span class="text-[9px] text-zinc-500 uppercase">Rot</span>
-                        <input type="number" id="t-rx" value="0" class="w-full">
-                        <input type="number" id="t-ry" value="0" class="w-full">
-                        <input type="number" id="t-rz" value="0" class="w-full">
-                    </div>
-                    <div class="grid grid-cols-4 items-center gap-2">
-                        <span class="text-[9px] text-zinc-500 uppercase">Esc</span>
-                        <input type="number" id="t-sx" value="1" class="w-full">
-                        <input type="number" id="t-sy" value="1" class="w-full">
-                        <input type="number" id="t-sz" value="1" class="w-full">
-                    </div>
-                </div>
-            </section>
-
-            <!-- Material Section -->
-            <section class="bg-white/5 p-4 rounded-lg border border-white/5">
-                <h3 class="text-[10px] font-black text-green-400 uppercase mb-4">Material Studio</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between mb-2"><span>Albedo Color</span><span id="hex-label">#FFFFFF</span></div>
-                        <input type="color" id="m-color" class="w-full h-8 bg-transparent border-none cursor-pointer rounded overflow-hidden">
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Rugosidad</span><span id="rough-label">0.50</span></div>
-                        <input type="range" id="m-rough" min="0" max="1" step="0.01" value="0.5" class="w-full">
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Metálico</span><span id="metal-label">0.00</span></div>
-                        <input type="range" id="m-metal" min="0" max="1" step="0.01" value="0" class="w-full">
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1"><span>Emisivo</span><span id="emit-label">0.00</span></div>
-                        <input type="range" id="m-emit" min="0" max="5" step="0.1" value="0" class="w-full">
-                    </div>
-                </div>
-            </section>
-
-            <!-- Post Process -->
-            <section>
-                <h3 class="text-[10px] font-black text-orange-500 uppercase mb-4">Post-Procesado</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px]">Oclusión Ambiental</span>
-                        <input type="checkbox" checked>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px]">Bloom (Resplandor)</span>
-                        <input type="checkbox" id="pp-bloom" checked>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1 text-[9px]"><span>Exposición</span></div>
-                        <input type="range" id="pp-expo" min="0.1" max="3" step="0.1" value="1" class="w-full accent-orange-500">
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Keyframe Action -->
-        <div class="p-6 bg-blue-600/10 border-t border-main">
-            <button onclick="addKey()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-[11px] font-black uppercase tracking-widest transition shadow-2xl shadow-blue-900/40 flex items-center justify-center space-x-3">
-                <span class="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></span>
-                <span>Grabar Keyframe (I)</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- Bottom Timeline: Advanced Sequence -->
-    <footer class="fixed bottom-0 left-[300px] w-[calc(100vw-620px)] h-48 glass border-t border-main z-40 flex flex-col">
-        <div class="h-10 bg-black/40 border-b border-main flex items-center justify-between px-6">
-            <div class="flex items-center space-x-6">
-                <button id="play-btn" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
-                    <svg id="play-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-                <div class="h-4 w-px bg-white/10"></div>
-                <div class="font-mono text-[14px] font-bold text-blue-400" id="timecode">00:00:00:00</div>
             </div>
-            <div class="flex space-x-4">
-                <button class="text-[9px] uppercase font-bold text-zinc-500 hover:text-white">Capa de Video</button>
-                <button class="text-[9px] uppercase font-bold text-zinc-500 hover:text-white">Capa de Audio</button>
-                <button onclick="clearTimeline()" class="text-[9px] uppercase font-bold text-red-600 hover:text-red-400">Limpiar</button>
-            </div>
-        </div>
+        </aside>
 
-        <div class="relative flex-grow bg-[#08080a] overflow-hidden" id="timeline-area">
-            <!-- Time Markers -->
-            <div id="timeline-ruler" class="absolute top-0 left-0 w-full h-6 border-b border-white/5 flex pointer-events-none opacity-20 text-[7px] font-mono p-1"></div>
+        <!-- VIEWPORT (Middle) -->
+        <main class="viewport" id="viewport">
+            <div class="cinemascope" id="cinema-bars">
+                <div class="black-bar" id="bar-top"></div>
+                <div class="black-bar" id="bar-bottom"></div>
+            </div>
             
-            <!-- Tracks -->
-            <div class="absolute top-8 left-0 w-full space-y-4 p-4">
-                <div class="h-4 bg-white/5 rounded-full relative" id="track-pos">
-                    <span class="absolute -top-3 left-0 text-[8px] uppercase text-zinc-600 font-bold">Posición</span>
+            <!-- HUD -->
+            <div class="absolute top-6 left-6 z-20 pointer-events-none">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                    <span class="text-[11px] font-black tracking-widest text-white">REC 4K PRORES</span>
                 </div>
-                <div class="h-4 bg-white/5 rounded-full relative" id="track-rot">
-                    <span class="absolute -top-3 left-0 text-[8px] uppercase text-zinc-600 font-bold">Rotación</span>
+                <div class="text-[9px] font-mono text-white/50">TC: <span id="tc-display">00:00:00:00</span></div>
+            </div>
+
+            <div class="absolute bottom-6 left-6 z-20 flex gap-4 pointer-events-none">
+                <div class="bg-black/80 p-3 rounded-lg border border-white/10 backdrop-blur">
+                    <div class="text-[8px] uppercase text-zinc-500 font-black mb-1">Lente Activo</div>
+                    <div class="text-[12px] font-mono text-white"><span id="hud-lens">50</span>mm f/1.4</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- INSPECTOR (Right) -->
+        <aside class="panel sidebar-right">
+            <div class="flex border-b border-white/5 bg-black/60 font-black text-[9px] tracking-widest text-center">
+                <div class="flex-1 py-4 border-b-2 border-[#e5c07b] text-[#e5c07b]">AJUSTES</div>
+                <div class="flex-1 py-4 opacity-30 hover:opacity-100 transition cursor-pointer">FISICA</div>
+                <div class="flex-1 py-4 opacity-30 hover:opacity-100 transition cursor-pointer">LUTS</div>
+            </div>
+
+            <div class="p-5 space-y-8">
+                <!-- Transform -->
+                <section>
+                    <span class="label">Transformación</span>
+                    <div class="grid grid-cols-3 gap-2 mt-2">
+                        <div><span class="text-[8px] text-zinc-600">X</span><input type="number" id="t-px" class="n-input"></div>
+                        <div><span class="text-[8px] text-zinc-600">Y</span><input type="number" id="t-py" class="n-input"></div>
+                        <div><span class="text-[8px] text-zinc-600">Z</span><input type="number" id="t-pz" class="n-input"></div>
+                    </div>
+                </section>
+
+                <!-- Cinematic PBR Material -->
+                <section class="bg-black/30 p-4 rounded border border-white/5">
+                    <span class="label text-[#e5c07b]">Material Fotorrealista</span>
+                    <div class="space-y-4 mt-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold">Base Color</span>
+                            <input type="color" id="m-color" class="w-8 h-8 bg-transparent border-none">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px]"><span>Metálico (Reflejo)</span><span id="v-metal">0.2</span></div>
+                            <input type="range" id="m-metal" min="0" max="1" step="0.01" value="0.2">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px]"><span>Rugosidad (Mate)</span><span id="v-rough">0.4</span></div>
+                            <input type="range" id="m-rough" min="0" max="1" step="0.01" value="0.4">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px]"><span>Emisión (Bloom)</span><span id="v-glow">0.0</span></div>
+                            <input type="range" id="m-glow" min="0" max="10" step="0.1" value="0">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Optical Settings -->
+                <section>
+                    <span class="label text-red-500">Óptica de Cine</span>
+                    <div class="space-y-4 mt-3">
+                        <div>
+                            <div class="flex justify-between text-[9px]"><span>Distancia Focal</span><span id="v-lens">50</span>mm</div>
+                            <input type="range" id="c-lens" min="15" max="150" value="50">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px]"><span>Exposición</span><span id="v-expo">1.0</span></div>
+                            <input type="range" id="c-expo" min="0.1" max="5" step="0.1" value="1.0">
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-y border-white/5">
+                            <span class="text-[10px] font-bold">Cámara en Mano</span>
+                            <input type="checkbox" id="c-shake" class="accent-[#e5c07b]">
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="p-4 mt-auto">
+                <button onclick="addKey()" class="w-full py-3 bg-[#e5c07b] text-black font-black uppercase text-[10px] rounded hover:bg-white transition-all">Grabar Fotograma (K)</button>
+            </div>
+        </aside>
+
+        <!-- TIMELINE (Bottom) -->
+        <footer class="panel timeline">
+            <div class="h-10 bg-black/80 border-b border-white/5 flex items-center justify-between px-6">
+                <div class="flex items-center gap-6">
+                    <button id="play-btn" class="w-7 h-7 flex items-center justify-center rounded-full bg-[#e5c07b] text-black">
+                        <svg id="play-svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <div class="font-mono text-[14px] text-[#e5c07b] font-bold" id="timer">00:00:00:00</div>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="toggleBars()" class="text-[9px] font-bold text-zinc-500 hover:text-white uppercase">Modo Cinemascope</button>
+                    <button onclick="resetScene()" class="text-[9px] font-bold text-red-500 hover:text-red-400 uppercase">Reiniciar Escena</button>
                 </div>
             </div>
 
-            <!-- Playhead -->
-            <div id="playhead" class="absolute top-0 left-0 w-[2px] h-full bg-blue-500 z-50">
-                <div class="absolute -top-1 -left-[5px] w-3 h-3 bg-blue-500 rotate-45 border border-white"></div>
+            <div class="relative flex-grow bg-[#0c0c0d] overflow-hidden" id="timeline-area">
+                <!-- Tracks -->
+                <div class="p-4 space-y-4">
+                    <div class="h-6 bg-white/5 rounded-sm relative" id="track-main">
+                        <span class="absolute -top-3 left-0 text-[7px] font-black uppercase text-zinc-700">Canal de Animación</span>
+                    </div>
+                </div>
+                
+                <!-- Playhead -->
+                <div id="playhead" class="absolute top-0 left-0 w-0.5 h-full bg-red-600 z-50">
+                    <div class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-red-600 rotate-45 border border-white"></div>
+                </div>
+                <input type="range" id="timeline-slider" min="0" max="240" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-[60]">
             </div>
-            <input type="range" id="timeline-slider" min="0" max="250" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-[60]">
-        </div>
-    </footer>
+        </footer>
+    </div>
 
     <script>
-        // --- INFINITY 3D ULTIMATE CORE ---
+        // --- CINEMA ENGINE CORE ---
         let scene, camera, renderer, controls, transformControls;
-        let objects = [];
+        let actors = [];
         let selected = null;
-        let isPlaying = false;
+        let playing = false;
         let frame = 0;
-        const totalFrames = 250;
-        
-        // Anim Data: UUID -> { frame: { pos, rot, sca } }
-        let animationMap = new Map();
+        const maxFrames = 240;
+        let animMap = new Map();
 
         function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050506);
-            scene.fog = new THREE.FogExp2(0x050506, 0.012);
+            THREE.RectAreaLightUniformsLib.init();
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(15, 10, 15);
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.FogExp2(0x050505, 0.015);
+
+            const w = window.innerWidth - 640;
+            const h = window.innerHeight - 248;
+            camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 1000);
+            camera.position.set(12, 8, 12);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
-            document.body.appendChild(renderer.domElement);
 
-            // Lighting Setup
-            const ambient = new THREE.AmbientLight(0xffffff, 0.2);
-            scene.add(ambient);
+            document.getElementById('viewport').appendChild(renderer.domElement);
 
-            const hemi = new THREE.HemisphereLight(0x0070f3, 0xf5a623, 0.4);
-            scene.add(hemi);
+            // -- INITIAL LIGHTING (No more black screen) --
+            const amb = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(amb);
 
-            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-            sun.position.set(20, 30, 10);
+            const sun = new THREE.DirectionalLight(0xfff5e1, 1.5);
+            sun.position.set(10, 20, 10);
             sun.castShadow = true;
-            sun.shadow.mapSize.set(4096, 4096);
+            sun.shadow.mapSize.set(2048, 2048);
             scene.add(sun);
 
+            // Area light for realism
+            const area = new THREE.RectAreaLight(0xffffff, 2, 10, 10);
+            area.position.set(-10, 10, -5);
+            area.lookAt(0,0,0);
+            scene.add(area);
+
             // Studio Grid
-            const grid = new THREE.GridHelper(60, 60, 0x1a1a1d, 0x111114);
+            const grid = new THREE.GridHelper(50, 50, 0x111111, 0x080808);
             scene.add(grid);
 
             // Controls
@@ -347,60 +292,53 @@
             transformControls.addEventListener('change', syncUI);
             scene.add(transformControls);
 
-            setupInterface();
-            spawn('box');
+            setupUI();
+            spawn('cube');
             animate();
         }
 
         function spawn(type) {
-            let mesh;
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: 0xcccccc, 
-                roughness: 0.4, 
-                metalness: 0.1,
-                envMapIntensity: 1 
-            });
+            let geometry, material, mesh;
+            material = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.2 });
 
-            if(type === 'box') mesh = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), mat);
-            else if(type === 'sphere') mesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 64, 64), mat);
-            else if(type === 'plane') {
-                mesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), mat);
-                mesh.rotation.x = -Math.PI / 2;
-            } else if(type === 'light' || type === 'spot') {
-                const color = type === 'light' ? 0xffaa00 : 0xffffff;
-                const light = type === 'light' ? new THREE.PointLight(color, 2, 30) : new THREE.SpotLight(color, 5, 50);
-                const helper = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: color}));
-                light.add(helper);
-                mesh = light;
-                if(type === 'spot') { mesh.castShadow = true; mesh.position.y = 10; }
+            if(type === 'cube') geometry = new THREE.BoxGeometry(3, 3, 3);
+            else if(type === 'sphere') geometry = new THREE.SphereGeometry(2, 64, 64);
+            else if(type === 'light-panel') {
+                mesh = new THREE.RectAreaLight(0x0088ff, 10, 4, 4);
+                mesh.position.set(5, 5, 0);
+                const visual = new THREE.Mesh(new THREE.PlaneGeometry(4,4), new THREE.MeshBasicMaterial({color: 0x0088ff, side: THREE.DoubleSide}));
+                mesh.add(visual);
+            } else if(type === 'spotlight') {
+                mesh = new THREE.SpotLight(0xffaa00, 20, 40, Math.PI/6, 0.5);
+                mesh.position.set(0, 10, 0);
+                mesh.castShadow = true;
             }
 
-            mesh.position.set(Math.random()*6-3, type==='light'?5:1, Math.random()*6-3);
+            if(!mesh) mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.name = `${type.toUpperCase()}_${actors.length + 1}`;
+            mesh.position.y = 1.5;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            mesh.name = `${type.toUpperCase()}_${objects.length + 1}`;
-            
+
             scene.add(mesh);
-            objects.push(mesh);
+            actors.push(mesh);
             select(mesh);
             updateOutliner();
-            updateStats();
         }
 
         function select(obj) {
             selected = obj;
             transformControls.attach(obj);
-            
-            // UI Update
             if(obj.material) {
                 document.getElementById('m-color').value = '#' + obj.material.color.getHexString();
-                document.getElementById('m-rough').value = obj.material.roughness;
                 document.getElementById('m-metal').value = obj.material.metalness;
-                document.getElementById('m-emit').value = obj.material.emissiveIntensity || 0;
+                document.getElementById('m-rough').value = obj.material.roughness;
+                document.getElementById('m-glow').value = obj.material.emissiveIntensity || 0;
             }
             syncUI();
             updateOutliner();
-            renderKeyMarkers();
+            drawKeys();
         }
 
         function syncUI() {
@@ -408,235 +346,203 @@
             document.getElementById('t-px').value = selected.position.x.toFixed(2);
             document.getElementById('t-py').value = selected.position.y.toFixed(2);
             document.getElementById('t-pz').value = selected.position.z.toFixed(2);
-            
-            document.getElementById('t-rx').value = THREE.MathUtils.radToDeg(selected.rotation.x).toFixed(0);
-            document.getElementById('t-ry').value = THREE.MathUtils.radToDeg(selected.rotation.y).toFixed(0);
-            document.getElementById('t-rz').value = THREE.MathUtils.radToDeg(selected.rotation.z).toFixed(0);
-
-            document.getElementById('t-sx').value = selected.scale.x.toFixed(2);
-            document.getElementById('t-sy').value = selected.scale.y.toFixed(2);
-            document.getElementById('t-sz').value = selected.scale.z.toFixed(2);
-
-            if(selected.material) {
-                document.getElementById('hex-label').innerText = '#' + selected.material.color.getHexString().toUpperCase();
-                document.getElementById('rough-label').innerText = parseFloat(selected.material.roughness).toFixed(2);
-                document.getElementById('metal-label').innerText = parseFloat(selected.material.metalness).toFixed(2);
-            }
         }
 
-        function setupInterface() {
-            // Material Change
-            document.getElementById('m-color').oninput = (e) => { if(selected?.material) selected.material.color.set(e.target.value); syncUI(); };
-            document.getElementById('m-rough').oninput = (e) => { if(selected?.material) selected.material.roughness = e.target.value; syncUI(); };
-            document.getElementById('m-metal').oninput = (e) => { if(selected?.material) selected.material.metalness = e.target.value; syncUI(); };
-            document.getElementById('m-emit').oninput = (e) => { 
+        function setupUI() {
+            // Material Update
+            document.getElementById('m-color').oninput = (e) => { if(selected?.material) selected.material.color.set(e.target.value); };
+            document.getElementById('m-metal').oninput = (e) => { 
+                if(selected?.material) {
+                    selected.material.metalness = e.target.value; 
+                    document.getElementById('v-metal').innerText = e.target.value;
+                }
+            };
+            document.getElementById('m-rough').oninput = (e) => { 
+                if(selected?.material) {
+                    selected.material.roughness = e.target.value;
+                    document.getElementById('v-rough').innerText = e.target.value;
+                }
+            };
+            document.getElementById('m-glow').oninput = (e) => { 
                 if(selected?.material) {
                     selected.material.emissive.set(selected.material.color);
                     selected.material.emissiveIntensity = e.target.value;
-                    document.getElementById('emit-label').innerText = e.target.value;
+                    document.getElementById('v-glow').innerText = e.target.value;
                 }
             };
 
-            // Post Process
-            document.getElementById('pp-expo').oninput = (e) => { renderer.toneMappingExposure = e.target.value; };
+            // Lens Update
+            document.getElementById('c-lens').oninput = (e) => {
+                camera.fov = 2 * Math.atan(18 / e.target.value) * (180 / Math.PI);
+                camera.updateProjectionMatrix();
+                document.getElementById('v-lens').innerText = e.target.value;
+                document.getElementById('hud-lens').innerText = e.target.value;
+            };
+
+            document.getElementById('c-expo').oninput = (e) => {
+                renderer.toneMappingExposure = e.target.value;
+                document.getElementById('v-expo').innerText = e.target.value;
+            };
 
             // Timeline
             const slider = document.getElementById('timeline-slider');
             slider.oninput = (e) => {
                 frame = parseInt(e.target.value);
                 updateTimeline();
-                applyAnimation();
+                applyAnim();
             };
 
-            document.getElementById('play-btn').onclick = togglePlay;
+            document.getElementById('play-btn').onclick = () => {
+                playing = !playing;
+                document.getElementById('play-svg').innerHTML = playing ? 
+                    '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+            };
 
-            // Context Menu
-            window.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const menu = document.getElementById('ctx-menu');
-                menu.style.display = 'block';
-                menu.style.left = e.pageX + 'px';
-                menu.style.top = e.pageY + 'px';
-            });
-            window.addEventListener('click', () => { document.getElementById('ctx-menu').style.display = 'none'; });
-
-            // Shortcuts
-            window.onkeydown = (e) => {
+            // Context/Shortcuts
+            window.addEventListener('keydown', (e) => {
+                if(e.key.toLowerCase() === 'k') addKey();
                 if(e.key.toLowerCase() === 'g') transformControls.setMode('translate');
                 if(e.key.toLowerCase() === 'r') transformControls.setMode('rotate');
                 if(e.key.toLowerCase() === 's') transformControls.setMode('scale');
-                if(e.key.toLowerCase() === 'i') addKey();
                 if(e.key === 'Delete') deleteSelected();
-                if(e.key === ' ') { togglePlay(); e.preventDefault(); }
-            };
+                if(e.key === ' ') { playing = !playing; e.preventDefault(); }
+            });
 
-            window.onresize = () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+            window.addEventListener('resize', () => {
+                const w = window.innerWidth - 640;
+                const h = window.innerHeight - 248;
+                camera.aspect = w/h;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            };
-
-            createRuler();
+                renderer.setSize(w,h);
+            });
         }
 
-        function updateOutliner() {
-            const list = document.getElementById('outliner-list');
-            list.innerHTML = '';
-            objects.forEach(obj => {
-                const el = document.createElement('div');
-                el.className = `flex items-center justify-between p-2 rounded cursor-pointer transition ${selected === obj ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-white/5'}`;
-                el.innerHTML = `<div class="flex items-center space-x-2"><div class="w-1.5 h-1.5 rounded-full ${obj.type.includes('Light')?'bg-yellow-500':'bg-zinc-500'}"></div><span>${obj.name}</span></div><span class="text-[8px] opacity-20">${obj.type}</span>`;
-                el.onclick = () => select(obj);
-                list.appendChild(el);
-            });
-            document.getElementById('obj-total').innerText = `${objects.length} Objetos`;
+        function updateTimeline() {
+            document.getElementById('playhead').style.left = `${(frame / maxFrames) * 100}%`;
+            document.getElementById('timeline-slider').value = frame;
+            const ff = frame % 24;
+            const ss = Math.floor(frame / 24) % 60;
+            const mm = Math.floor(frame / 1440);
+            document.getElementById('tc-display').innerText = `00:00:${String(ss).padStart(2,'0')}:${String(ff).padStart(2,'0')}`;
+            document.getElementById('timer').innerText = `00:00:${String(ss).padStart(2,'0')}:${String(ff).padStart(2,'0')}`;
         }
 
         function addKey() {
             if(!selected) return;
             const id = selected.uuid;
-            if(!animationMap.has(id)) animationMap.set(id, {});
-            
-            const frames = animationMap.get(id);
+            if(!animMap.has(id)) animMap.set(id, {});
+            const frames = animMap.get(id);
             frames[frame] = {
-                p: selected.position.clone(),
-                r: selected.rotation.clone(),
-                s: selected.scale.clone()
+                pos: selected.position.clone(),
+                rot: selected.rotation.clone(),
+                sca: selected.scale.clone()
             };
-            renderKeyMarkers();
+            drawKeys();
         }
 
-        function renderKeyMarkers() {
-            const trackPos = document.getElementById('track-pos');
-            trackPos.querySelectorAll('.key-dot').forEach(d => d.remove());
-            
-            if(!selected || !animationMap.has(selected.uuid)) return;
-            
-            const frames = animationMap.get(selected.uuid);
-            Object.keys(frames).forEach(f => {
-                const dot = document.createElement('div');
-                dot.className = 'key-dot absolute w-2 h-2 bg-blue-500 rotate-45 border border-white top-1';
-                dot.style.left = `${(f / totalFrames) * 100}%`;
-                trackPos.appendChild(dot);
+        function drawKeys() {
+            const track = document.getElementById('track-main');
+            track.querySelectorAll('.keyframe').forEach(k => k.remove());
+            if(!selected || !animMap.has(selected.uuid)) return;
+            const keys = animMap.get(selected.uuid);
+            Object.keys(keys).forEach(f => {
+                const marker = document.createElement('div');
+                marker.className = 'keyframe';
+                marker.style.left = `${(f / maxFrames) * 100}%`;
+                track.appendChild(marker);
             });
         }
 
-        function applyAnimation() {
-            objects.forEach(obj => {
-                const data = animationMap.get(obj.uuid);
+        function applyAnim() {
+            actors.forEach(actor => {
+                const data = animMap.get(actor.uuid);
                 if(!data) return;
-
-                const sorted = Object.keys(data).map(Number).sort((a,b)=>a-b);
-                if(sorted.length === 0) return;
+                const fKeys = Object.keys(data).map(Number).sort((a,b)=>a-b);
+                if(fKeys.length === 0) return;
 
                 if(data[frame]) {
-                    obj.position.copy(data[frame].p);
-                    obj.rotation.copy(data[frame].r);
-                    obj.scale.copy(data[frame].s);
-                    return;
-                }
-
-                let prev = null, next = null;
-                for(let f of sorted) {
-                    if(f < frame) prev = f;
-                    if(f > frame && next === null) next = f;
-                }
-
-                if(prev !== null && next !== null) {
-                    const t = (frame - prev) / (next - prev);
-                    const smoothT = t * t * (3 - 2 * t); // Hermite curve
-                    
-                    obj.position.lerpVectors(data[prev].p, data[next].p, smoothT);
-                    obj.scale.lerpVectors(data[prev].s, data[next].s, smoothT);
-                    
-                    const q1 = new THREE.Quaternion().setFromEuler(data[prev].r);
-                    const q2 = new THREE.Quaternion().setFromEuler(data[next].r);
-                    obj.quaternion.slerpQuaternions(q1, q2, smoothT);
-                } else if(prev !== null) {
-                    obj.position.copy(data[prev].p);
-                    obj.rotation.copy(data[prev].r);
-                    obj.scale.copy(data[prev].s);
+                    actor.position.copy(data[frame].pos);
+                    actor.rotation.copy(data[frame].rot);
+                    actor.scale.copy(data[frame].sca);
+                } else {
+                    let prev = null, next = null;
+                    for(let k of fKeys) {
+                        if(k < frame) prev = k;
+                        if(k > frame && next === null) next = k;
+                    }
+                    if(prev !== null && next !== null) {
+                        const t = (frame - prev) / (next - prev);
+                        const ease = t * t * (3 - 2 * t);
+                        actor.position.lerpVectors(data[prev].pos, data[next].pos, ease);
+                        actor.scale.lerpVectors(data[prev].sca, data[next].sca, ease);
+                        const q1 = new THREE.Quaternion().setFromEuler(data[prev].rot);
+                        const q2 = new THREE.Quaternion().setFromEuler(data[next].rot);
+                        actor.quaternion.slerpQuaternions(q1, q2, ease);
+                    }
                 }
             });
             syncUI();
         }
 
-        function updateTimeline() {
-            document.getElementById('timeline-slider').value = frame;
-            document.getElementById('playhead').style.left = `${(frame / totalFrames) * 100}%`;
-            
-            const ff = frame % 24;
-            const ss = Math.floor(frame / 24) % 60;
-            const mm = Math.floor(frame / 1440);
-            document.getElementById('timecode').innerText = `00:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}:${String(ff).padStart(2,'0')}`;
-        }
-
-        function togglePlay() {
-            isPlaying = !isPlaying;
-            document.getElementById('play-icon').innerHTML = isPlaying ? 
-                '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' : 
-                '<path d="M8 5v14l11-7z"/>';
-        }
-
-        function createRuler() {
-            const ruler = document.getElementById('timeline-ruler');
-            for(let i=0; i<=totalFrames; i+=24) {
-                const d = document.createElement('div');
-                d.className = "h-full border-l border-white/10 relative";
-                d.style.width = `${(24/totalFrames)*100}%`;
-                d.innerHTML = `<span class="absolute top-1 left-1">${Math.floor(i/24)}s</span>`;
-                ruler.appendChild(d);
-            }
-        }
-
-        function updateStats() {
-            let polys = 0, verts = 0;
-            scene.traverse(o => {
-                if(o.geometry) {
-                    polys += o.geometry.attributes.position.count / 3;
-                    verts += o.geometry.attributes.position.count;
-                }
+        function updateOutliner() {
+            const list = document.getElementById('outliner');
+            list.innerHTML = '';
+            actors.forEach(a => {
+                const el = document.createElement('div');
+                el.className = `p-2 flex justify-between text-[10px] rounded cursor-pointer ${selected === a ? 'bg-[#e5c07b]/20 text-[#e5c07b]' : 'hover:bg-white/5'}`;
+                el.innerHTML = `<span>${a.name}</span><span class="opacity-20">OBJ</span>`;
+                el.onclick = () => select(a);
+                list.appendChild(el);
             });
-            document.getElementById('render-stats').innerText = `Vértices: ${verts.toLocaleString()} | Caras: ${Math.floor(polys).toLocaleString()} | Objetos: ${objects.length}`;
+            document.getElementById('obj-total').innerText = actors.length;
         }
 
-        function focusCamera() {
-            if(!selected) return;
-            const target = selected.position.clone();
-            controls.target.copy(target);
-            camera.position.set(target.x+10, target.y+10, target.z+10);
+        function toggleBars() {
+            document.getElementById('bar-top').classList.toggle('hidden-bar');
+            document.getElementById('bar-bottom').classList.toggle('hidden-bar');
+        }
+
+        function setWorld(mode) {
+            document.querySelectorAll('.btn-cinema').forEach(b => b.classList.remove('btn-active'));
+            if(mode === 'day') {
+                scene.background = new THREE.Color(0x87ceeb);
+                scene.fog.color.set(0x87ceeb);
+            } else if(mode === 'night') {
+                scene.background = new THREE.Color(0x010105);
+                scene.fog.color.set(0x010105);
+            } else if(mode === 'studio') {
+                scene.background = new THREE.Color(0x050505);
+                scene.fog.color.set(0x050505);
+                document.getElementById('btn-studio').classList.add('btn-active');
+            }
         }
 
         function deleteSelected() {
             if(!selected) return;
             scene.remove(selected);
-            objects = objects.filter(o => o !== selected);
-            animationMap.delete(selected.uuid);
+            actors = actors.filter(a => a !== selected);
+            animMap.delete(selected.uuid);
             transformControls.detach();
             selected = null;
             updateOutliner();
-            updateStats();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if(isPlaying) {
+            if(playing) {
                 frame++;
-                if(frame > totalFrames) frame = 0;
+                if(frame > maxFrames) frame = 0;
                 updateTimeline();
-                applyAnimation();
+                applyAnim();
             }
+
+            if(document.getElementById('c-shake').checked) {
+                camera.position.x += Math.sin(Date.now() * 0.005) * 0.005;
+                camera.position.y += Math.cos(Date.now() * 0.004) * 0.005;
+            }
+
             controls.update();
             renderer.render(scene, camera);
-            
-            // FPS Logic
-            const now = performance.now();
-            if(!window.lastTime) window.lastTime = now;
-            const delta = now - window.lastTime;
-            if(delta > 1000) {
-                document.getElementById('fps-counter').innerText = Math.round(1000/delta * 60);
-                window.lastTime = now;
-            }
         }
 
         init();
