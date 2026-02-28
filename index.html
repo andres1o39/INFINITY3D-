@@ -2,53 +2,54 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Geometry Dash Infinite - Rhythm Edition</title>
+    <title>Geometry Dash - Ultra Responsive</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
-        canvas { display: block; background: linear-gradient(#005, #001); }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 24px; pointer-events: none; }
-        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial Black', sans-serif; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; color: white; font-size: 30px; letter-spacing: 2px; pointer-events: none; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0ff; text-align: center; font-size: 20px; text-shadow: 0 0 10px #0ff; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="ui">Puntos: 0</div>
-    <div id="msg">Haz CLICK para Empezar<br>Salto: Ratón o Espacio</div>
+    <div id="ui">SCORE: 0</div>
+    <div id="msg"><h1>CLICK PARA EMPEZAR</h1><p>Ritmo Generado Activo</p></div>
     <canvas id="game"></canvas>
 
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-const ui = document.getElementById('ui');
-const msg = document.getElementById('msg');
 
-// Configuración del Juego
-let gameRunning = false;
-let score = 0;
-const gravity = 0.6;
-const jumpForce = -12;
-const speed = 7;
-const bpm = 125; // Ritmo del juego
-const beatInterval = (60 / bpm) * 1000;
-
-// Objetos
-const player = {
-    x: 100, y: 0, w: 40, h: 40,
-    vy: 0, rotation: 0, grounded: false,
-    color: '#0ff'
+// --- AJUSTES DE DIFICULTAD ---
+const config = {
+    gravity: 1.2,        // Gravedad aumentada (caída rápida)
+    jumpForce: -16,      // Salto potente
+    speed: 9,            // Velocidad de avance
+    bpm: 128,            // Ritmo
+    floorHeight: 120
 };
 
-let obstacles = [];
+let gameRunning = false;
+let score = 0;
 let lastBeat = 0;
+let obstacles = [];
 
-// --- AUDIO SYSTEM (Sintetizador rítmico) ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playTone(freq, type, duration) {
+const player = {
+    x: 150, y: 0, w: 50, h: 50,
+    vy: 0, rotation: 0, grounded: false
+};
+
+// --- SISTEMA DE AUDIO (Música de sintetizador) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function playBeat(freq, type, vol, duration) {
+    if(!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -56,124 +57,123 @@ function playTone(freq, type, duration) {
 }
 
 function init() {
+    if(!audioCtx) audioCtx = new AudioContext();
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    player.y = canvas.height - 140;
-    gameRunning = true;
-    msg.style.display = 'none';
+    player.y = canvas.height - config.floorHeight - player.h;
+    player.vy = 0;
+    player.rotation = 0;
     score = 0;
     obstacles = [];
+    gameRunning = true;
+    document.getElementById('msg').style.display = 'none';
     requestAnimationFrame(update);
-}
-
-function spawnObstacle() {
-    obstacles.push({
-        x: canvas.width,
-        y: canvas.height - 100,
-        w: 40, h: 40,
-        type: Math.random() > 0.7 ? 'double' : 'single'
-    });
-    // Sonido de bombo rítmico
-    playTone(60, 'sine', 0.2);
 }
 
 function update(time) {
     if (!gameRunning) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Dibujar Suelo
-    ctx.fillStyle = '#555';
-    ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-
-    // Lógica rítmica (Spawn basado en BPM)
+    // Fondo dinámico rítmico
+    const beatInterval = (60 / config.bpm) * 1000;
     if (time - lastBeat > beatInterval) {
-        spawnObstacle();
         lastBeat = time;
+        // Sonido de Bombo (Música)
+        playBeat(60, 'sine', 0.3, 0.2); 
+        // Aparece obstáculo cada 2 beats para que no sea imposible
+        if(Math.random() > 0.3) spawnObstacle();
     }
 
-    // Jugador: Gravedad y Movimiento
-    player.vy += gravity;
+    ctx.fillStyle = '#000814';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Suelo con rejilla
+    ctx.strokeStyle = '#00f2ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-10, canvas.height - config.floorHeight, canvas.width + 20, 5);
+
+    // Física del Jugador
+    player.vy += config.gravity;
     player.y += player.vy;
-    
-    const floorY = canvas.height - 100 - player.h;
-    if (player.y >= floorY) {
-        player.y = floorY;
+
+    const floorLimit = canvas.height - config.floorHeight - player.h;
+    if (player.y >= floorLimit) {
+        player.y = floorLimit;
         player.vy = 0;
         player.grounded = true;
-        // Alinear rotación al suelo
         player.rotation = Math.round(player.rotation / 90) * 90;
     } else {
         player.grounded = false;
-        player.rotation += 5; // Rotar en el aire
+        player.rotation += 6; 
     }
 
-    // Dibujar Jugador
+    // Dibujar Jugador (Cubo neon)
     ctx.save();
     ctx.translate(player.x + player.w/2, player.y + player.h/2);
     ctx.rotate(player.rotation * Math.PI / 180);
-    ctx.fillStyle = player.color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#0ff';
+    ctx.fillStyle = '#0ff';
     ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'white';
     ctx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
     ctx.restore();
+    ctx.shadowBlur = 0;
 
     // Obstáculos
     for (let i = obstacles.length - 1; i >= 0; i--) {
         let o = obstacles[i];
-        o.x -= speed;
+        o.x -= config.speed;
 
-        // Dibujar Triángulo (Spike)
-        ctx.fillStyle = "#ff4444";
+        // Dibujar Pico
+        ctx.fillStyle = '#ff0055';
         ctx.beginPath();
         ctx.moveTo(o.x, o.y);
         ctx.lineTo(o.x + o.w, o.y);
         ctx.lineTo(o.x + o.w/2, o.y - o.h);
         ctx.fill();
 
-        // Colisión
-        if (player.x < o.x + o.w - 10 && 
-            player.x + player.w > o.x + 10 && 
+        // Colisión precisa
+        if (player.x + player.w - 12 > o.x && 
+            player.x + 12 < o.x + o.w && 
             player.y + player.h > o.y - o.h + 10) {
-            gameOver();
+            die();
         }
 
-        if (o.x < -100) {
+        if (o.x < -50) {
             obstacles.splice(i, 1);
             score++;
-            ui.innerText = `Puntos: ${score}`;
+            document.getElementById('ui').innerText = `SCORE: ${score}`;
         }
     }
 
     requestAnimationFrame(update);
 }
 
+function spawnObstacle() {
+    obstacles.push({
+        x: canvas.width + 50,
+        y: canvas.height - config.floorHeight,
+        w: 50, h: 60
+    });
+}
+
 function jump() {
-    if (!gameRunning) {
-        init();
-        return;
-    }
+    if (!gameRunning) { init(); return; }
     if (player.grounded) {
-        player.vy = jumpForce;
-        playTone(400, 'square', 0.1); // Sonido de salto
+        player.vy = config.jumpForce;
+        playBeat(200, 'square', 0.1, 0.1); // Sonido de salto
     }
 }
 
-function gameOver() {
+function die() {
     gameRunning = false;
-    msg.innerHTML = `GAME OVER<br>Puntos: ${score}<br>Haz Click para reintentar`;
-    msg.style.display = 'block';
-    playTone(100, 'sawtooth', 0.5);
+    playBeat(50, 'sawtooth', 0.4, 0.5); // Sonido de muerte
+    document.getElementById('msg').innerHTML = `<h1>¡CRASH!</h1><p>Puntos: ${score}</p><h3>CLICK PARA REINTENTAR</h3>`;
+    document.getElementById('msg').style.display = 'block';
 }
 
-// Eventos
 window.addEventListener('mousedown', jump);
 window.addEventListener('keydown', (e) => { if(e.code === 'Space') jump(); });
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
 </script>
 </body>
 </html>
