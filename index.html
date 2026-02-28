@@ -1,157 +1,843 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Gemini OS - Neural API Edition</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --accent: #00ff88; --bg: #050505; --win: #121212; }
-        body, html { margin: 0; padding: 0; height: 100vh; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
-        #desktop { height: calc(100% - 50px); padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, 110px); gap: 15px; }
-        .app-icon { text-align: center; cursor: pointer; padding: 10px; border-radius: 10px; transition: 0.2s; }
-        .app-icon:hover { background: rgba(0, 255, 136, 0.1); }
-        .app-icon i { font-size: 45px; display: block; margin-bottom: 8px; color: var(--accent); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — IA para Laptop</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .window { position: absolute; width: 600px; height: 450px; background: var(--win); border-radius: 12px; display: none; flex-direction: column; border: 1px solid #333; box-shadow: 0 0 30px rgba(0,0,0,1); overflow: hidden; z-index: 100; }
-        .win-header { background: #1a1a1a; padding: 12px; cursor: move; display: flex; justify-content: space-between; }
-        .win-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1219;
+    --panel: #0f1820;
+    --border: #1a3a4a;
+    --accent: #00e5ff;
+    --accent2: #00ff88;
+    --accent3: #ff6b35;
+    --text: #b0d8e8;
+    --text-dim: #4a7a8a;
+    --glow: 0 0 20px rgba(0, 229, 255, 0.3);
+    --glow2: 0 0 20px rgba(0, 255, 136, 0.3);
+  }
 
-        /* Chat Estilo Moderno */
-        #ai-messages { flex: 1; overflow-y: auto; margin-bottom: 10px; padding: 10px; background: #000; border-radius: 8px; border: 1px solid #222; }
-        .msg { margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; line-height: 1.4; max-width: 85%; }
-        .user-msg { background: var(--accent); color: black; align-self: flex-end; margin-left: auto; }
-        .ai-msg { background: #222; color: #00ff88; align-self: flex-start; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    cursor: default;
+  }
 
-        .input-area { display: flex; gap: 10px; }
-        #ai-input { flex: 1; background: #1a1a1a; border: 1px solid #444; color: white; padding: 10px; border-radius: 5px; outline: none; }
-        #ai-input:focus { border-color: var(--accent); }
+  /* Scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
 
-        #taskbar { position: fixed; bottom: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.9); display: flex; align-items: center; padding: 0 20px; border-top: 1px solid #333; }
-        .loading { font-style: italic; color: #888; font-size: 0.8em; }
-    </style>
+  /* Noise texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    animation: flicker 8s infinite;
+  }
+
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.8; }
+    97% { opacity: 1; }
+    98% { opacity: 0.6; }
+    99% { opacity: 1; }
+  }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: var(--glow2);
+    animation: pulse 2s infinite;
+    display: inline-block;
+    margin-right: 5px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .sys-info {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* Main layout */
+  .main {
+    display: grid;
+    grid-template-columns: 220px 1fr 200px;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* Sidebar left */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 0 16px 20px;
+  }
+
+  .sidebar-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .quick-btn {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    text-align: left;
+    padding: 7px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  .quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.05);
+    padding-left: 14px;
+  }
+
+  .quick-btn::before {
+    content: '▸ ';
+    color: var(--text-dim);
+  }
+
+  .quick-btn:hover::before {
+    color: var(--accent);
+  }
+
+  /* Metrics */
+  .metric {
+    margin-bottom: 12px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .metric-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .metric-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    box-shadow: 0 0 8px rgba(0,229,255,0.4);
+    transition: width 1s ease;
+  }
+
+  /* Chat area */
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .chat-header {
+    padding: 10px 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+    max-width: 90%;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user {
+    flex-direction: row-reverse;
+    align-self: flex-end;
+  }
+
+  .msg-avatar {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .msg-avatar.ai {
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent);
+  }
+
+  .msg-avatar.user {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--accent2);
+  }
+
+  .msg-bubble {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 100%;
+    position: relative;
+  }
+
+  .message.ai .msg-bubble {
+    border-left: 2px solid var(--accent);
+  }
+
+  .message.user .msg-bubble {
+    border-right: 2px solid var(--accent2);
+    background: rgba(0,255,136,0.04);
+  }
+
+  .msg-meta {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 5px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 5px;
+    padding: 12px 14px;
+    align-items: center;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: typingDot 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingDot {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Input area */
+  .input-area {
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .input-prompt {
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 38px;
+    flex-shrink: 0;
+  }
+
+  .input-field {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    resize: none;
+    outline: none;
+    min-height: 38px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+
+  .input-field:focus {
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .input-field::placeholder {
+    color: var(--text-dim);
+  }
+
+  .send-btn {
+    background: rgba(0,229,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    height: 38px;
+    white-space: nowrap;
+  }
+
+  .send-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  .send-btn:active { transform: scale(0.97); }
+
+  /* Right panel */
+  .right-panel {
+    border-left: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+
+  .right-section {
+    padding: 0 14px 20px;
+  }
+
+  .right-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .model-tag {
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+    display: block;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .cap-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    padding-bottom: 6px;
+  }
+
+  .cap-val {
+    color: var(--accent2);
+  }
+
+  .token-display {
+    font-size: 22px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    text-align: center;
+    margin: 8px 0;
+  }
+
+  .token-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+  }
+
+  /* Animated grid background */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .chat-area, .sidebar, .right-panel, header {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Corner decorations */
+  .corner {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-color: var(--accent);
+    border-style: solid;
+    opacity: 0.5;
+  }
+
+  .welcome-msg code {
+    background: rgba(0,229,255,0.1);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--accent);
+  }
+</style>
 </head>
 <body>
 
-<div id="desktop">
-    <div class="app-icon" onclick="openWin('win-claude')">
-        <i class="fas fa-brain"></i><span>Claude 3.5</span>
-    </div>
-    <div class="app-icon" onclick="openWin('win-settings')">
-        <i class="fas fa-key"></i><span>API Config</span>
-    </div>
-</div>
+<div class="grid-bg"></div>
 
-<div id="win-claude" class="window">
-    <div class="win-header" onmousedown="startDrag(event, this.parentElement)">
-        <span><i class="fas fa-robot"></i> Claude Neural Link</span>
-        <i class="fas fa-times" onclick="closeWin('win-claude')" style="cursor:pointer"></i>
+<header>
+  <div class="logo">NEXUS</div>
+  <div class="sys-info" id="sysTime">--:--:-- | SYS.OK</div>
+  <div class="status-bar">
+    <span><span class="status-dot"></span>ONLINE</span>
+    <span style="color:var(--accent2)">v2.4.1</span>
+    <span>NEXUS-AI</span>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Left sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Acciones rápidas</div>
+      <button class="quick-btn" onclick="quickAction('Resume mi último documento')">Resumir documento</button>
+      <button class="quick-btn" onclick="quickAction('Escribe un email profesional sobre...')">Redactar email</button>
+      <button class="quick-btn" onclick="quickAction('Explica este concepto de programación:')">Ayuda con código</button>
+      <button class="quick-btn" onclick="quickAction('Traduce este texto al inglés:')">Traducir texto</button>
+      <button class="quick-btn" onclick="quickAction('Crea un plan de trabajo para la semana')">Plan semanal</button>
+      <button class="quick-btn" onclick="quickAction('Analiza los pros y contras de...')">Analizar opciones</button>
+      <button class="quick-btn" onclick="quickAction('Dame ideas creativas para...')">Ideas creativas</button>
     </div>
-    <div class="win-body">
-        <div id="ai-messages">
-            <div class="msg ai-msg">Sistema Conectado. Por favor, asegúrate de haber configurado tu API Key en la app 'API Config'.</div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Sistema</div>
+      <div class="metric">
+        <div class="metric-label">
+          <span>CPU</span><span id="cpu-val" style="color:var(--accent2)">--</span>
         </div>
-        <div id="status-ai"></div>
-        <div class="input-area">
-            <input type="text" id="ai-input" placeholder="Escribe tu mensaje a Claude..." onkeypress="if(event.key==='Enter') sendToClaude()">
-            <button onclick="sendToClaude()" style="background:var(--accent); border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">ENVIAR</button>
+        <div class="metric-bar"><div class="metric-fill" id="cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          <span>RAM</span><span id="ram-val" style="color:var(--accent2)">--</span>
         </div>
+        <div class="metric-bar"><div class="metric-fill" id="ram-bar" style="width:0%; background: linear-gradient(90deg,var(--accent),var(--accent3))"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          <span>RED</span><span id="net-val" style="color:var(--accent2)">--</span>
+        </div>
+        <div class="metric-bar"><div class="metric-fill" id="net-bar" style="width:0%; background: linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
+      </div>
     </div>
-</div>
 
-<div id="win-settings" class="window" style="height:250px; width:400px;">
-    <div class="win-header" onmousedown="startDrag(event, this.parentElement)">
-        <span><i class="fas fa-cog"></i> Configurar API</span>
-        <i class="fas fa-times" onclick="closeWin('win-settings')" style="cursor:pointer"></i>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Historial</div>
+      <div id="history-list" style="font-size:10px; color:var(--text-dim); line-height:1.8;">
+        <div>— Sin historial aún —</div>
+      </div>
     </div>
-    <div class="win-body">
-        <p>Introduce tu Anthropic API Key:</p>
-        <input type="password" id="api-key-input" placeholder="sk-ant-..." style="width:100%; padding:10px; background:#000; border:1px solid var(--accent); color:white;">
-        <button onclick="saveKey()" style="margin-top:15px; width:100%; padding:10px; background:var(--accent); border:none; cursor:pointer; font-weight:bold;">GUARDAR KEY</button>
-    </div>
-</div>
+  </div>
 
-<div id="taskbar">
-    <i class="fas fa-atom" style="color:var(--accent); font-size:24px;"></i>
-    <div id="clock" style="margin-left:auto; color:var(--accent); font-family:monospace;"></div>
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <span>CONSOLA PRINCIPAL // NEXUS-AI</span>
+      <span id="msgCount">0 mensajes</span>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="message ai">
+        <div class="msg-avatar ai">⬡</div>
+        <div>
+          <div class="msg-bubble welcome-msg">
+            Sistema inicializado correctamente.<br><br>
+            Soy <strong style="color:var(--accent)">NEXUS</strong>, tu asistente de IA para laptop. Estoy listo para ayudarte con:<br><br>
+            → Redacción y documentos<br>
+            → Código y programación<br>
+            → Análisis y síntesis<br>
+            → Preguntas y respuestas<br>
+            → Ideas y creatividad<br><br>
+            Escribe tu consulta abajo o usa las <code>acciones rápidas</code> del panel lateral.
+          </div>
+          <div class="msg-meta">NEXUS // 00:00:00 // BOOT_MSG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <span class="input-prompt">›</span>
+        <textarea 
+          class="input-field" 
+          id="inputField"
+          placeholder="Escribe tu consulta aquí... (Enter para enviar, Shift+Enter para nueva línea)"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" onclick="sendMessage()">ENVIAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="right-panel">
+    <div class="right-section">
+      <div class="right-label">Modelo activo</div>
+      <span class="model-tag">NEXUS-7B-INSTRUCT</span>
+      <span class="model-tag" style="color:var(--accent2); border-color:rgba(0,255,136,0.2); background:rgba(0,255,136,0.05)">CONTEXTO: 128K</span>
+    </div>
+
+    <div class="right-section">
+      <div class="right-label">Tokens</div>
+      <div class="token-display" id="tokenCount">0</div>
+      <div class="token-label">TOKENS USADOS</div>
+      <div class="cap-row"><span>Límite sesión</span><span class="cap-val">128,000</span></div>
+      <div class="cap-row"><span>Disponibles</span><span class="cap-val" id="tokensLeft">128,000</span></div>
+      <div class="cap-row"><span>Mensajes</span><span class="cap-val" id="msgCountR">0</span></div>
+    </div>
+
+    <div class="right-section">
+      <div class="right-label">Capacidades</div>
+      <div class="cap-row"><span>Texto</span><span class="cap-val">✓</span></div>
+      <div class="cap-row"><span>Código</span><span class="cap-val">✓</span></div>
+      <div class="cap-row"><span>Análisis</span><span class="cap-val">✓</span></div>
+      <div class="cap-row"><span>Traducción</span><span class="cap-val">✓</span></div>
+      <div class="cap-row"><span>Resumen</span><span class="cap-val">✓</span></div>
+      <div class="cap-row"><span>Visión</span><span class="cap-val" style="color:var(--text-dim)">—</span></div>
+    </div>
+
+    <div class="right-section">
+      <div class="right-label">Temperatura</div>
+      <input type="range" min="0" max="100" value="70" id="tempSlider" 
+        style="width:100%; accent-color:var(--accent); margin-bottom:6px;">
+      <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim)">
+        <span>Preciso</span>
+        <span id="tempVal" style="color:var(--accent)">0.7</span>
+        <span>Creativo</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    let zIdx = 1000;
-    let ANTHROPIC_API_KEY = localStorage.getItem('claude_key') || "";
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    const t = now.toTimeString().split(' ')[0];
+    document.getElementById('sysTime').textContent = t + ' | SYS.OK';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
 
-    function saveKey() {
-        ANTHROPIC_API_KEY = document.getElementById('api-key-input').value;
-        localStorage.setItem('claude_key', ANTHROPIC_API_KEY);
-        alert("API Key guardada localmente en el sistema.");
-        closeWin('win-settings');
+  // Fake metrics
+  function updateMetrics() {
+    const cpu = 15 + Math.random() * 25;
+    const ram = 45 + Math.random() * 15;
+    const net = Math.random() * 40;
+    document.getElementById('cpu-val').textContent = cpu.toFixed(0) + '%';
+    document.getElementById('ram-val').textContent = ram.toFixed(0) + '%';
+    document.getElementById('net-val').textContent = net.toFixed(0) + '%';
+    document.getElementById('cpu-bar').style.width = cpu + '%';
+    document.getElementById('ram-bar').style.width = ram + '%';
+    document.getElementById('net-bar').style.width = net + '%';
+  }
+  updateMetrics();
+  setInterval(updateMetrics, 2500);
+
+  // Temperature slider
+  document.getElementById('tempSlider').addEventListener('input', function() {
+    document.getElementById('tempVal').textContent = (this.value / 100).toFixed(1);
+  });
+
+  // Auto-resize textarea
+  const inputField = document.getElementById('inputField');
+  inputField.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  inputField.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
+  });
 
-    async function sendToClaude() {
-        const inputEl = document.getElementById('ai-input');
-        const msgBox = document.getElementById('ai-messages');
-        const status = document.getElementById('status-ai');
-        const text = inputEl.value;
+  let totalTokens = 0;
+  let msgCount = 0;
+  let historyItems = [];
 
-        if(!text || !ANTHROPIC_API_KEY) {
-            alert("Escribe algo o configura tu API Key primero.");
-            return;
-        }
+  function quickAction(text) {
+    inputField.value = text;
+    inputField.focus();
+  }
 
-        // Mostrar mensaje del usuario
-        msgBox.innerHTML += `<div class="msg user-msg">${text}</div>`;
-        inputEl.value = "";
-        status.innerHTML = `<span class="loading">Claude está pensando...</span>`;
-        msgBox.scrollTop = msgBox.scrollHeight;
+  function getTime() {
+    return new Date().toTimeString().split(' ')[0];
+  }
 
-        try {
-            // PETICIÓN REAL A CLAUDE (Usando el endpoint de mensajes)
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'x-api-key': ANTHROPIC_API_KEY,
-                    'anthropic-version': '2023-06-01',
-                    'content-type': 'application/json',
-                    'dangerouslyAllowBrowser': 'true' // Esto es para demos, en prod se usa backend
-                },
-                body: JSON.stringify({
-                    model: "claude-3-5-sonnet-20240620",
-                    max_tokens: 1024,
-                    messages: [{ role: "user", content: text }]
-                })
-            });
+  function countTokens(text) {
+    return Math.ceil(text.split(/\s+/).length * 1.3);
+  }
 
-            const data = await response.json();
-            status.innerHTML = "";
-            
-            if(data.content && data.content[0]) {
-                msgBox.innerHTML += `<div class="msg ai-msg">${data.content[0].text}</div>`;
-            } else {
-                msgBox.innerHTML += `<div class="msg ai-msg" style="color:red">Error: ${data.error ? data.error.message : 'No se pudo conectar'}</div>`;
-            }
-        } catch (error) {
-            status.innerHTML = "";
-            msgBox.innerHTML += `<div class="msg ai-msg" style="color:red">Error de conexión. Revisa el CORS o tu Key.</div>`;
-        }
-        msgBox.scrollTop = msgBox.scrollHeight;
+  function addMessage(role, text) {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message ' + role;
+
+    const avatar = role === 'ai' ? '⬡' : '◈';
+    const meta = role === 'ai' ? 'NEXUS' : 'USUARIO';
+
+    div.innerHTML = `
+      <div class="msg-avatar ${role}">${avatar}</div>
+      <div>
+        <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>
+        <div class="msg-meta">${meta} // ${getTime()}</div>
+      </div>
+    `;
+
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message ai';
+    div.id = 'typing-indicator';
+    div.innerHTML = `
+      <div class="msg-avatar ai">⬡</div>
+      <div class="msg-bubble typing">
+        <span></span><span></span><span></span>
+      </div>
+    `;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  // AI response generator
+  const responses = {
+    default: [
+      "Entendido. He procesado tu consulta y aquí está mi análisis:\n\nEsta es una pregunta interesante que requiere considerar múltiples perspectivas. Desde un punto de vista técnico, los factores clave a considerar son la eficiencia, la escalabilidad y la facilidad de uso. Te recomendaría comenzar con un enfoque iterativo, probando hipótesis pequeñas antes de comprometerte con una solución definitiva.",
+      "Perfecto. Aquí tienes la información que necesitas:\n\nHe analizado tu consulta en detalle. Los puntos más importantes son: primero, definir claramente el objetivo; segundo, identificar los recursos disponibles; y tercero, establecer métricas de éxito. Con esta base, puedes estructurar tu plan de acción de manera efectiva.",
+      "Procesando tu solicitud...\n\nBasándome en el contexto proporcionado, te sugiero lo siguiente: considera las mejores prácticas del sector, documenta cada paso del proceso, y mantén comunicación constante con los involucrados. ¿Necesitas que profundice en algún aspecto específico?",
+      "Análisis completado. Aquí está mi respuesta:\n\nEsta situación tiene varias aristas. Por un lado, debes considerar los factores técnicos; por otro, los aspectos humanos y organizacionales. Mi recomendación es abordar ambas dimensiones de manera simultánea para obtener los mejores resultados.",
+    ]
+  };
+
+  function getAIResponse(userMsg) {
+    const msg = userMsg.toLowerCase();
+    
+    if (msg.includes('email') || msg.includes('correo')) {
+      return "Claro, aquí tienes un email profesional:\n\nAsunto: [Tu asunto aquí]\n\nEstimado/a [Nombre],\n\nMe dirijo a usted para [motivo principal]. En este sentido, me gustaría [acción o propuesta concreta].\n\nQuedo a su disposición para cualquier consulta adicional.\n\nAtentamente,\n[Tu nombre]";
     }
-
-    // Funciones de Ventana
-    function openWin(id) { document.getElementById(id).style.display = 'flex'; document.getElementById(id).style.zIndex = ++zIdx; }
-    function closeWin(id) { document.getElementById(id).style.display = 'none'; }
-
-    function startDrag(e, win) {
-        win.style.zIndex = ++zIdx;
-        let shiftX = e.clientX - win.getBoundingClientRect().left;
-        let shiftY = e.clientY - win.getBoundingClientRect().top;
-        function moveAt(pageX, pageY) { win.style.left = pageX - shiftX + 'px'; win.style.top = pageY - shiftY + 'px'; }
-        function onMouseMove(event) { moveAt(event.pageX, event.pageY); }
-        document.addEventListener('mousemove', onMouseMove);
-        document.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); document.onmouseup = null; };
+    if (msg.includes('código') || msg.includes('programación') || msg.includes('code')) {
+      return "Entendido. Para ayudarte con el código necesito más contexto. Dime:\n\n→ ¿Qué lenguaje de programación?\n→ ¿Qué función debe realizar?\n→ ¿Tienes algún código existente que revisar?\n\nCon esa información podré darte una solución precisa y funcional.";
     }
+    if (msg.includes('resume') || msg.includes('resumir') || msg.includes('resumen')) {
+      return "Para resumir tu documento de manera efectiva, necesito que pegues el texto aquí. Mientras tanto, aquí está mi metodología:\n\n1. Identifico las ideas principales\n2. Elimino información redundante\n3. Mantengo el contexto esencial\n4. Estructuro el resumen de forma clara\n\n¿Puedes compartir el texto que deseas resumir?";
+    }
+    if (msg.includes('traduc')) {
+      return "Listo para traducir. Comparte el texto que deseas traducir y especifica:\n\n→ Idioma de destino (inglés, francés, alemán, etc.)\n→ Tono deseado (formal/informal)\n→ Contexto de uso (técnico, literario, comercial)\n\nAsí podré ofrecerte la traducción más precisa y natural.";
+    }
+    if (msg.includes('plan') || msg.includes('semana') || msg.includes('proyecto')) {
+      return "Aquí tienes un plan de trabajo estructurado:\n\nLUNES — Revisión de objetivos y priorización de tareas\nMARTES — Ejecución de tareas críticas (alta concentración)\nMIÉRCOLES — Reuniones y colaboración\nJUEVES — Desarrollo de proyectos a largo plazo\nVIERNES — Revisión, documentación y planificación siguiente semana\n\n¿Quieres que adapte este plan a tus objetivos específicos?";
+    }
+    
+    const r = responses.default;
+    return r[Math.floor(Math.random() * r.length)];
+  }
 
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+  function updateStats(tokens) {
+    totalTokens += tokens;
+    document.getElementById('tokenCount').textContent = totalTokens.toLocaleString();
+    document.getElementById('tokensLeft').textContent = (128000 - totalTokens).toLocaleString();
+    document.getElementById('msgCount').textContent = msgCount + ' mensajes';
+    document.getElementById('msgCountR').textContent = msgCount;
+  }
+
+  function updateHistory(text) {
+    const short = text.substring(0, 25) + (text.length > 25 ? '...' : '');
+    historyItems.unshift(short);
+    if (historyItems.length > 5) historyItems.pop();
+    
+    const hist = document.getElementById('history-list');
+    hist.innerHTML = historyItems.map((h, i) => 
+      `<div style="color:${i===0?'var(--text)':'var(--text-dim)'}; padding: 2px 0; cursor:pointer; font-size:10px;" onclick="inputField.value='${h.replace(/'/g,"\\'")}'">${h}</div>`
+    ).join('');
+  }
+
+  async function sendMessage() {
+    const text = inputField.value.trim();
+    if (!text) return;
+
+    inputField.value = '';
+    inputField.style.height = 'auto';
+    msgCount++;
+
+    addMessage('user', text);
+    updateHistory(text);
+
+    const userTokens = countTokens(text);
+    updateStats(userTokens);
+
+    showTyping();
+
+    const delay = 800 + Math.random() * 1200;
+    
+    setTimeout(() => {
+      removeTyping();
+      const response = getAIResponse(text);
+      addMessage('ai', response);
+      
+      const aiTokens = countTokens(response);
+      msgCount++;
+      updateStats(aiTokens);
+    }, delay);
+  }
 </script>
-
 </body>
 </html>
