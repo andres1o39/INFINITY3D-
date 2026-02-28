@@ -3,261 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual HTML Runner</title>
+    <title>Pro Animation Runner</title>
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --panel-bg: #2d2d2d;
-            --text-color: #e0e0e0;
-            --accent-color: #4caf50;
-            --accent-hover: #45a049;
-            --border-color: #404040;
+            --bg-color: #0f0f0f;
+            --header-bg: #1a1a1a;
+            --accent: #00ff88;
+            --text: #efefef;
+            --border: #333;
         }
 
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text);
             overflow: hidden;
         }
 
-        .app-container {
+        .layout {
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
 
         header {
-            background-color: var(--panel-bg);
-            padding: 0 20px;
+            background: var(--header-bg);
+            height: 50px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            height: 60px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo {
-            font-weight: 800;
-            color: var(--accent-color);
-            font-size: 1.2rem;
-            letter-spacing: 0.5px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
         }
 
         .btn-run {
-            background-color: var(--accent-color);
-            color: white;
+            background: var(--accent);
+            color: #000;
             border: none;
-            padding: 10px 24px;
-            border-radius: 6px;
+            padding: 8px 20px;
+            border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .btn-run:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
+        .btn-run:hover { opacity: 0.9; transform: scale(1.02); }
 
-        .btn-run:active {
-            transform: translateY(1px);
-        }
-
-        .main-content {
+        .main {
             display: flex;
             flex: 1;
-            width: 100%;
         }
 
-        .editor-container, .preview-container {
+        .editor-pane, .preview-pane {
             flex: 1;
             display: flex;
             flex-direction: column;
-            position: relative;
+            min-width: 0;
         }
 
         .label {
-            background: #252525;
-            font-size: 12px;
-            padding: 8px 15px;
-            color: #aaa;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
+            font-size: 10px;
+            color: #666;
+            padding: 5px 15px;
+            background: #151515;
+            border-bottom: 1px solid var(--border);
         }
 
         textarea {
             flex: 1;
-            background-color: #1e1e1e;
-            color: #ce9178; /* Color similar a strings en VS Code */
+            background: transparent;
+            color: #aaa;
             border: none;
-            padding: 20px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 16px;
-            line-height: 1.6;
+            padding: 15px;
+            font-family: inherit;
+            font-size: 14px;
             resize: none;
             outline: none;
-            border-right: 1px solid var(--border-color);
+            border-right: 1px solid var(--border);
+        }
+
+        #preview-container {
+            flex: 1;
+            background: #fff;
+            position: relative;
         }
 
         iframe {
-            flex: 1;
-            background-color: #ffffff;
-            border: none;
             width: 100%;
             height: 100%;
+            border: none;
         }
 
-        /* Indicador de cambios */
-        #status-dot {
-            width: 8px;
-            height: 8px;
-            background: transparent;
-            border-radius: 50%;
-            display: inline-block;
-            margin-left: 8px;
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-weight: bold;
+            display: none;
         }
-
-        .modified #status-dot {
-            background: #ffca28;
-        }
-
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="layout">
     <header>
-        <div class="logo-section">
-            <div class="logo">CODE_RUNNER</div>
-            <div id="status-text" style="font-size: 12px; color: #888;">
-                Estado: Listo <span id="status-dot"></span>
-            </div>
-        </div>
-        <button class="btn-run" onclick="runCode()" title="Ejecutar Código (Ctrl+Enter)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
-            EJECUTAR
+        <div style="color: var(--accent); font-weight: bold;">ANIMATION_RUNNER v2</div>
+        <button class="btn-run" onclick="forceRun()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            EJECUTAR (LIMPIO)
         </button>
     </header>
 
-    <div class="main-content">
-        <div class="editor-container">
-            <div class="label">EDITOR (HTML / CSS)</div>
-            <textarea id="editor" spellcheck="false" placeholder="Pega tu código aquí..."></textarea>
+    <div class="main">
+        <div class="editor-pane">
+            <div class="label">CÓDIGO FUENTE</div>
+            <textarea id="editor" spellcheck="false"></textarea>
         </div>
-        
-        <div class="preview-container">
-            <div class="label">RESULTADO</div>
-            <iframe id="preview"></iframe>
+        <div class="preview-pane">
+            <div class="label">RESULTADO (RENDER)</div>
+            <div id="preview-container">
+                <div id="loader" class="loader">Cargando escena...</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     const editor = document.getElementById('editor');
-    const preview = document.getElementById('preview');
-    const statusText = document.getElementById('status-text');
-    const header = document.querySelector('header');
+    const container = document.getElementById('preview-container');
+    const loader = document.getElementById('loader');
 
-    // Plantilla inicial
-    const initialContent = `<!DOCTYPE html>
+    // Ejemplo de Three.js corregido para este editor
+    const threeExample = `<!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body { 
-      background: #f0f2f5; 
-      display: flex; 
-      flex-direction: column;
-      align-items: center; 
-      justify-content: center;
-      height: 90vh;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .box {
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    button {
-      background: #4caf50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { width: 100vw; height: 100vh; display: block; }
+    </style>
 </head>
 <body>
-  <div class="box">
-    <h1>¡Editor Manual!</h1>
-    <p>Haz cambios en el texto y pulsa el botón verde.</p>
-    <button onclick="alert('¡Hola desde el frame!')">Probar JS</button>
-  </div>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshNormalMaterial();
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    <\/script>
 </body>
 </html>`;
 
-    function runCode() {
-        const content = editor.value;
-        const iframeDoc = preview.contentDocument || preview.contentWindow.document;
+    function forceRun() {
+        loader.style.display = 'block';
         
-        iframeDoc.open();
-        iframeDoc.write(content);
-        iframeDoc.close();
+        // ELIMINAR EL IFRAME ANTERIOR (Esto limpia la memoria de la GPU y JS)
+        const oldIframe = container.querySelector('iframe');
+        if (oldIframe) oldIframe.remove();
 
-        // Actualizar UI
-        header.classList.remove('modified');
-        statusText.innerHTML = 'Estado: Ejecutado <span id="status-dot"></span>';
-        console.log("Código ejecutado correctamente.");
+        // CREAR UN NUEVO IFRAME DESDE CERO
+        const newIframe = document.createElement('iframe');
+        container.appendChild(newIframe);
+
+        const content = editor.value;
+        const doc = newIframe.contentDocument || newIframe.contentWindow.document;
+
+        // Inyección asíncrona ligera para evitar bloqueos
+        setTimeout(() => {
+            doc.open();
+            doc.write(content);
+            doc.close();
+            loader.style.display = 'none';
+        }, 50);
     }
 
-    // Detectar cambios para avisar que no se ha ejecutado
-    editor.addEventListener('input', () => {
-        header.classList.add('modified');
-        statusText.innerHTML = 'Estado: Sin ejecutar * <span id="status-dot"></span>';
-    });
+    // Configuración inicial
+    window.onload = () => {
+        editor.value = threeExample;
+        forceRun();
+    };
 
-    // Atajo de teclado: Ctrl + Enter
-    editor.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 'Enter') {
-            runCode();
-        }
-        
-        // Tabulación
+    // Soporte de tabulación y atajo Ctrl+Enter
+    editor.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') forceRun();
         if (e.key === 'Tab') {
             e.preventDefault();
-            const start = this.selectionStart;
-            const end = this.selectionEnd;
-            this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
-            this.selectionStart = this.selectionEnd = start + 2;
+            const start = editor.selectionStart;
+            editor.value = editor.value.substring(0, start) + "  " + editor.value.substring(editor.selectionEnd);
+            editor.selectionStart = editor.selectionEnd = start + 2;
         }
     });
-
-    // Carga inicial
-    window.onload = () => {
-        editor.value = initialContent;
-        runCode();
-    };
 </script>
 
 </body>
