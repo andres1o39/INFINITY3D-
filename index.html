@@ -30,46 +30,41 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    cursor: default;
   }
 
-  /* Scanlines overlay */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
     );
     pointer-events: none;
     z-index: 1000;
   }
 
-  /* Noise texture */
-  body::after {
-    content: '';
+  .grid-bg {
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    background-image:
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
     pointer-events: none;
-    z-index: 999;
-    opacity: 0.4;
+    z-index: 0;
   }
 
-  /* Header */
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 24px;
+    padding: 10px 24px;
     border-bottom: 1px solid var(--border);
     background: var(--bg2);
     flex-shrink: 0;
     position: relative;
+    z-index: 2;
   }
 
   header::after {
@@ -78,87 +73,77 @@
     bottom: 0; left: 0; right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.6;
+    opacity: 0.5;
   }
 
   .logo {
     font-family: 'Orbitron', monospace;
     font-weight: 900;
-    font-size: 22px;
-    letter-spacing: 0.3em;
+    font-size: 20px;
+    letter-spacing: 0.35em;
     color: var(--accent);
     text-shadow: var(--glow);
-    animation: flicker 8s infinite;
+    animation: flicker 10s infinite;
   }
 
   @keyframes flicker {
-    0%, 95%, 100% { opacity: 1; }
-    96% { opacity: 0.8; }
-    97% { opacity: 1; }
-    98% { opacity: 0.6; }
-    99% { opacity: 1; }
+    0%,93%,100%{opacity:1} 94%{opacity:.7} 95%{opacity:1} 97%{opacity:.5} 98%{opacity:1}
   }
 
-  .status-bar {
+  .header-right {
     display: flex;
-    gap: 20px;
     align-items: center;
+    gap: 16px;
     font-size: 11px;
     color: var(--text-dim);
   }
 
   .status-dot {
+    display: inline-block;
     width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--accent2);
     box-shadow: var(--glow2);
-    animation: pulse 2s infinite;
-    display: inline-block;
     margin-right: 5px;
+    animation: pulse 2s infinite;
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
+    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)}
   }
 
-  .sys-info {
-    font-size: 11px;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-  }
-
-  /* Main layout */
   .main {
     display: grid;
-    grid-template-columns: 220px 1fr 200px;
+    grid-template-columns: 210px 1fr 190px;
     flex: 1;
     overflow: hidden;
-    gap: 0;
+    position: relative;
+    z-index: 1;
   }
 
-  /* Sidebar left */
   .sidebar {
     border-right: 1px solid var(--border);
     background: var(--bg2);
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 
   .sidebar-section {
-    padding: 0 16px 20px;
+    padding: 14px 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
   }
 
-  .sidebar-label {
+  .section-label {
     font-size: 9px;
-    letter-spacing: 0.25em;
+    letter-spacing: .25em;
     color: var(--text-dim);
-    margin-bottom: 10px;
     text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
   }
 
   .quick-btn {
@@ -170,11 +155,11 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
     text-align: left;
-    padding: 7px 10px;
+    padding: 6px 8px;
     cursor: pointer;
     border-radius: 3px;
-    margin-bottom: 4px;
-    transition: all 0.15s;
+    margin-bottom: 3px;
+    transition: all .15s;
     line-height: 1.4;
   }
 
@@ -182,47 +167,26 @@
     border-color: var(--accent);
     color: var(--accent);
     background: rgba(0,229,255,0.05);
-    padding-left: 14px;
+    padding-left: 12px;
   }
 
-  .quick-btn::before {
-    content: '▸ ';
-    color: var(--text-dim);
-  }
+  .quick-btn::before { content: 'ss '; color: var(--text-dim); }
+  .quick-btn:hover::before { color: var(--accent); }
 
-  .quick-btn:hover::before {
-    color: var(--accent);
-  }
-
-  /* Metrics */
-  .metric {
-    margin-bottom: 12px;
-  }
-
+  .metric { margin-bottom: 10px; }
   .metric-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    margin-bottom: 4px;
-    display: flex;
-    justify-content: space-between;
+    font-size: 10px; color: var(--text-dim);
+    margin-bottom: 3px;
+    display: flex; justify-content: space-between;
   }
-
-  .metric-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
+  .metric-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .metric-fill {
-    height: 100%;
-    border-radius: 2px;
+    height: 100%; border-radius: 2px;
     background: linear-gradient(90deg, var(--accent2), var(--accent));
-    box-shadow: 0 0 8px rgba(0,229,255,0.4);
-    transition: width 1s ease;
+    box-shadow: 0 0 6px rgba(0,229,255,.4);
+    transition: width 1.5s ease;
   }
 
-  /* Chat area */
   .chat-area {
     display: flex;
     flex-direction: column;
@@ -231,41 +195,36 @@
   }
 
   .chat-header {
-    padding: 10px 20px;
-    font-size: 11px;
+    padding: 8px 18px;
+    font-size: 10px;
     color: var(--text-dim);
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    letter-spacing: .05em;
   }
 
   .messages {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
 
-  .messages::-webkit-scrollbar { width: 4px; }
-  .messages::-webkit-scrollbar-track { background: transparent; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); }
 
   .message {
     display: flex;
-    gap: 12px;
-    animation: slideIn 0.3s ease;
-    max-width: 90%;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    gap: 10px;
+    animation: slideIn .25s ease;
+    max-width: 92%;
   }
 
   .message.user {
@@ -273,25 +232,27 @@
     align-self: flex-end;
   }
 
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .msg-avatar {
-    width: 32px; height: 32px;
+    width: 30px; height: 30px;
     border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
   }
 
   .msg-avatar.ai {
-    background: rgba(0,229,255,0.1);
-    border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(0,229,255,.08);
+    border: 1px solid rgba(0,229,255,.25);
     color: var(--accent);
   }
 
   .msg-avatar.user {
-    background: rgba(0,255,136,0.1);
-    border: 1px solid rgba(0,255,136,0.3);
+    background: rgba(0,255,136,.08);
+    border: 1px solid rgba(0,255,136,.25);
     color: var(--accent2);
   }
 
@@ -299,74 +260,59 @@
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: 10px 14px;
+    padding: 10px 13px;
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.65;
     max-width: 100%;
-    position: relative;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
-  .message.ai .msg-bubble {
-    border-left: 2px solid var(--accent);
-  }
-
+  .message.ai .msg-bubble { border-left: 2px solid var(--accent); }
   .message.user .msg-bubble {
     border-right: 2px solid var(--accent2);
-    background: rgba(0,255,136,0.04);
+    background: rgba(0,255,136,.03);
   }
 
   .msg-meta {
     font-size: 9px;
     color: var(--text-dim);
-    margin-top: 5px;
-    letter-spacing: 0.1em;
+    margin-top: 4px;
+    letter-spacing: .08em;
   }
 
-  /* Typing indicator */
-  .typing {
-    display: flex;
-    gap: 5px;
-    padding: 12px 14px;
-    align-items: center;
-  }
-
-  .typing span {
-    width: 6px; height: 6px;
-    border-radius: 50%;
+  .cursor-blink {
+    display: inline-block;
+    width: 8px; height: 13px;
     background: var(--accent);
-    animation: typingDot 1.2s infinite;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink .6s step-end infinite;
   }
 
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-  @keyframes typingDot {
-    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
-    30% { opacity: 1; transform: scale(1); }
-  }
-
-  /* Input area */
   .input-area {
     border-top: 1px solid var(--border);
-    padding: 14px 20px;
+    padding: 12px 18px;
     background: var(--bg2);
     flex-shrink: 0;
   }
 
   .input-row {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: flex-end;
   }
 
   .input-prompt {
     color: var(--accent);
-    font-size: 14px;
-    line-height: 38px;
+    font-size: 15px;
+    line-height: 36px;
     flex-shrink: 0;
   }
 
-  .input-field {
+  textarea.input-field {
     flex: 1;
     background: var(--panel);
     border: 1px solid var(--border);
@@ -374,82 +320,88 @@
     color: var(--text);
     font-family: 'Share Tech Mono', monospace;
     font-size: 13px;
-    padding: 8px 12px;
+    padding: 7px 11px;
     resize: none;
     outline: none;
-    min-height: 38px;
-    max-height: 120px;
-    line-height: 1.5;
-    transition: border-color 0.2s;
+    min-height: 36px;
+    max-height: 110px;
+    line-height: 1.55;
+    transition: border-color .2s, box-shadow .2s;
   }
 
-  .input-field:focus {
+  textarea.input-field:focus {
     border-color: var(--accent);
     box-shadow: var(--glow);
   }
 
-  .input-field::placeholder {
-    color: var(--text-dim);
-  }
+  textarea.input-field::placeholder { color: var(--text-dim); }
+  textarea.input-field:disabled { opacity: .5; }
 
   .send-btn {
-    background: rgba(0,229,255,0.1);
+    background: rgba(0,229,255,.1);
     border: 1px solid var(--accent);
     color: var(--accent);
     font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    padding: 8px 16px;
+    font-size: 9px;
+    letter-spacing: .12em;
+    padding: 7px 14px;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s;
-    height: 38px;
+    transition: all .15s;
+    height: 36px;
     white-space: nowrap;
   }
 
-  .send-btn:hover {
+  .send-btn:hover:not(:disabled) {
     background: var(--accent);
     color: var(--bg);
     box-shadow: var(--glow);
   }
 
-  .send-btn:active { transform: scale(0.97); }
+  .send-btn:active:not(:disabled) { transform: scale(.97); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-  /* Right panel */
   .right-panel {
     border-left: 1px solid var(--border);
     background: var(--bg2);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    padding: 16px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding: 14px 0;
   }
 
   .right-section {
-    padding: 0 14px 20px;
+    padding: 0 13px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    margin-bottom: 2px;
   }
 
   .right-label {
     font-size: 9px;
-    letter-spacing: 0.25em;
+    letter-spacing: .25em;
     color: var(--text-dim);
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     text-transform: uppercase;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
+    padding-bottom: 5px;
+    padding-top: 12px;
   }
 
+  .right-section:first-child .right-label { padding-top: 0; }
+
   .model-tag {
-    background: rgba(0,229,255,0.08);
-    border: 1px solid rgba(0,229,255,0.2);
+    display: block;
+    text-align: center;
+    background: rgba(0,229,255,.07);
+    border: 1px solid rgba(0,229,255,.2);
     color: var(--accent);
     font-size: 10px;
     padding: 4px 8px;
     border-radius: 3px;
-    margin-bottom: 6px;
-    display: block;
-    text-align: center;
-    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+    letter-spacing: .05em;
   }
 
   .cap-row {
@@ -457,64 +409,59 @@
     justify-content: space-between;
     font-size: 10px;
     color: var(--text-dim);
-    margin-bottom: 6px;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    padding-bottom: 6px;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255,255,255,.03);
   }
 
-  .cap-val {
-    color: var(--accent2);
-  }
+  .cap-val { color: var(--accent2); }
 
   .token-display {
-    font-size: 22px;
+    font-size: 18px;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
     color: var(--accent);
     text-shadow: var(--glow);
     text-align: center;
-    margin: 8px 0;
+    margin: 4px 0 1px;
   }
 
   .token-label {
-    font-size: 9px;
+    font-size: 8px; color: var(--text-dim);
+    text-align: center; letter-spacing: .2em; margin-bottom: 8px;
+  }
+
+  .error-bubble {
+    background: rgba(255,107,53,.08);
+    border: 1px solid rgba(255,107,53,.3);
+    border-left: 2px solid var(--accent3);
+    color: var(--accent3);
+    font-size: 12px;
+    padding: 10px 13px;
+    border-radius: 4px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .clear-btn {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
     color: var(--text-dim);
-    text-align: center;
-    letter-spacing: 0.2em;
-    margin-bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: .1em;
+    transition: all .15s;
+    margin-top: 6px;
   }
 
-  /* Animated grid background */
-  .grid-bg {
-    position: fixed;
-    inset: 0;
-    background-image: 
-      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .chat-area, .sidebar, .right-panel, header {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Corner decorations */
-  .corner {
-    position: absolute;
-    width: 12px; height: 12px;
-    border-color: var(--accent);
-    border-style: solid;
-    opacity: 0.5;
-  }
-
-  .welcome-msg code {
-    background: rgba(0,229,255,0.1);
-    padding: 1px 5px;
-    border-radius: 2px;
-    color: var(--accent);
+  .clear-btn:hover {
+    border-color: var(--accent3);
+    color: var(--accent3);
   }
 </style>
 </head>
@@ -524,153 +471,134 @@
 
 <header>
   <div class="logo">NEXUS</div>
-  <div class="sys-info" id="sysTime">--:--:-- | SYS.OK</div>
-  <div class="status-bar">
+  <div class="header-right">
     <span><span class="status-dot"></span>ONLINE</span>
-    <span style="color:var(--accent2)">v2.4.1</span>
-    <span>NEXUS-AI</span>
+    <span id="sysTime" style="color:var(--text-dim)">--:--:--</span>
+    <span style="color:var(--accent2); font-size:10px;">claude-sonnet-4-20250514</span>
   </div>
 </header>
 
 <div class="main">
-  <!-- Left sidebar -->
+
   <div class="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-label">Acciones rápidas</div>
-      <button class="quick-btn" onclick="quickAction('Resume mi último documento')">Resumir documento</button>
-      <button class="quick-btn" onclick="quickAction('Escribe un email profesional sobre...')">Redactar email</button>
-      <button class="quick-btn" onclick="quickAction('Explica este concepto de programación:')">Ayuda con código</button>
-      <button class="quick-btn" onclick="quickAction('Traduce este texto al inglés:')">Traducir texto</button>
-      <button class="quick-btn" onclick="quickAction('Crea un plan de trabajo para la semana')">Plan semanal</button>
-      <button class="quick-btn" onclick="quickAction('Analiza los pros y contras de...')">Analizar opciones</button>
-      <button class="quick-btn" onclick="quickAction('Dame ideas creativas para...')">Ideas creativas</button>
+      <div class="section-label">Acciones rapidas</div>
+      <button class="quick-btn" onclick="quickAction('Resume el siguiente texto en 5 puntos clave:\n\n')">Resumir texto</button>
+      <button class="quick-btn" onclick="quickAction('Escribeme un email profesional para:\n\n')">Redactar email</button>
+      <button class="quick-btn" onclick="quickAction('Explica este codigo y sugiere mejoras:\n\n')">Revisar codigo</button>
+      <button class="quick-btn" onclick="quickAction('Traduce al ingles de forma natural:\n\n')">Traducir texto</button>
+      <button class="quick-btn" onclick="quickAction('Crea un plan de trabajo detallado para esta semana con estos objetivos:\n\n')">Plan semanal</button>
+      <button class="quick-btn" onclick="quickAction('Dame 5 ideas creativas para:\n\n')">Ideas creativas</button>
+      <button class="quick-btn" onclick="quickAction('Analiza los pros y contras de:\n\n')">Analizar opciones</button>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Sistema</div>
+      <div class="section-label">Sistema</div>
       <div class="metric">
-        <div class="metric-label">
-          <span>CPU</span><span id="cpu-val" style="color:var(--accent2)">--</span>
-        </div>
+        <div class="metric-label"><span>CPU</span><span id="cpu-val" style="color:var(--accent2)">--</span></div>
         <div class="metric-bar"><div class="metric-fill" id="cpu-bar" style="width:0%"></div></div>
       </div>
       <div class="metric">
-        <div class="metric-label">
-          <span>RAM</span><span id="ram-val" style="color:var(--accent2)">--</span>
-        </div>
-        <div class="metric-bar"><div class="metric-fill" id="ram-bar" style="width:0%; background: linear-gradient(90deg,var(--accent),var(--accent3))"></div></div>
+        <div class="metric-label"><span>RAM</span><span id="ram-val" style="color:var(--accent2)">--</span></div>
+        <div class="metric-bar"><div class="metric-fill" id="ram-bar" style="width:0%; background:linear-gradient(90deg,var(--accent),var(--accent3))"></div></div>
       </div>
       <div class="metric">
-        <div class="metric-label">
-          <span>RED</span><span id="net-val" style="color:var(--accent2)">--</span>
-        </div>
-        <div class="metric-bar"><div class="metric-fill" id="net-bar" style="width:0%; background: linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
+        <div class="metric-label"><span>RED</span><span id="net-val" style="color:var(--accent2)">--</span></div>
+        <div class="metric-bar"><div class="metric-fill" id="net-bar" style="width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
       </div>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Historial</div>
-      <div id="history-list" style="font-size:10px; color:var(--text-dim); line-height:1.8;">
-        <div>— Sin historial aún —</div>
+      <div class="section-label">Conversacion</div>
+      <div style="font-size:10px; color:var(--text-dim); margin-bottom:8px;">
+        <span id="conv-turns">0</span> turnos en contexto
       </div>
+      <button class="clear-btn" onclick="clearConversation()">&#8856; NUEVA CONVERSACION</button>
     </div>
   </div>
 
-  <!-- Chat -->
   <div class="chat-area">
     <div class="chat-header">
-      <span>CONSOLA PRINCIPAL // NEXUS-AI</span>
+      <span>CONSOLA PRINCIPAL // NEXUS-AI &harr; CLAUDE API</span>
       <span id="msgCount">0 mensajes</span>
     </div>
 
     <div class="messages" id="messages">
       <div class="message ai">
-        <div class="msg-avatar ai">⬡</div>
+        <div class="msg-avatar ai">&#11041;</div>
         <div>
-          <div class="msg-bubble welcome-msg">
-            Sistema inicializado correctamente.<br><br>
-            Soy <strong style="color:var(--accent)">NEXUS</strong>, tu asistente de IA para laptop. Estoy listo para ayudarte con:<br><br>
-            → Redacción y documentos<br>
-            → Código y programación<br>
-            → Análisis y síntesis<br>
-            → Preguntas y respuestas<br>
-            → Ideas y creatividad<br><br>
-            Escribe tu consulta abajo o usa las <code>acciones rápidas</code> del panel lateral.
-          </div>
-          <div class="msg-meta">NEXUS // 00:00:00 // BOOT_MSG</div>
+          <div class="msg-bubble">Sistema inicializado. Conectado a la API de Claude.
+
+Soy NEXUS, potenciado por Claude Sonnet 4. Tengo memoria de la conversacion completa y puedo ayudarte con cualquier tarea: redaccion, codigo, analisis, traducciones, ideas y mucho mas.
+
+Escribe tu consulta abajo o usa las acciones rapidas del panel lateral.</div>
+          <div class="msg-meta">NEXUS // BOOT // API_READY</div>
         </div>
       </div>
     </div>
 
     <div class="input-area">
       <div class="input-row">
-        <span class="input-prompt">›</span>
-        <textarea 
-          class="input-field" 
+        <span class="input-prompt">&rsaquo;</span>
+        <textarea
+          class="input-field"
           id="inputField"
-          placeholder="Escribe tu consulta aquí... (Enter para enviar, Shift+Enter para nueva línea)"
+          placeholder="Escribe aqui... (Enter para enviar, Shift+Enter nueva linea)"
           rows="1"
         ></textarea>
-        <button class="send-btn" onclick="sendMessage()">ENVIAR</button>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">ENVIAR</button>
       </div>
     </div>
   </div>
 
-  <!-- Right panel -->
   <div class="right-panel">
     <div class="right-section">
-      <div class="right-label">Modelo activo</div>
-      <span class="model-tag">NEXUS-7B-INSTRUCT</span>
-      <span class="model-tag" style="color:var(--accent2); border-color:rgba(0,255,136,0.2); background:rgba(0,255,136,0.05)">CONTEXTO: 128K</span>
+      <div class="right-label">Modelo</div>
+      <span class="model-tag">CLAUDE SONNET 4</span>
+      <span class="model-tag" style="color:var(--accent2);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.05)">CTX: 200K TOKENS</span>
     </div>
 
     <div class="right-section">
       <div class="right-label">Tokens</div>
-      <div class="token-display" id="tokenCount">0</div>
-      <div class="token-label">TOKENS USADOS</div>
-      <div class="cap-row"><span>Límite sesión</span><span class="cap-val">128,000</span></div>
-      <div class="cap-row"><span>Disponibles</span><span class="cap-val" id="tokensLeft">128,000</span></div>
-      <div class="cap-row"><span>Mensajes</span><span class="cap-val" id="msgCountR">0</span></div>
+      <div class="token-display" id="tokenIn">0</div>
+      <div class="token-label">INPUT</div>
+      <div class="token-display" id="tokenOut" style="color:var(--accent2);text-shadow:var(--glow2)">0</div>
+      <div class="token-label">OUTPUT</div>
+    </div>
+
+    <div class="right-section">
+      <div class="right-label">Estadisticas</div>
+      <div class="cap-row"><span>Mensajes</span><span class="cap-val" id="statMsgs">0</span></div>
+      <div class="cap-row"><span>Total tokens</span><span class="cap-val" id="statTotal">0</span></div>
+      <div class="cap-row"><span>Ultimo tiempo</span><span class="cap-val" id="statTime">-</span></div>
     </div>
 
     <div class="right-section">
       <div class="right-label">Capacidades</div>
-      <div class="cap-row"><span>Texto</span><span class="cap-val">✓</span></div>
-      <div class="cap-row"><span>Código</span><span class="cap-val">✓</span></div>
-      <div class="cap-row"><span>Análisis</span><span class="cap-val">✓</span></div>
-      <div class="cap-row"><span>Traducción</span><span class="cap-val">✓</span></div>
-      <div class="cap-row"><span>Resumen</span><span class="cap-val">✓</span></div>
-      <div class="cap-row"><span>Visión</span><span class="cap-val" style="color:var(--text-dim)">—</span></div>
-    </div>
-
-    <div class="right-section">
-      <div class="right-label">Temperatura</div>
-      <input type="range" min="0" max="100" value="70" id="tempSlider" 
-        style="width:100%; accent-color:var(--accent); margin-bottom:6px;">
-      <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim)">
-        <span>Preciso</span>
-        <span id="tempVal" style="color:var(--accent)">0.7</span>
-        <span>Creativo</span>
-      </div>
+      <div class="cap-row"><span>Texto</span><span class="cap-val">&#10003;</span></div>
+      <div class="cap-row"><span>Codigo</span><span class="cap-val">&#10003;</span></div>
+      <div class="cap-row"><span>Analisis</span><span class="cap-val">&#10003;</span></div>
+      <div class="cap-row"><span>Traduccion</span><span class="cap-val">&#10003;</span></div>
+      <div class="cap-row"><span>Razonamiento</span><span class="cap-val">&#10003;</span></div>
+      <div class="cap-row"><span>Memoria ctx</span><span class="cap-val" style="color:var(--accent)">&#10003;</span></div>
     </div>
   </div>
+
 </div>
 
 <script>
   // Clock
   function updateClock() {
-    const now = new Date();
-    const t = now.toTimeString().split(' ')[0];
-    document.getElementById('sysTime').textContent = t + ' | SYS.OK';
+    document.getElementById('sysTime').textContent = new Date().toTimeString().split(' ')[0];
   }
   setInterval(updateClock, 1000);
   updateClock();
 
   // Fake metrics
   function updateMetrics() {
-    const cpu = 15 + Math.random() * 25;
-    const ram = 45 + Math.random() * 15;
-    const net = Math.random() * 40;
+    const cpu = 12 + Math.random() * 22;
+    const ram = 42 + Math.random() * 18;
+    const net = Math.random() * 35;
     document.getElementById('cpu-val').textContent = cpu.toFixed(0) + '%';
     document.getElementById('ram-val').textContent = ram.toFixed(0) + '%';
     document.getElementById('net-val').textContent = net.toFixed(0) + '%';
@@ -679,18 +607,139 @@
     document.getElementById('net-bar').style.width = net + '%';
   }
   updateMetrics();
-  setInterval(updateMetrics, 2500);
+  setInterval(updateMetrics, 3000);
 
-  // Temperature slider
-  document.getElementById('tempSlider').addEventListener('input', function() {
-    document.getElementById('tempVal').textContent = (this.value / 100).toFixed(1);
-  });
+  // State
+  let conversation = [];
+  let msgCount = 0;
+  let totalIn = 0, totalOut = 0;
+  let isStreaming = false;
+
+  function getTime() { return new Date().toTimeString().split(' ')[0]; }
+
+  function scrollBottom() {
+    const m = document.getElementById('messages');
+    m.scrollTop = m.scrollHeight;
+  }
+
+  function setInputEnabled(enabled) {
+    document.getElementById('inputField').disabled = !enabled;
+    document.getElementById('sendBtn').disabled = !enabled;
+  }
+
+  function updateStats() {
+    document.getElementById('tokenIn').textContent = totalIn.toLocaleString();
+    document.getElementById('tokenOut').textContent = totalOut.toLocaleString();
+    document.getElementById('statMsgs').textContent = msgCount;
+    document.getElementById('statTotal').textContent = (totalIn + totalOut).toLocaleString();
+    document.getElementById('msgCount').textContent = msgCount + ' mensajes';
+    document.getElementById('conv-turns').textContent = Math.floor(conversation.length / 2);
+  }
+
+  function quickAction(text) {
+    const f = document.getElementById('inputField');
+    f.value = text;
+    f.focus();
+    f.style.height = 'auto';
+    f.style.height = Math.min(f.scrollHeight, 110) + 'px';
+  }
+
+  function clearConversation() {
+    conversation = [];
+    msgCount = 0;
+    document.getElementById('messages').innerHTML = `
+      <div class="message ai">
+        <div class="msg-avatar ai">&#11041;</div>
+        <div>
+          <div class="msg-bubble">Conversacion reiniciada. Contexto limpiado.
+
+Puedes comenzar una nueva consulta.</div>
+          <div class="msg-meta">NEXUS // ${getTime()} // RESET</div>
+        </div>
+      </div>`;
+    updateStats();
+  }
+
+  function escHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function addUserMessage(text) {
+    const msgs = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'message user';
+    wrap.innerHTML = `
+      <div class="msg-avatar user">&#9672;</div>
+      <div style="min-width:0;flex:1">
+        <div class="msg-bubble">${escHtml(text)}</div>
+        <div class="msg-meta">USUARIO // ${getTime()}</div>
+      </div>`;
+    msgs.appendChild(wrap);
+    scrollBottom();
+  }
+
+  function addStreamingBubble() {
+    const msgs = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'message ai';
+    const id = 'sb-' + Date.now();
+    const metaId = 'sm-' + Date.now();
+    wrap.innerHTML = `
+      <div class="msg-avatar ai">&#11041;</div>
+      <div style="min-width:0;flex:1">
+        <div class="msg-bubble" id="${id}"><span class="cursor-blink"></span></div>
+        <div class="msg-meta" id="${metaId}">NEXUS // ${getTime()} // STREAMING...</div>
+      </div>`;
+    msgs.appendChild(wrap);
+    scrollBottom();
+
+    let text = '';
+    return {
+      id, metaId,
+      append(chunk) {
+        text += chunk;
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = text;
+          const cur = document.createElement('span');
+          cur.className = 'cursor-blink';
+          el.appendChild(cur);
+          scrollBottom();
+        }
+      },
+      finish() {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+        const mel = document.getElementById(metaId);
+        if (mel) mel.textContent = `NEXUS // ${getTime()} // DONE`;
+        return text;
+      },
+      remove() { wrap.remove(); }
+    };
+  }
+
+  function addError(msg) {
+    const msgs = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'message ai';
+    wrap.innerHTML = `
+      <div class="msg-avatar ai" style="color:var(--accent3);border-color:rgba(255,107,53,.3)">&#9888;</div>
+      <div>
+        <div class="error-bubble">${escHtml(msg)}</div>
+        <div class="msg-meta" style="color:var(--accent3)">ERROR // ${getTime()}</div>
+      </div>`;
+    msgs.appendChild(wrap);
+    scrollBottom();
+  }
 
   // Auto-resize textarea
   const inputField = document.getElementById('inputField');
   inputField.addEventListener('input', function() {
     this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    this.style.height = Math.min(this.scrollHeight, 110) + 'px';
   });
 
   inputField.addEventListener('keydown', function(e) {
@@ -700,143 +749,104 @@
     }
   });
 
-  let totalTokens = 0;
-  let msgCount = 0;
-  let historyItems = [];
-
-  function quickAction(text) {
-    inputField.value = text;
-    inputField.focus();
-  }
-
-  function getTime() {
-    return new Date().toTimeString().split(' ')[0];
-  }
-
-  function countTokens(text) {
-    return Math.ceil(text.split(/\s+/).length * 1.3);
-  }
-
-  function addMessage(role, text) {
-    const msgs = document.getElementById('messages');
-    const div = document.createElement('div');
-    div.className = 'message ' + role;
-
-    const avatar = role === 'ai' ? '⬡' : '◈';
-    const meta = role === 'ai' ? 'NEXUS' : 'USUARIO';
-
-    div.innerHTML = `
-      <div class="msg-avatar ${role}">${avatar}</div>
-      <div>
-        <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>
-        <div class="msg-meta">${meta} // ${getTime()}</div>
-      </div>
-    `;
-
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-    return div;
-  }
-
-  function showTyping() {
-    const msgs = document.getElementById('messages');
-    const div = document.createElement('div');
-    div.className = 'message ai';
-    div.id = 'typing-indicator';
-    div.innerHTML = `
-      <div class="msg-avatar ai">⬡</div>
-      <div class="msg-bubble typing">
-        <span></span><span></span><span></span>
-      </div>
-    `;
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  function removeTyping() {
-    const el = document.getElementById('typing-indicator');
-    if (el) el.remove();
-  }
-
-  // AI response generator
-  const responses = {
-    default: [
-      "Entendido. He procesado tu consulta y aquí está mi análisis:\n\nEsta es una pregunta interesante que requiere considerar múltiples perspectivas. Desde un punto de vista técnico, los factores clave a considerar son la eficiencia, la escalabilidad y la facilidad de uso. Te recomendaría comenzar con un enfoque iterativo, probando hipótesis pequeñas antes de comprometerte con una solución definitiva.",
-      "Perfecto. Aquí tienes la información que necesitas:\n\nHe analizado tu consulta en detalle. Los puntos más importantes son: primero, definir claramente el objetivo; segundo, identificar los recursos disponibles; y tercero, establecer métricas de éxito. Con esta base, puedes estructurar tu plan de acción de manera efectiva.",
-      "Procesando tu solicitud...\n\nBasándome en el contexto proporcionado, te sugiero lo siguiente: considera las mejores prácticas del sector, documenta cada paso del proceso, y mantén comunicación constante con los involucrados. ¿Necesitas que profundice en algún aspecto específico?",
-      "Análisis completado. Aquí está mi respuesta:\n\nEsta situación tiene varias aristas. Por un lado, debes considerar los factores técnicos; por otro, los aspectos humanos y organizacionales. Mi recomendación es abordar ambas dimensiones de manera simultánea para obtener los mejores resultados.",
-    ]
-  };
-
-  function getAIResponse(userMsg) {
-    const msg = userMsg.toLowerCase();
-    
-    if (msg.includes('email') || msg.includes('correo')) {
-      return "Claro, aquí tienes un email profesional:\n\nAsunto: [Tu asunto aquí]\n\nEstimado/a [Nombre],\n\nMe dirijo a usted para [motivo principal]. En este sentido, me gustaría [acción o propuesta concreta].\n\nQuedo a su disposición para cualquier consulta adicional.\n\nAtentamente,\n[Tu nombre]";
-    }
-    if (msg.includes('código') || msg.includes('programación') || msg.includes('code')) {
-      return "Entendido. Para ayudarte con el código necesito más contexto. Dime:\n\n→ ¿Qué lenguaje de programación?\n→ ¿Qué función debe realizar?\n→ ¿Tienes algún código existente que revisar?\n\nCon esa información podré darte una solución precisa y funcional.";
-    }
-    if (msg.includes('resume') || msg.includes('resumir') || msg.includes('resumen')) {
-      return "Para resumir tu documento de manera efectiva, necesito que pegues el texto aquí. Mientras tanto, aquí está mi metodología:\n\n1. Identifico las ideas principales\n2. Elimino información redundante\n3. Mantengo el contexto esencial\n4. Estructuro el resumen de forma clara\n\n¿Puedes compartir el texto que deseas resumir?";
-    }
-    if (msg.includes('traduc')) {
-      return "Listo para traducir. Comparte el texto que deseas traducir y especifica:\n\n→ Idioma de destino (inglés, francés, alemán, etc.)\n→ Tono deseado (formal/informal)\n→ Contexto de uso (técnico, literario, comercial)\n\nAsí podré ofrecerte la traducción más precisa y natural.";
-    }
-    if (msg.includes('plan') || msg.includes('semana') || msg.includes('proyecto')) {
-      return "Aquí tienes un plan de trabajo estructurado:\n\nLUNES — Revisión de objetivos y priorización de tareas\nMARTES — Ejecución de tareas críticas (alta concentración)\nMIÉRCOLES — Reuniones y colaboración\nJUEVES — Desarrollo de proyectos a largo plazo\nVIERNES — Revisión, documentación y planificación siguiente semana\n\n¿Quieres que adapte este plan a tus objetivos específicos?";
-    }
-    
-    const r = responses.default;
-    return r[Math.floor(Math.random() * r.length)];
-  }
-
-  function updateStats(tokens) {
-    totalTokens += tokens;
-    document.getElementById('tokenCount').textContent = totalTokens.toLocaleString();
-    document.getElementById('tokensLeft').textContent = (128000 - totalTokens).toLocaleString();
-    document.getElementById('msgCount').textContent = msgCount + ' mensajes';
-    document.getElementById('msgCountR').textContent = msgCount;
-  }
-
-  function updateHistory(text) {
-    const short = text.substring(0, 25) + (text.length > 25 ? '...' : '');
-    historyItems.unshift(short);
-    if (historyItems.length > 5) historyItems.pop();
-    
-    const hist = document.getElementById('history-list');
-    hist.innerHTML = historyItems.map((h, i) => 
-      `<div style="color:${i===0?'var(--text)':'var(--text-dim)'}; padding: 2px 0; cursor:pointer; font-size:10px;" onclick="inputField.value='${h.replace(/'/g,"\\'")}'">${h}</div>`
-    ).join('');
-  }
-
   async function sendMessage() {
+    if (isStreaming) return;
     const text = inputField.value.trim();
     if (!text) return;
 
     inputField.value = '';
     inputField.style.height = 'auto';
+
+    addUserMessage(text);
     msgCount++;
+    conversation.push({ role: 'user', content: text });
 
-    addMessage('user', text);
-    updateHistory(text);
+    setInputEnabled(false);
+    isStreaming = true;
 
-    const userTokens = countTokens(text);
-    updateStats(userTokens);
+    const startTime = Date.now();
+    const streamer = addStreamingBubble();
 
-    showTyping();
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          stream: true,
+          system: 'Eres NEXUS, un asistente de IA para laptop potenciado por Claude. Eres preciso, util y conciso. Respondes siempre en el mismo idioma del usuario. Cuando el usuario te pide codigo, lo proporcionas claramente formateado. Eres directo y eficiente. No uses markdown con asteriscos para negritas ya que el output es texto plano.',
+          messages: conversation
+        })
+      });
 
-    const delay = 800 + Math.random() * 1200;
-    
-    setTimeout(() => {
-      removeTyping();
-      const response = getAIResponse(text);
-      addMessage('ai', response);
-      
-      const aiTokens = countTokens(response);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let inputTokens = 0, outputTokens = 0;
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (!data || data === '[DONE]') continue;
+
+          try {
+            const evt = JSON.parse(data);
+
+            if (evt.type === 'message_start' && evt.message?.usage) {
+              inputTokens = evt.message.usage.input_tokens || 0;
+            }
+
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              streamer.append(evt.delta.text);
+              fullText += evt.delta.text;
+            }
+
+            if (evt.type === 'message_delta' && evt.usage) {
+              outputTokens = evt.usage.output_tokens || 0;
+            }
+          } catch (_) {}
+        }
+      }
+
+      const finalText = streamer.finish();
+
+      conversation.push({ role: 'assistant', content: finalText });
       msgCount++;
-      updateStats(aiTokens);
-    }, delay);
+      totalIn += inputTokens;
+      totalOut += outputTokens;
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      document.getElementById('statTime').textContent = elapsed + 's';
+      updateStats();
+
+    } catch (err) {
+      streamer.remove();
+      conversation.pop();
+      addError('Error al conectar con la API de Claude:\n' + err.message);
+    }
+
+    isStreaming = false;
+    setInputEnabled(true);
+    document.getElementById('inputField').focus();
   }
 </script>
 </body>
