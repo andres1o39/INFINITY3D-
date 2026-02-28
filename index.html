@@ -1,853 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS — IA para Laptop</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #080c10;
-    --bg2: #0d1219;
-    --panel: #0f1820;
-    --border: #1a3a4a;
-    --accent: #00e5ff;
-    --accent2: #00ff88;
-    --accent3: #ff6b35;
-    --text: #b0d8e8;
-    --text-dim: #4a7a8a;
-    --glow: 0 0 20px rgba(0, 229, 255, 0.3);
-    --glow2: 0 0 20px rgba(0, 255, 136, 0.3);
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  .grid-bg {
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 24px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
-  }
-
-  header::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.5;
-  }
-
-  .logo {
-    font-family: 'Orbitron', monospace;
-    font-weight: 900;
-    font-size: 20px;
-    letter-spacing: 0.35em;
-    color: var(--accent);
-    text-shadow: var(--glow);
-    animation: flicker 10s infinite;
-  }
-
-  @keyframes flicker {
-    0%,93%,100%{opacity:1} 94%{opacity:.7} 95%{opacity:1} 97%{opacity:.5} 98%{opacity:1}
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  .status-dot {
-    display: inline-block;
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--accent2);
-    box-shadow: var(--glow2);
-    margin-right: 5px;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)}
-  }
-
-  .main {
-    display: grid;
-    grid-template-columns: 210px 1fr 190px;
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-  }
-
-  .sidebar {
-    border-right: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-
-  .sidebar-section {
-    padding: 14px 14px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-  }
-
-  .section-label {
-    font-size: 9px;
-    letter-spacing: .25em;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .quick-btn {
-    display: block;
-    width: 100%;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    text-align: left;
-    padding: 6px 8px;
-    cursor: pointer;
-    border-radius: 3px;
-    margin-bottom: 3px;
-    transition: all .15s;
-    line-height: 1.4;
-  }
-
-  .quick-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,229,255,0.05);
-    padding-left: 12px;
-  }
-
-  .quick-btn::before { content: 'ss '; color: var(--text-dim); }
-  .quick-btn:hover::before { color: var(--accent); }
-
-  .metric { margin-bottom: 10px; }
-  .metric-label {
-    font-size: 10px; color: var(--text-dim);
-    margin-bottom: 3px;
-    display: flex; justify-content: space-between;
-  }
-  .metric-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .metric-fill {
-    height: 100%; border-radius: 2px;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    box-shadow: 0 0 6px rgba(0,229,255,.4);
-    transition: width 1.5s ease;
-  }
-
-  .chat-area {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--bg);
-  }
-
-  .chat-header {
-    padding: 8px 18px;
-    font-size: 10px;
-    color: var(--text-dim);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    letter-spacing: .05em;
-  }
-
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-
-  .messages::-webkit-scrollbar { width: 3px; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); }
-
-  .message {
-    display: flex;
-    gap: 10px;
-    animation: slideIn .25s ease;
-    max-width: 92%;
-  }
-
-  .message.user {
-    flex-direction: row-reverse;
-    align-self: flex-end;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .msg-avatar {
-    width: 30px; height: 30px;
-    border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; flex-shrink: 0;
-  }
-
-  .msg-avatar.ai {
-    background: rgba(0,229,255,.08);
-    border: 1px solid rgba(0,229,255,.25);
-    color: var(--accent);
-  }
-
-  .msg-avatar.user {
-    background: rgba(0,255,136,.08);
-    border: 1px solid rgba(0,255,136,.25);
-    color: var(--accent2);
-  }
-
-  .msg-bubble {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px 13px;
-    font-size: 13px;
-    line-height: 1.65;
-    max-width: 100%;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .message.ai .msg-bubble { border-left: 2px solid var(--accent); }
-  .message.user .msg-bubble {
-    border-right: 2px solid var(--accent2);
-    background: rgba(0,255,136,.03);
-  }
-
-  .msg-meta {
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-top: 4px;
-    letter-spacing: .08em;
-  }
-
-  .cursor-blink {
-    display: inline-block;
-    width: 8px; height: 13px;
-    background: var(--accent);
-    margin-left: 2px;
-    vertical-align: text-bottom;
-    animation: blink .6s step-end infinite;
-  }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-  .input-area {
-    border-top: 1px solid var(--border);
-    padding: 12px 18px;
-    background: var(--bg2);
-    flex-shrink: 0;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    align-items: flex-end;
-  }
-
-  .input-prompt {
-    color: var(--accent);
-    font-size: 15px;
-    line-height: 36px;
-    flex-shrink: 0;
-  }
-
-  textarea.input-field {
-    flex: 1;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    padding: 7px 11px;
-    resize: none;
-    outline: none;
-    min-height: 36px;
-    max-height: 110px;
-    line-height: 1.55;
-    transition: border-color .2s, box-shadow .2s;
-  }
-
-  textarea.input-field:focus {
-    border-color: var(--accent);
-    box-shadow: var(--glow);
-  }
-
-  textarea.input-field::placeholder { color: var(--text-dim); }
-  textarea.input-field:disabled { opacity: .5; }
-
-  .send-btn {
-    background: rgba(0,229,255,.1);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: .12em;
-    padding: 7px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all .15s;
-    height: 36px;
-    white-space: nowrap;
-  }
-
-  .send-btn:hover:not(:disabled) {
-    background: var(--accent);
-    color: var(--bg);
-    box-shadow: var(--glow);
-  }
-
-  .send-btn:active:not(:disabled) { transform: scale(.97); }
-  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-  .right-panel {
-    border-left: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    padding: 14px 0;
-  }
-
-  .right-section {
-    padding: 0 13px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    margin-bottom: 2px;
-  }
-
-  .right-label {
-    font-size: 9px;
-    letter-spacing: .25em;
-    color: var(--text-dim);
-    margin-bottom: 9px;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 5px;
-    padding-top: 12px;
-  }
-
-  .right-section:first-child .right-label { padding-top: 0; }
-
-  .model-tag {
-    display: block;
-    text-align: center;
-    background: rgba(0,229,255,.07);
-    border: 1px solid rgba(0,229,255,.2);
-    color: var(--accent);
-    font-size: 10px;
-    padding: 4px 8px;
-    border-radius: 3px;
-    margin-bottom: 5px;
-    letter-spacing: .05em;
-  }
-
-  .cap-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--text-dim);
-    margin-bottom: 5px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255,255,255,.03);
-  }
-
-  .cap-val { color: var(--accent2); }
-
-  .token-display {
-    font-size: 18px;
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
-    color: var(--accent);
-    text-shadow: var(--glow);
-    text-align: center;
-    margin: 4px 0 1px;
-  }
-
-  .token-label {
-    font-size: 8px; color: var(--text-dim);
-    text-align: center; letter-spacing: .2em; margin-bottom: 8px;
-  }
-
-  .error-bubble {
-    background: rgba(255,107,53,.08);
-    border: 1px solid rgba(255,107,53,.3);
-    border-left: 2px solid var(--accent3);
-    color: var(--accent3);
-    font-size: 12px;
-    padding: 10px 13px;
-    border-radius: 4px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-  }
-
-  .clear-btn {
-    display: block;
-    width: 100%;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    padding: 6px;
-    border-radius: 3px;
-    cursor: pointer;
-    letter-spacing: .1em;
-    transition: all .15s;
-    margin-top: 6px;
-  }
-
-  .clear-btn:hover {
-    border-color: var(--accent3);
-    color: var(--accent3);
-  }
-</style>
+    <meta charset="UTF-8">
+    <title>Geometry Dash Infinite - Rhythm Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
+        canvas { display: block; background: linear-gradient(#005, #001); }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 24px; pointer-events: none; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; }
+    </style>
 </head>
 <body>
-
-<div class="grid-bg"></div>
-
-<header>
-  <div class="logo">NEXUS</div>
-  <div class="header-right">
-    <span><span class="status-dot"></span>ONLINE</span>
-    <span id="sysTime" style="color:var(--text-dim)">--:--:--</span>
-    <span style="color:var(--accent2); font-size:10px;">claude-sonnet-4-20250514</span>
-  </div>
-</header>
-
-<div class="main">
-
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="section-label">Acciones rapidas</div>
-      <button class="quick-btn" onclick="quickAction('Resume el siguiente texto en 5 puntos clave:\n\n')">Resumir texto</button>
-      <button class="quick-btn" onclick="quickAction('Escribeme un email profesional para:\n\n')">Redactar email</button>
-      <button class="quick-btn" onclick="quickAction('Explica este codigo y sugiere mejoras:\n\n')">Revisar codigo</button>
-      <button class="quick-btn" onclick="quickAction('Traduce al ingles de forma natural:\n\n')">Traducir texto</button>
-      <button class="quick-btn" onclick="quickAction('Crea un plan de trabajo detallado para esta semana con estos objetivos:\n\n')">Plan semanal</button>
-      <button class="quick-btn" onclick="quickAction('Dame 5 ideas creativas para:\n\n')">Ideas creativas</button>
-      <button class="quick-btn" onclick="quickAction('Analiza los pros y contras de:\n\n')">Analizar opciones</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Sistema</div>
-      <div class="metric">
-        <div class="metric-label"><span>CPU</span><span id="cpu-val" style="color:var(--accent2)">--</span></div>
-        <div class="metric-bar"><div class="metric-fill" id="cpu-bar" style="width:0%"></div></div>
-      </div>
-      <div class="metric">
-        <div class="metric-label"><span>RAM</span><span id="ram-val" style="color:var(--accent2)">--</span></div>
-        <div class="metric-bar"><div class="metric-fill" id="ram-bar" style="width:0%; background:linear-gradient(90deg,var(--accent),var(--accent3))"></div></div>
-      </div>
-      <div class="metric">
-        <div class="metric-label"><span>RED</span><span id="net-val" style="color:var(--accent2)">--</span></div>
-        <div class="metric-bar"><div class="metric-fill" id="net-bar" style="width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Conversacion</div>
-      <div style="font-size:10px; color:var(--text-dim); margin-bottom:8px;">
-        <span id="conv-turns">0</span> turnos en contexto
-      </div>
-      <button class="clear-btn" onclick="clearConversation()">&#8856; NUEVA CONVERSACION</button>
-    </div>
-  </div>
-
-  <div class="chat-area">
-    <div class="chat-header">
-      <span>CONSOLA PRINCIPAL // NEXUS-AI &harr; CLAUDE API</span>
-      <span id="msgCount">0 mensajes</span>
-    </div>
-
-    <div class="messages" id="messages">
-      <div class="message ai">
-        <div class="msg-avatar ai">&#11041;</div>
-        <div>
-          <div class="msg-bubble">Sistema inicializado. Conectado a la API de Claude.
-
-Soy NEXUS, potenciado por Claude Sonnet 4. Tengo memoria de la conversacion completa y puedo ayudarte con cualquier tarea: redaccion, codigo, analisis, traducciones, ideas y mucho mas.
-
-Escribe tu consulta abajo o usa las acciones rapidas del panel lateral.</div>
-          <div class="msg-meta">NEXUS // BOOT // API_READY</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="input-area">
-      <div class="input-row">
-        <span class="input-prompt">&rsaquo;</span>
-        <textarea
-          class="input-field"
-          id="inputField"
-          placeholder="Escribe aqui... (Enter para enviar, Shift+Enter nueva linea)"
-          rows="1"
-        ></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">ENVIAR</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="right-panel">
-    <div class="right-section">
-      <div class="right-label">Modelo</div>
-      <span class="model-tag">CLAUDE SONNET 4</span>
-      <span class="model-tag" style="color:var(--accent2);border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.05)">CTX: 200K TOKENS</span>
-    </div>
-
-    <div class="right-section">
-      <div class="right-label">Tokens</div>
-      <div class="token-display" id="tokenIn">0</div>
-      <div class="token-label">INPUT</div>
-      <div class="token-display" id="tokenOut" style="color:var(--accent2);text-shadow:var(--glow2)">0</div>
-      <div class="token-label">OUTPUT</div>
-    </div>
-
-    <div class="right-section">
-      <div class="right-label">Estadisticas</div>
-      <div class="cap-row"><span>Mensajes</span><span class="cap-val" id="statMsgs">0</span></div>
-      <div class="cap-row"><span>Total tokens</span><span class="cap-val" id="statTotal">0</span></div>
-      <div class="cap-row"><span>Ultimo tiempo</span><span class="cap-val" id="statTime">-</span></div>
-    </div>
-
-    <div class="right-section">
-      <div class="right-label">Capacidades</div>
-      <div class="cap-row"><span>Texto</span><span class="cap-val">&#10003;</span></div>
-      <div class="cap-row"><span>Codigo</span><span class="cap-val">&#10003;</span></div>
-      <div class="cap-row"><span>Analisis</span><span class="cap-val">&#10003;</span></div>
-      <div class="cap-row"><span>Traduccion</span><span class="cap-val">&#10003;</span></div>
-      <div class="cap-row"><span>Razonamiento</span><span class="cap-val">&#10003;</span></div>
-      <div class="cap-row"><span>Memoria ctx</span><span class="cap-val" style="color:var(--accent)">&#10003;</span></div>
-    </div>
-  </div>
-
-</div>
+    <div id="ui">Puntos: 0</div>
+    <div id="msg">Haz CLICK para Empezar<br>Salto: Ratón o Espacio</div>
+    <canvas id="game"></canvas>
 
 <script>
-  // Clock
-  function updateClock() {
-    document.getElementById('sysTime').textContent = new Date().toTimeString().split(' ')[0];
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const ui = document.getElementById('ui');
+const msg = document.getElementById('msg');
 
-  // Fake metrics
-  function updateMetrics() {
-    const cpu = 12 + Math.random() * 22;
-    const ram = 42 + Math.random() * 18;
-    const net = Math.random() * 35;
-    document.getElementById('cpu-val').textContent = cpu.toFixed(0) + '%';
-    document.getElementById('ram-val').textContent = ram.toFixed(0) + '%';
-    document.getElementById('net-val').textContent = net.toFixed(0) + '%';
-    document.getElementById('cpu-bar').style.width = cpu + '%';
-    document.getElementById('ram-bar').style.width = ram + '%';
-    document.getElementById('net-bar').style.width = net + '%';
-  }
-  updateMetrics();
-  setInterval(updateMetrics, 3000);
+// Configuración del Juego
+let gameRunning = false;
+let score = 0;
+const gravity = 0.6;
+const jumpForce = -12;
+const speed = 7;
+const bpm = 125; // Ritmo del juego
+const beatInterval = (60 / bpm) * 1000;
 
-  // State
-  let conversation = [];
-  let msgCount = 0;
-  let totalIn = 0, totalOut = 0;
-  let isStreaming = false;
+// Objetos
+const player = {
+    x: 100, y: 0, w: 40, h: 40,
+    vy: 0, rotation: 0, grounded: false,
+    color: '#0ff'
+};
 
-  function getTime() { return new Date().toTimeString().split(' ')[0]; }
+let obstacles = [];
+let lastBeat = 0;
 
-  function scrollBottom() {
-    const m = document.getElementById('messages');
-    m.scrollTop = m.scrollHeight;
-  }
+// --- AUDIO SYSTEM (Sintetizador rítmico) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, duration) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
 
-  function setInputEnabled(enabled) {
-    document.getElementById('inputField').disabled = !enabled;
-    document.getElementById('sendBtn').disabled = !enabled;
-  }
+function init() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    player.y = canvas.height - 140;
+    gameRunning = true;
+    msg.style.display = 'none';
+    score = 0;
+    obstacles = [];
+    requestAnimationFrame(update);
+}
 
-  function updateStats() {
-    document.getElementById('tokenIn').textContent = totalIn.toLocaleString();
-    document.getElementById('tokenOut').textContent = totalOut.toLocaleString();
-    document.getElementById('statMsgs').textContent = msgCount;
-    document.getElementById('statTotal').textContent = (totalIn + totalOut).toLocaleString();
-    document.getElementById('msgCount').textContent = msgCount + ' mensajes';
-    document.getElementById('conv-turns').textContent = Math.floor(conversation.length / 2);
-  }
+function spawnObstacle() {
+    obstacles.push({
+        x: canvas.width,
+        y: canvas.height - 100,
+        w: 40, h: 40,
+        type: Math.random() > 0.7 ? 'double' : 'single'
+    });
+    // Sonido de bombo rítmico
+    playTone(60, 'sine', 0.2);
+}
 
-  function quickAction(text) {
-    const f = document.getElementById('inputField');
-    f.value = text;
-    f.focus();
-    f.style.height = 'auto';
-    f.style.height = Math.min(f.scrollHeight, 110) + 'px';
-  }
+function update(time) {
+    if (!gameRunning) return;
 
-  function clearConversation() {
-    conversation = [];
-    msgCount = 0;
-    document.getElementById('messages').innerHTML = `
-      <div class="message ai">
-        <div class="msg-avatar ai">&#11041;</div>
-        <div>
-          <div class="msg-bubble">Conversacion reiniciada. Contexto limpiado.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-Puedes comenzar una nueva consulta.</div>
-          <div class="msg-meta">NEXUS // ${getTime()} // RESET</div>
-        </div>
-      </div>`;
-    updateStats();
-  }
+    // Dibujar Suelo
+    ctx.fillStyle = '#555';
+    ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
 
-  function escHtml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  function addUserMessage(text) {
-    const msgs = document.getElementById('messages');
-    const wrap = document.createElement('div');
-    wrap.className = 'message user';
-    wrap.innerHTML = `
-      <div class="msg-avatar user">&#9672;</div>
-      <div style="min-width:0;flex:1">
-        <div class="msg-bubble">${escHtml(text)}</div>
-        <div class="msg-meta">USUARIO // ${getTime()}</div>
-      </div>`;
-    msgs.appendChild(wrap);
-    scrollBottom();
-  }
-
-  function addStreamingBubble() {
-    const msgs = document.getElementById('messages');
-    const wrap = document.createElement('div');
-    wrap.className = 'message ai';
-    const id = 'sb-' + Date.now();
-    const metaId = 'sm-' + Date.now();
-    wrap.innerHTML = `
-      <div class="msg-avatar ai">&#11041;</div>
-      <div style="min-width:0;flex:1">
-        <div class="msg-bubble" id="${id}"><span class="cursor-blink"></span></div>
-        <div class="msg-meta" id="${metaId}">NEXUS // ${getTime()} // STREAMING...</div>
-      </div>`;
-    msgs.appendChild(wrap);
-    scrollBottom();
-
-    let text = '';
-    return {
-      id, metaId,
-      append(chunk) {
-        text += chunk;
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = text;
-          const cur = document.createElement('span');
-          cur.className = 'cursor-blink';
-          el.appendChild(cur);
-          scrollBottom();
-        }
-      },
-      finish() {
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-        const mel = document.getElementById(metaId);
-        if (mel) mel.textContent = `NEXUS // ${getTime()} // DONE`;
-        return text;
-      },
-      remove() { wrap.remove(); }
-    };
-  }
-
-  function addError(msg) {
-    const msgs = document.getElementById('messages');
-    const wrap = document.createElement('div');
-    wrap.className = 'message ai';
-    wrap.innerHTML = `
-      <div class="msg-avatar ai" style="color:var(--accent3);border-color:rgba(255,107,53,.3)">&#9888;</div>
-      <div>
-        <div class="error-bubble">${escHtml(msg)}</div>
-        <div class="msg-meta" style="color:var(--accent3)">ERROR // ${getTime()}</div>
-      </div>`;
-    msgs.appendChild(wrap);
-    scrollBottom();
-  }
-
-  // Auto-resize textarea
-  const inputField = document.getElementById('inputField');
-  inputField.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 110) + 'px';
-  });
-
-  inputField.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  async function sendMessage() {
-    if (isStreaming) return;
-    const text = inputField.value.trim();
-    if (!text) return;
-
-    inputField.value = '';
-    inputField.style.height = 'auto';
-
-    addUserMessage(text);
-    msgCount++;
-    conversation.push({ role: 'user', content: text });
-
-    setInputEnabled(false);
-    isStreaming = true;
-
-    const startTime = Date.now();
-    const streamer = addStreamingBubble();
-
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          stream: true,
-          system: 'Eres NEXUS, un asistente de IA para laptop potenciado por Claude. Eres preciso, util y conciso. Respondes siempre en el mismo idioma del usuario. Cuando el usuario te pide codigo, lo proporcionas claramente formateado. Eres directo y eficiente. No uses markdown con asteriscos para negritas ya que el output es texto plano.',
-          messages: conversation
-        })
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      let inputTokens = 0, outputTokens = 0;
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop(); // keep incomplete line
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (!data || data === '[DONE]') continue;
-
-          try {
-            const evt = JSON.parse(data);
-
-            if (evt.type === 'message_start' && evt.message?.usage) {
-              inputTokens = evt.message.usage.input_tokens || 0;
-            }
-
-            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-              streamer.append(evt.delta.text);
-              fullText += evt.delta.text;
-            }
-
-            if (evt.type === 'message_delta' && evt.usage) {
-              outputTokens = evt.usage.output_tokens || 0;
-            }
-          } catch (_) {}
-        }
-      }
-
-      const finalText = streamer.finish();
-
-      conversation.push({ role: 'assistant', content: finalText });
-      msgCount++;
-      totalIn += inputTokens;
-      totalOut += outputTokens;
-
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      document.getElementById('statTime').textContent = elapsed + 's';
-      updateStats();
-
-    } catch (err) {
-      streamer.remove();
-      conversation.pop();
-      addError('Error al conectar con la API de Claude:\n' + err.message);
+    // Lógica rítmica (Spawn basado en BPM)
+    if (time - lastBeat > beatInterval) {
+        spawnObstacle();
+        lastBeat = time;
     }
 
-    isStreaming = false;
-    setInputEnabled(true);
-    document.getElementById('inputField').focus();
-  }
+    // Jugador: Gravedad y Movimiento
+    player.vy += gravity;
+    player.y += player.vy;
+    
+    const floorY = canvas.height - 100 - player.h;
+    if (player.y >= floorY) {
+        player.y = floorY;
+        player.vy = 0;
+        player.grounded = true;
+        // Alinear rotación al suelo
+        player.rotation = Math.round(player.rotation / 90) * 90;
+    } else {
+        player.grounded = false;
+        player.rotation += 5; // Rotar en el aire
+    }
+
+    // Dibujar Jugador
+    ctx.save();
+    ctx.translate(player.x + player.w/2, player.y + player.h/2);
+    ctx.rotate(player.rotation * Math.PI / 180);
+    ctx.fillStyle = player.color;
+    ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
+    ctx.restore();
+
+    // Obstáculos
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        let o = obstacles[i];
+        o.x -= speed;
+
+        // Dibujar Triángulo (Spike)
+        ctx.fillStyle = "#ff4444";
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y);
+        ctx.lineTo(o.x + o.w, o.y);
+        ctx.lineTo(o.x + o.w/2, o.y - o.h);
+        ctx.fill();
+
+        // Colisión
+        if (player.x < o.x + o.w - 10 && 
+            player.x + player.w > o.x + 10 && 
+            player.y + player.h > o.y - o.h + 10) {
+            gameOver();
+        }
+
+        if (o.x < -100) {
+            obstacles.splice(i, 1);
+            score++;
+            ui.innerText = `Puntos: ${score}`;
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+function jump() {
+    if (!gameRunning) {
+        init();
+        return;
+    }
+    if (player.grounded) {
+        player.vy = jumpForce;
+        playTone(400, 'square', 0.1); // Sonido de salto
+    }
+}
+
+function gameOver() {
+    gameRunning = false;
+    msg.innerHTML = `GAME OVER<br>Puntos: ${score}<br>Haz Click para reintentar`;
+    msg.style.display = 'block';
+    playTone(100, 'sawtooth', 0.5);
+}
+
+// Eventos
+window.addEventListener('mousedown', jump);
+window.addEventListener('keydown', (e) => { if(e.code === 'Space') jump(); });
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 </script>
 </body>
 </html>
