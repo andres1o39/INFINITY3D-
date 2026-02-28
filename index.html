@@ -2,221 +2,162 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini OS - Infinite Edition</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Gemini OS - Quantum Kernel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --accent: #00f2ff; --bg-glass: rgba(10, 10, 10, 0.9); --win-bg: #1e1e1e; --text: #e0e0e0; }
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { 
-            margin: 0; height: 100vh; 
-            background: radial-gradient(circle, #242424 0%, #000000 100%);
-            color: var(--text); overflow: hidden; 
-        }
+        :root { --main: #00ff88; --bg: #050505; --win: #121212; --glass: rgba(255, 255, 255, 0.05); }
+        * { box-sizing: border-box; cursor: default; }
+        body { margin: 0; height: 100vh; background: #000; color: white; font-family: 'JetBrains Mono', monospace; overflow: hidden; }
+        
+        /* Wallpaper con Canvas (Opcional: puedes poner una imagen) */
+        #wallpaper { position: fixed; width: 100%; height: 100%; z-index: -1; background: linear-gradient(45deg, #050505, #1a1a2e); }
 
-        /* Escritorio dinámico */
-        #desktop { 
-            height: calc(100% - 50px); padding: 20px; 
-            display: grid; grid-template-columns: repeat(auto-fill, 110px); 
-            grid-template-rows: repeat(auto-fill, 110px); gap: 10px;
-        }
-        .icon { 
-            text-align: center; cursor: pointer; padding: 10px; 
-            border-radius: 10px; transition: 0.2s;
-        }
-        .icon:hover { background: rgba(255,255,255,0.1); transform: scale(1.05); }
-        .icon i { font-size: 45px; display: block; margin-bottom: 8px; color: var(--accent); }
-        .icon span { font-size: 13px; }
+        /* Escritorio Estilo Grid */
+        #desktop { height: calc(100% - 45px); padding: 25px; display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-auto-rows: 100px; gap: 20px; }
+        .app-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; border-radius: 12px; }
+        .app-icon:hover { background: var(--glass); transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,255,136,0.2); }
+        .app-icon i { font-size: 42px; margin-bottom: 8px; filter: drop-shadow(0 0 5px var(--main)); }
+        .app-icon span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Ventanas de Alta Gama */
-        .window { 
-            position: absolute; width: 600px; height: 450px; 
-            background: var(--win-bg); border-radius: 12px; display: none; 
-            flex-direction: column; box-shadow: 0 0 30px rgba(0,242,255,0.2); 
-            z-index: 10; border: 1px solid #333; overflow: hidden;
-        }
-        .win-header { 
-            background: #2d2d2d; padding: 12px; cursor: move; 
-            display: flex; justify-content: space-between; align-items: center; 
-        }
-        .win-body { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
-        .close-btn { color: #ff5555; cursor: pointer; transition: 0.3s; }
-        .close-btn:hover { transform: scale(1.3); }
+        /* Ventanas Quantum */
+        .window { position: absolute; width: 700px; height: 450px; background: var(--win); border: 1px solid #333; border-radius: 10px; display: none; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.8); z-index: 10; overflow: hidden; }
+        .win-bar { background: #1a1a1a; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; cursor: move; }
+        .win-ctrls { display: flex; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; cursor: pointer; }
+        .win-content { flex: 1; padding: 20px; overflow-y: auto; }
 
-        /* IA Chat Interface */
-        #ai-container { display: flex; flex-direction: column; height: 100%; }
-        #ai-messages { flex: 1; background: #121212; border-radius: 8px; padding: 10px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #444; }
-        .msg { margin-bottom: 10px; padding: 8px; border-radius: 5px; max-width: 85%; }
-        .user-msg { background: var(--accent); color: #000; align-self: flex-end; margin-left: auto; }
-        .ai-msg { background: #333; color: var(--accent); }
+        /* Terminal Estilo Hacker */
+        .terminal { background: #000; color: #00ff00; font-family: 'Courier New'; padding: 10px; height: 100%; }
+        .terminal-input { background: transparent; border: none; color: #00ff00; outline: none; width: 100%; }
 
-        /* Infi Store */
-        .store-card { 
-            background: #2d2d2d; border-radius: 8px; padding: 15px; 
-            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #444;
-        }
-        .btn-install { 
-            background: var(--accent); color: black; border: none; 
-            padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;
-        }
+        /* Monitor de Sistema */
+        .stat-bar { background: #333; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        .stat-fill { background: var(--main); height: 100%; width: 0%; transition: 1s; }
 
-        /* Taskbar */
-        #taskbar { 
-            position: fixed; bottom: 0; width: 100%; height: 50px; 
-            background: var(--bg-glass); backdrop-filter: blur(10px); 
-            display: flex; align-items: center; padding: 0 20px; border-top: 1px solid #333;
-        }
+        /* Taskbar Inferior */
+        #taskbar { position: fixed; bottom: 0; width: 100%; height: 45px; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); display: flex; align-items: center; padding: 0 15px; border-top: 1px solid #222; z-index: 10000; }
+        .start-btn { color: var(--main); font-size: 24px; cursor: pointer; margin-right: 20px; }
+        #clock { margin-left: auto; color: var(--main); font-size: 13px; }
     </style>
 </head>
 <body>
 
+<div id="wallpaper"></div>
+
 <div id="desktop">
-    <div class="icon" onclick="openWin('win-ai')"><i class="fas fa-brain"></i><span>Claude AI</span></div>
-    <div class="icon" onclick="openWin('win-store')"><i class="fas fa-box-open"></i><span>Infi Store</span></div>
-    <div class="icon" onclick="openWin('win-gal')"><i class="fas fa-photo-video"></i><span>Galería</span></div>
+    <div class="app-icon" onclick="openW('win-terminal')"><i class="fas fa-terminal" style="color: #00ff88;"></i><span>Kernel</span></div>
+    <div class="app-icon" onclick="openW('win-files')"><i class="fas fa-folder-open" style="color: #ffca28;"></i><span>Archivos</span></div>
+    <div class="app-icon" onclick="openW('win-stats')"><i class="fas fa-microchip" style="color: #ff4081;"></i><span>Recursos</span></div>
+    <div class="app-icon" onclick="openW('win-discord')"><i class="fab fa-discord" style="color: #5865F2;"></i><span>Discord</span></div>
+    <div class="app-icon" onclick="openW('win-code')"><i class="fas fa-code" style="color: #00d2ff;"></i><span>IDE Dev</span></div>
 </div>
 
-<div id="win-ai" class="window">
-    <div class="win-header" onmousedown="drag(this.parentElement)">
-        <span><i class="fas fa-robot"></i> Inteligencia Artificial</span>
-        <i class="fas fa-times close-btn" onclick="closeWin('win-ai')"></i>
+<div id="win-terminal" class="window">
+    <div class="win-bar" onmousedown="drag(this.parentElement)">
+        <span><i class="fas fa-terminal"></i> root@gemini-os:~</span>
+        <div class="win-ctrls"><div class="dot red" onclick="closeW('win-terminal')"></div></div>
     </div>
-    <div class="win-body">
-        <div id="ai-container">
-            <div id="ai-messages">
-                <div class="msg ai-msg">Sistema Iniciado. Soy tu IA integrada. ¿Qué deseas ejecutar hoy?</div>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="ai-input" style="flex:1; background:#000; color:white; border:1px solid var(--accent); padding:10px; border-radius:5px;" placeholder="Escribe un comando o pregunta...">
-                <button onclick="sendToAI()" style="background:var(--accent); border:none; padding:10px; border-radius:5px; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="win-store" class="window">
-    <div class="win-header" onmousedown="drag(this.parentElement)">
-        <span><i class="fas fa-shopping-cart"></i> Infi Store (Cloud)</span>
-        <i class="fas fa-times close-btn" onclick="closeWin('win-store')"></i>
-    </div>
-    <div class="win-body">
-        <div class="store-card">
-            <div><b>YouTube Player</b><br><small>Streaming de video</small></div>
-            <button class="btn-install" onclick="install('YouTube', 'fa-youtube', '#ff0000')">Instalar</button>
-        </div>
-        <div class="store-card">
-            <div><b>Weather Pro</b><br><small>Clima en tiempo real</small></div>
-            <button class="btn-install" onclick="install('Clima', 'fa-cloud-sun', '#f1c40f')">Instalar</button>
-        </div>
-        <div class="store-card">
-            <div><b>System Monitor</b><br><small>Ver recursos del PC</small></div>
-            <button class="btn-install" onclick="install('Monitor', 'fa-chart-line', '#2ecc71')">Instalar</button>
+    <div class="win-content" style="padding:0;">
+        <div class="terminal" id="term-out">
+            <div>Gemini Kernel v4.0.0-release</div>
+            <div>Escribe 'help' para ver comandos...</div>
+            <div style="display:flex"><span>$ &nbsp;</span><input type="text" class="terminal-input" id="term-in" autofocus onkeypress="execTerm(event)"></div>
         </div>
     </div>
 </div>
 
-<div id="win-gal" class="window">
-    <div class="win-header" onmousedown="drag(this.parentElement)">
-        <span><i class="fas fa-images"></i> Media Center</span>
-        <i class="fas fa-times close-btn" onclick="closeWin('win-gal')"></i>
+<div id="win-stats" class="window" style="width:350px; height:300px;">
+    <div class="win-bar" onmousedown="drag(this.parentElement)">
+        <span>Monitor de Energía</span>
+        <div class="win-ctrls"><div class="dot red" onclick="closeW('win-stats')"></div></div>
     </div>
-    <div class="win-body">
-        <input type="file" id="img-upload" multiple onchange="previewImages()" style="display:none">
-        <button onclick="document.getElementById('img-upload').click()" style="width:100%; padding:15px; background:#333; color:var(--accent); border:1px dashed var(--accent); cursor:pointer; margin-bottom:15px;">+ Importar archivos de Laptop</button>
-        <div id="gallery-view" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;"></div>
+    <div class="win-content">
+        CPU: <span id="cpu-val">0%</span> <div class="stat-bar"><div id="cpu-fill" class="stat-fill"></div></div>
+        RAM: <span id="ram-val">0%</span> <div class="stat-bar"><div id="ram-fill" class="stat-fill" style="background:#00d2ff"></div></div>
+        GPU: <span id="gpu-val">0%</span> <div class="stat-bar"><div id="gpu-fill" class="stat-fill" style="background:#ff4081"></div></div>
+    </div>
+</div>
+
+<div id="win-files" class="window">
+    <div class="win-bar" onmousedown="drag(this.parentElement)">
+        <span>Mi Almacenamiento</span>
+        <div class="win-ctrls"><div class="dot red" onclick="closeW('win-files')"></div></div>
+    </div>
+    <div class="win-content">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; text-align:center;">
+            <div ondblclick="alert('Carpeta vacía')"><i class="fas fa-folder" style="font-size:40px; color:#ffca28"></i><br>Proyectos</div>
+            <div ondblclick="alert('Contiene: index.html, script.js')"><i class="fas fa-folder" style="font-size:40px; color:#ffca28"></i><br>Downloads</div>
+            <div ondblclick="alert('Acceso denegado: Root solo')"><i class="fas fa-folder-lock" style="font-size:40px; color:#ff5f56"></i><br>System32</div>
+        </div>
     </div>
 </div>
 
 <div id="taskbar">
-    <i class="fas fa-microchip" style="color:var(--accent); font-size:25px;"></i>
-    <div id="clock" style="margin-left:auto; font-family:monospace; color:var(--accent);"></div>
+    <i class="fas fa-atom start-btn"></i>
+    <div id="clock"></div>
 </div>
 
 <script>
-    let zIdx = 1000;
+    let activeWin = null;
+    let zIdx = 100;
 
-    function openWin(id) {
+    function openW(id) {
         const w = document.getElementById(id);
         w.style.display = 'flex';
         w.style.zIndex = ++zIdx;
     }
 
-    function closeWin(id) { document.getElementById(id).style.display = 'none'; }
+    function closeW(id) { document.getElementById(id).style.display = 'none'; }
 
-    // --- LÓGICA DE IA ---
-    async function sendToAI() {
-        const input = document.getElementById('ai-input');
-        const box = document.getElementById('ai-messages');
-        if(!input.value) return;
-
-        box.innerHTML += `<div class="msg user-msg">${input.value}</div>`;
-        const userText = input.value.toLowerCase();
-        input.value = "";
-
-        // Simulador de respuesta "Inteligente"
-        setTimeout(() => {
-            let reply = "No entiendo ese comando de sistema.";
-            if(userText.includes("hola")) reply = "Hola, usuario. Sistema operativo listo para operar.";
-            if(userText.includes("instalar")) reply = "Puedes instalar nuevas funciones desde la Infi Store.";
-            if(userText.includes("quien eres")) reply = "Soy el Kernel de IA de Gemini OS.";
+    // Logica Terminal
+    function execTerm(e) {
+        if(e.key === 'Enter') {
+            const out = document.getElementById('term-out');
+            const cmd = e.target.value.toLowerCase();
+            let res = "Comando no reconocido.";
             
-            box.innerHTML += `<div class="msg ai-msg"><b>Claude:</b> ${reply}</div>`;
-            box.scrollTop = box.scrollHeight;
-        }, 600);
+            if(cmd === 'help') res = "Comandos: cls, neofetch, exit, install --update, date";
+            if(cmd === 'neofetch') res = "OS: Gemini Quantum<br>Kernel: 4.0.0<br>Uptime: 2 mins<br>Shell: bash";
+            if(cmd === 'cls') { out.innerHTML = ''; e.target.value = ''; return; }
+            
+            const div = document.createElement('div');
+            div.innerHTML = `<div>$ ${cmd}</div><div>${res}</div><br>`;
+            out.insertBefore(div, out.lastElementChild);
+            e.target.value = '';
+            out.scrollTop = out.scrollHeight;
+        }
     }
 
-    // --- LÓGICA DE INFI STORE (INSTALACIÓN REAL) ---
-    function install(name, icon, color) {
-        const desktop = document.getElementById('desktop');
-        // Crear el icono físicamente
-        const div = document.createElement('div');
-        div.className = 'icon';
-        div.style.animation = "appear 0.5s ease";
-        div.innerHTML = `<i class="fas ${icon}" style="color:${color}"></i><span>${name}</span>`;
-        div.onclick = () => alert(`Ejecutando ${name}...`);
-        desktop.appendChild(div);
+    // Monitor de Recursos (Simulado pero dinámico)
+    setInterval(() => {
+        const cpu = Math.floor(Math.random() * 40) + 10;
+        const ram = Math.floor(Math.random() * 20) + 60;
+        const gpu = Math.floor(Math.random() * 30);
         
-        // Notificación de actualización
-        alert(`${name} instalado y actualizado en el escritorio.`);
-    }
+        document.getElementById('cpu-fill').style.width = cpu + "%";
+        document.getElementById('cpu-val').innerText = cpu + "%";
+        document.getElementById('ram-fill').style.width = ram + "%";
+        document.getElementById('ram-val').innerText = ram + "%";
+        document.getElementById('gpu-fill').style.width = gpu + "%";
+        document.getElementById('gpu-val').innerText = gpu + "%";
+    }, 2000);
 
-    // --- LÓGICA DE GALERÍA (LECTURA DE DISCO) ---
-    function previewImages() {
-        const files = document.getElementById('img-upload').files;
-        const view = document.getElementById('gallery-view');
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.width = "100%";
-                img.style.borderRadius = "5px";
-                img.style.border = "1px solid #444";
-                view.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // --- ARRASTRE Y RELOJ ---
+    // Drag and Drop
     function drag(el) {
         el.style.zIndex = ++zIdx;
         document.onmousemove = (e) => {
-            el.style.left = e.clientX - 200 + "px";
+            el.style.left = e.clientX - 350 + "px";
             el.style.top = e.clientY - 20 + "px";
         }
         document.onmouseup = () => document.onmousemove = null;
     }
 
+    // Reloj
     setInterval(() => {
-        const d = new Date();
-        document.getElementById('clock').innerText = d.getHours() + ":" + d.getMinutes().toString().padStart(2, '0') + ":" + d.getSeconds().toString().padStart(2, '0');
+        document.getElementById('clock').innerText = new Date().toLocaleString();
     }, 1000);
 </script>
-
-<style>
-    @keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-</style>
 
 </body>
 </html>
