@@ -2,178 +2,192 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Geometry Dash - Ultra Responsive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini OS Simulator</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial Black', sans-serif; }
-        canvas { display: block; }
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; color: white; font-size: 30px; letter-spacing: 2px; pointer-events: none; }
-        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0ff; text-align: center; font-size: 20px; text-shadow: 0 0 10px #0ff; cursor: pointer; }
+        :root {
+            --bg-color: #2c3e50;
+            --taskbar-color: rgba(0, 0, 0, 0.8);
+            --accent-color: #3498db;
+            --window-bg: #ecf0f1;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        /* Escritorio */
+        #desktop {
+            height: calc(100% - 45px);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 100px);
+            grid-template-rows: repeat(auto-fill, 100px);
+            grid-gap: 20px;
+            align-content: start;
+        }
+
+        .icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            text-shadow: 1px 1px 3px black;
+            transition: 0.2s;
+        }
+
+        .icon:hover { background: rgba(255,255,255,0.2); border-radius: 5px; }
+
+        .icon img { width: 50px; height: 50px; margin-bottom: 5px; }
+
+        /* Ventanas */
+        .window {
+            position: absolute;
+            width: 400px;
+            height: 300px;
+            background: var(--window-bg);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+        }
+
+        .window-header {
+            background: #bdc3c7;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .close-btn { color: red; cursor: pointer; font-weight: bold; }
+
+        .window-content { padding: 15px; flex-grow: 1; overflow: auto; }
+
+        /* Barra de Tareas */
+        #taskbar {
+            height: 45px;
+            background: var(--taskbar-color);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .start-btn {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 4px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        #clock { color: white; margin-left: auto; padding-right: 20px; }
     </style>
 </head>
 <body>
-    <div id="ui">SCORE: 0</div>
-    <div id="msg"><h1>CLICK PARA EMPEZAR</h1><p>Ritmo Generado Activo</p></div>
-    <canvas id="game"></canvas>
+
+<div id="desktop">
+    <div class="icon" onclick="openWindow('win-docs')">
+        <img src="https://cdn-icons-png.flaticon.com/512/5968/5968517.png" alt="Docs">
+        <span>Documentos</span>
+    </div>
+    <div class="icon" onclick="openWindow('win-settings')">
+        <img src="https://cdn-icons-png.flaticon.com/512/3524/3524659.png" alt="Config">
+        <span>Ajustes</span>
+    </div>
+</div>
+
+<div id="win-docs" class="window">
+    <div class="window-header">
+        <span>📁 Mis Documentos</span>
+        <span class="close-btn" onclick="closeWindow('win-docs')">✖</span>
+    </div>
+    <div class="window-content">
+        <p>Bienvenido al simulador. Aquí podrías listar archivos.</p>
+        <ul>
+            <li>proyecto_secreto.txt</li>
+            <li>vacaciones.jpg</li>
+        </ul>
+    </div>
+</div>
+
+<div id="win-settings" class="window">
+    <div class="window-header">
+        <span>⚙️ Configuración</span>
+        <span class="close-btn" onclick="closeWindow('win-settings')">✖</span>
+    </div>
+    <div class="window-content">
+        <label>Color de acento:</label>
+        <input type="color" onchange="document.documentElement.style.setProperty('--accent-color', this.value)">
+        <p>Versión del sistema: 1.0.2-Gemini</p>
+    </div>
+</div>
+
+<div id="taskbar">
+    <button class="start-btn">Inicio</button>
+    <div id="clock">00:00:00</div>
+</div>
 
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+    // Reloj
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-// --- AJUSTES DE DIFICULTAD ---
-const config = {
-    gravity: 1.2,        // Gravedad aumentada (caída rápida)
-    jumpForce: -16,      // Salto potente
-    speed: 9,            // Velocidad de avance
-    bpm: 128,            // Ritmo
-    floorHeight: 120
-};
-
-let gameRunning = false;
-let score = 0;
-let lastBeat = 0;
-let obstacles = [];
-
-const player = {
-    x: 150, y: 0, w: 50, h: 50,
-    vy: 0, rotation: 0, grounded: false
-};
-
-// --- SISTEMA DE AUDIO (Música de sintetizador) ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-
-function playBeat(freq, type, vol, duration) {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
-
-function init() {
-    if(!audioCtx) audioCtx = new AudioContext();
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    player.y = canvas.height - config.floorHeight - player.h;
-    player.vy = 0;
-    player.rotation = 0;
-    score = 0;
-    obstacles = [];
-    gameRunning = true;
-    document.getElementById('msg').style.display = 'none';
-    requestAnimationFrame(update);
-}
-
-function update(time) {
-    if (!gameRunning) return;
-
-    // Fondo dinámico rítmico
-    const beatInterval = (60 / config.bpm) * 1000;
-    if (time - lastBeat > beatInterval) {
-        lastBeat = time;
-        // Sonido de Bombo (Música)
-        playBeat(60, 'sine', 0.3, 0.2); 
-        // Aparece obstáculo cada 2 beats para que no sea imposible
-        if(Math.random() > 0.3) spawnObstacle();
+    // Lógica de ventanas
+    function openWindow(id) {
+        const win = document.getElementById(id);
+        win.style.display = 'flex';
+        win.style.top = '100px';
+        win.style.left = '100px';
+        win.style.zIndex = 10;
     }
 
-    ctx.fillStyle = '#000814';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Suelo con rejilla
-    ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-10, canvas.height - config.floorHeight, canvas.width + 20, 5);
-
-    // Física del Jugador
-    player.vy += config.gravity;
-    player.y += player.vy;
-
-    const floorLimit = canvas.height - config.floorHeight - player.h;
-    if (player.y >= floorLimit) {
-        player.y = floorLimit;
-        player.vy = 0;
-        player.grounded = true;
-        player.rotation = Math.round(player.rotation / 90) * 90;
-    } else {
-        player.grounded = false;
-        player.rotation += 6; 
+    function closeWindow(id) {
+        document.getElementById(id).style.display = 'none';
     }
 
-    // Dibujar Jugador (Cubo neon)
-    ctx.save();
-    ctx.translate(player.x + player.w/2, player.y + player.h/2);
-    ctx.rotate(player.rotation * Math.PI / 180);
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = '#0ff';
-    ctx.fillStyle = '#0ff';
-    ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
-    ctx.strokeStyle = 'white';
-    ctx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
-    ctx.restore();
-    ctx.shadowBlur = 0;
+    // Hacer las ventanas arrastrables (Básico)
+    const windows = document.querySelectorAll('.window');
+    windows.forEach(win => {
+        const header = win.querySelector('.window-header');
+        header.onmousedown = function(e) {
+            let shiftX = e.clientX - win.getBoundingClientRect().left;
+            let shiftY = e.clientY - win.getBoundingClientRect().top;
 
-    // Obstáculos
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        let o = obstacles[i];
-        o.x -= config.speed;
+            function moveAt(pageX, pageY) {
+                win.style.left = pageX - shiftX + 'px';
+                win.style.top = pageY - shiftY + 'px';
+            }
 
-        // Dibujar Pico
-        ctx.fillStyle = '#ff0055';
-        ctx.beginPath();
-        ctx.moveTo(o.x, o.y);
-        ctx.lineTo(o.x + o.w, o.y);
-        ctx.lineTo(o.x + o.w/2, o.y - o.h);
-        ctx.fill();
-
-        // Colisión precisa
-        if (player.x + player.w - 12 > o.x && 
-            player.x + 12 < o.x + o.w && 
-            player.y + player.h > o.y - o.h + 10) {
-            die();
-        }
-
-        if (o.x < -50) {
-            obstacles.splice(i, 1);
-            score++;
-            document.getElementById('ui').innerText = `SCORE: ${score}`;
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-function spawnObstacle() {
-    obstacles.push({
-        x: canvas.width + 50,
-        y: canvas.height - config.floorHeight,
-        w: 50, h: 60
+            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+            document.addEventListener('mousemove', onMouseMove);
+            document.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.onmouseup = null;
+            };
+        };
     });
-}
-
-function jump() {
-    if (!gameRunning) { init(); return; }
-    if (player.grounded) {
-        player.vy = config.jumpForce;
-        playBeat(200, 'square', 0.1, 0.1); // Sonido de salto
-    }
-}
-
-function die() {
-    gameRunning = false;
-    playBeat(50, 'sawtooth', 0.4, 0.5); // Sonido de muerte
-    document.getElementById('msg').innerHTML = `<h1>¡CRASH!</h1><p>Puntos: ${score}</p><h3>CLICK PARA REINTENTAR</h3>`;
-    document.getElementById('msg').style.display = 'block';
-}
-
-window.addEventListener('mousedown', jump);
-window.addEventListener('keydown', (e) => { if(e.code === 'Space') jump(); });
 </script>
+
 </body>
 </html>
