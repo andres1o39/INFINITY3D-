@@ -3,530 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blender Web Professional Edition</title>
+    <title>Quick Code Runner</title>
     <style>
         :root {
-            --bg-main: #1d1d1d;
-            --bg-panel: #2b2b2b;
-            --bg-viewport: #393939;
-            --accent: #e2a245;
-            --accent-hover: #f5b963;
-            --text-main: #cfcfcf;
-            --text-dim: #888;
-            --border: #181818;
-            --header-h: 30px;
-            --timeline-h: 180px;
-            --sidebar-w: 280px;
+            --bg-color: #1e1e1e;
+            --panel-bg: #252526;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --border-color: #333;
         }
 
-        * { box-sizing: border-box; outline: none; }
-        body {
+        body, html {
             margin: 0;
-            background: var(--bg-main);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 12px;
-            height: 100vh;
-            display: grid;
-            grid-template-rows: var(--header-h) 1fr var(--timeline-h);
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             overflow: hidden;
         }
 
-        /* --- Barra de Menú Superior --- */
-        header {
-            background: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            gap: 15px;
-            z-index: 100;
-        }
-        .menu-item { cursor: pointer; padding: 2px 8px; border-radius: 3px; }
-        .menu-item:hover { background: #444; }
-
-        /* --- Área Principal Layout --- */
-        main {
-            display: grid;
-            grid-template-columns: 200px 1fr var(--sidebar-w);
-            overflow: hidden;
-        }
-
-        /* --- Outliner (Izquierda) --- */
-        .outliner {
-            background: var(--bg-panel);
-            border-right: 1px solid var(--border);
+        .app-container {
             display: flex;
             flex-direction: column;
+            height: 100vh;
         }
-        .panel-header {
-            background: #333;
-            padding: 5px 10px;
-            font-weight: bold;
-            font-size: 11px;
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
-        }
-        .object-list { overflow-y: auto; padding: 5px 0; }
-        .object-item {
-            padding: 4px 15px;
-            cursor: pointer;
-            display: flex;
             align-items: center;
-            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            height: 40px;
         }
-        .object-item:hover { background: #3d3d3d; }
-        .object-item.selected { background: #4b4b4b; border-left: 2px solid var(--accent); }
 
-        /* --- Viewport (Centro) --- */
-        .viewport-container {
+        .logo {
+            font-weight: bold;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+        }
+
+        .main-editor {
+            display: flex;
+            flex: 1;
+            width: 100%;
+        }
+
+        .editor-side, .preview-side {
+            flex: 1;
             position: relative;
-            background: var(--bg-viewport);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            perspective: 1200px;
-        }
-        .grid-floor {
-            position: absolute;
-            width: 2000px;
-            height: 2000px;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            transform: rotateX(90deg) translateY(100px);
-            pointer-events: none;
-        }
-        
-        /* Objetos 3D */
-        .object-3d {
-            position: absolute;
-            transform-style: preserve-3d;
-            transition: outline 0.2s;
-        }
-        .object-3d.selected {
-            outline: 2px solid var(--accent);
-            outline-offset: 5px;
-        }
-
-        /* Cubo */
-        .mesh-cube { width: 100px; height: 100px; }
-        .face {
-            position: absolute; width: 100px; height: 100px;
-            background: #999; border: 0.5px solid #222;
-            opacity: 0.9; display: flex; align-items: center; justify-content: center;
-            color: #222; font-weight: bold;
-        }
-        .f-front  { transform: rotateY(0deg) translateZ(50px); }
-        .f-back   { transform: rotateY(180deg) translateZ(50px); }
-        .f-right  { transform: rotateY(90deg) translateZ(50px); }
-        .f-left   { transform: rotateY(-90deg) translateZ(50px); }
-        .f-top    { transform: rotateX(90deg) translateZ(50px); background: #bbb; }
-        .f-bottom { transform: rotateX(-90deg) translateZ(50px); background: #777; }
-
-        /* --- Propiedades (Derecha) --- */
-        .properties {
-            background: var(--bg-panel);
-            border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
         }
-        .prop-content { padding: 15px; overflow-y: auto; }
-        .prop-section { margin-bottom: 20px; }
-        .prop-section h3 { font-size: 11px; margin: 0 0 10px 0; color: var(--text-dim); border-bottom: 1px solid #444; }
-        
-        .input-group { display: grid; grid-template-columns: 20px 1fr; gap: 5px; align-items: center; margin-bottom: 5px; }
-        .input-group span { color: #f44; font-weight: bold; font-size: 10px; }
-        .input-group:nth-child(3) span { color: #4f4; }
-        .input-group:nth-child(4) span { color: #44f; }
-        
-        input[type="number"], input[type="text"] {
-            background: #181818; border: 1px solid #444; color: #eee;
-            padding: 3px 6px; border-radius: 2px; width: 100%;
-        }
-        input:focus { border-color: var(--accent); }
 
-        .btn-action {
-            width: 100%; background: #444; border: 1px solid #555; color: white;
-            padding: 6px; border-radius: 4px; cursor: pointer; margin-top: 10px;
-        }
-        .btn-action:hover { background: #555; }
-        .btn-primary { background: #4d4d4d; border-color: var(--accent); color: var(--accent); }
-
-        /* --- Timeline (Abajo) --- */
-        .timeline {
-            background: var(--bg-panel);
-            border-top: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-        }
-        .tl-toolbar {
-            height: 35px; background: #333; display: flex; align-items: center; padding: 0 15px; gap: 20px;
-        }
-        .tl-controls button {
-            background: none; border: none; color: white; font-size: 16px; cursor: pointer; padding: 0 10px;
-        }
-        .tl-controls button:hover { color: var(--accent); }
-
-        .tl-body {
-            flex-grow: 1; position: relative; background: #1a1a1a; overflow-x: auto;
-        }
-        .tl-grid {
-            width: 2500px; height: 100%; position: relative;
-            background-image: repeating-linear-gradient(90deg, #222 0px, #222 1px, transparent 1px, transparent 10px);
-        }
-        .tl-numbers {
-            height: 20px; border-bottom: 1px solid #333; display: flex; font-size: 9px; color: #666;
-        }
-        .tl-num { width: 100px; padding-left: 2px; border-left: 1px solid #444; }
-
-        .playhead {
-            position: absolute; top: 0; width: 2px; height: 100%; background: #4cc3ff; z-index: 10;
-        }
-        .playhead::after {
-            content: ''; position: absolute; top: 0; left: -5px; 
-            border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #4cc3ff;
+        .panel-label {
+            background: var(--panel-bg);
+            font-size: 11px;
+            padding: 4px 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+            color: #888;
         }
 
-        .kf-marker {
-            position: absolute; top: 30px; width: 8px; height: 8px; background: var(--accent);
-            transform: rotate(45deg); cursor: pointer;
+        textarea {
+            flex: 1;
+            background-color: var(--bg-color);
+            color: #9cdcfe;
+            border: none;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            border-right: 1px solid var(--border-color);
         }
 
-        .cursor-info { position: fixed; bottom: 5px; right: 10px; color: var(--text-dim); font-size: 10px; }
+        iframe {
+            flex: 1;
+            background-color: white;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Scrollbar styling */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="menu-item">Archivo</div>
-    <div class="menu-item">Editar</div>
-    <div class="menu-item">Render</div>
-    <div class="menu-item">Ventana</div>
-    <div class="menu-item" style="color:var(--accent)">Agregar ✚</div>
-</header>
+<div class="app-container">
+    <header>
+        <div class="logo">HTML RUNNER</div>
+        <div style="font-size: 12px; opacity: 0.6;">Escritura rápida activada</div>
+    </header>
 
-<main>
-    <!-- Outliner -->
-    <section class="outliner">
-        <div class="panel-header">Escena <span>▼</span></div>
-        <div class="object-list" id="outliner-list">
-            <!-- Dinámico -->
+    <div class="main-editor">
+        <div class="editor-side">
+            <div class="panel-label">Editor de Código</div>
+            <textarea id="code-input" spellcheck="false" placeholder="Escribe tu HTML, CSS o JS aquí..."></textarea>
         </div>
-    </section>
-
-    <!-- Viewport -->
-    <section class="viewport-container" id="viewport">
-        <div class="grid-floor"></div>
-        <!-- Objetos 3D dinámicos -->
-    </section>
-
-    <!-- Properties -->
-    <section class="properties">
-        <div class="panel-header">Propiedades del Objeto</div>
-        <div class="prop-content" id="prop-panel">
-            <div id="no-selection" style="color:#666; text-align:center; margin-top:40px;">No hay objeto seleccionado</div>
-            
-            <div id="prop-editor" style="display:none;">
-                <div class="prop-section">
-                    <h3>Nombre</h3>
-                    <input type="text" id="obj-name">
-                </div>
-
-                <div class="prop-section">
-                    <h3>Localización (m)</h3>
-                    <div class="input-group"><span>X</span><input type="number" id="tx" value="0" step="0.1"></div>
-                    <div class="input-group"><span>Y</span><input type="number" id="ty" value="0" step="0.1"></div>
-                    <div class="input-group"><span>Z</span><input type="number" id="tz" value="0" step="0.1"></div>
-                </div>
-
-                <div class="prop-section">
-                    <h3>Rotación (°)</h3>
-                    <div class="input-group"><span>X</span><input type="number" id="rx" value="0"></div>
-                    <div class="input-group"><span>Y</span><input type="number" id="ry" value="0"></div>
-                    <div class="input-group"><span>Z</span><input type="number" id="rz" value="0"></div>
-                </div>
-
-                <div class="prop-section">
-                    <h3>Escala</h3>
-                    <div class="input-group"><span>X</span><input type="number" id="sx" value="1" step="0.1"></div>
-                    <div class="input-group"><span>Y</span><input type="number" id="sy" value="1" step="0.1"></div>
-                    <div class="input-group"><span>Z</span><input type="number" id="sz" value="1" step="0.1"></div>
-                </div>
-
-                <button class="btn-action btn-primary" onclick="addKeyframe()">Insertar Fotograma (I)</button>
-                <button class="btn-action" style="color:#ff6666;" onclick="deleteObject()">Eliminar Objeto</button>
-            </div>
-        </div>
-    </section>
-</main>
-
-<section class="timeline">
-    <div class="tl-toolbar">
-        <div class="tl-controls">
-            <button onclick="setFrame(1)">⏮</button>
-            <button id="play-btn" onclick="togglePlay()">▶</button>
-            <button onclick="setFrame(state.frame + 1)">⏭</button>
-        </div>
-        <div>Inicio: <span style="color:#888">1</span> | Fin: <span style="color:#888">250</span></div>
-        <div style="font-size: 14px; font-weight: bold;">Frame: <span id="current-frame" style="color:var(--accent)">1</span></div>
-    </div>
-    <div class="tl-body" id="tl-body">
-        <div class="tl-numbers" id="tl-numbers"></div>
-        <div class="tl-grid" id="tl-grid">
-            <div class="playhead" id="playhead"></div>
-            <!-- Keyframes dinámicos -->
+        
+        <div class="preview-side">
+            <div class="panel-label">Vista Previa</div>
+            <iframe id="live-preview"></iframe>
         </div>
     </div>
-</section>
-
-<div class="cursor-info">Pan: Botón medio | Órbita: Alt + Click | Zoom: Scroll</div>
+</div>
 
 <script>
-    const state = {
-        frame: 1,
-        playing: false,
-        selectedId: null,
-        objects: [
-            {
-                id: 'cube1',
-                name: 'Cubo Principal',
-                type: 'cube',
-                tx: 0, ty: 0, tz: 0,
-                rx: -25, ry: 45, rz: 0,
-                sx: 1, sy: 1, sz: 1,
-                keyframes: [] // { frame, tx, ty, tz, rx, ry, rz, sx, sy, sz }
-            }
-        ]
+    const editor = document.getElementById('code-input');
+    const preview = document.getElementById('live-preview');
+
+    // Default template
+    const defaultCode = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { 
+      font-family: sans-serif; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 80vh; 
+      color: #333;
+    }
+    .card {
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 { color: #007acc; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>¡Funciona! 🚀</h1>
+    <p>Modifica el código a la izquierda para ver los cambios aquí mismo.</p>
+  </div>
+</body>
+</html>`;
+
+    function updatePreview() {
+        const content = editor.value;
+        const iframeDoc = preview.contentDocument || preview.contentWindow.document;
+        
+        iframeDoc.open();
+        iframeDoc.write(content);
+        iframeDoc.close();
+    }
+
+    // Event listener for real-time updates
+    editor.addEventListener('input', updatePreview);
+
+    // Initial load
+    window.onload = () => {
+        editor.value = defaultCode;
+        updatePreview();
     };
 
-    // --- Inicialización de la Línea de Tiempo ---
-    const tlNumbers = document.getElementById('tl-numbers');
-    for (let i = 0; i <= 250; i += 10) {
-        const div = document.createElement('div');
-        div.className = 'tl-num';
-        div.innerText = i;
-        tlNumbers.appendChild(div);
-    }
-
-    // --- Renderizado de Objetos ---
-    function renderApp() {
-        const viewport = document.getElementById('viewport');
-        const outliner = document.getElementById('outliner-list');
-        
-        // Limpiar
-        document.querySelectorAll('.object-3d').forEach(el => el.remove());
-        outliner.innerHTML = '';
-
-        state.objects.forEach(obj => {
-            // Outliner Item
-            const item = document.createElement('div');
-            item.className = `object-item ${state.selectedId === obj.id ? 'selected' : ''}`;
-            item.innerHTML = `<span>❒</span> ${obj.name}`;
-            item.onclick = () => selectObject(obj.id);
-            outliner.appendChild(item);
-
-            // Viewport Mesh
-            const el = document.createElement('div');
-            el.className = `object-3d mesh-cube ${state.selectedId === obj.id ? 'selected' : ''}`;
-            el.id = `mesh-${obj.id}`;
-            el.innerHTML = `
-                <div class="face f-front"></div><div class="face f-back"></div>
-                <div class="face f-right"></div><div class="face f-left"></div>
-                <div class="face f-top"></div><div class="face f-bottom"></div>
-            `;
-            
-            // Aplicar transformaciones
-            el.style.transform = `
-                translate3d(${obj.tx * 50}px, ${-obj.ty * 50}px, ${obj.tz * 50}px)
-                rotateX(${obj.rx}deg) rotateY(${obj.ry}deg) rotateZ(${obj.rz}deg)
-                scale3d(${obj.sx}, ${obj.sy}, ${obj.sz})
-            `;
-            viewport.appendChild(el);
-        });
-
-        updateProperties();
-        renderKeyframes();
-    }
-
-    function selectObject(id) {
-        state.selectedId = id;
-        renderApp();
-    }
-
-    function updateProperties() {
-        const editor = document.getElementById('prop-editor');
-        const empty = document.getElementById('no-selection');
-        
-        if (!state.selectedId) {
-            editor.style.display = 'none';
-            empty.style.display = 'block';
-            return;
-        }
-
-        editor.style.display = 'block';
-        empty.style.display = 'none';
-
-        const obj = state.objects.find(o => o.id === state.selectedId);
-        document.getElementById('obj-name').value = obj.name;
-        document.getElementById('tx').value = obj.tx;
-        document.getElementById('ty').value = obj.ty;
-        document.getElementById('tz').value = obj.tz;
-        document.getElementById('rx').value = obj.rx;
-        document.getElementById('ry').value = obj.ry;
-        document.getElementById('rz').value = obj.rz;
-        document.getElementById('sx').value = obj.sx;
-        document.getElementById('sy').value = obj.sy;
-        document.getElementById('sz').value = obj.sz;
-    }
-
-    // --- Animación e Interpolación ---
-    function setFrame(f) {
-        state.frame = Math.max(1, Math.min(250, f));
-        document.getElementById('current-frame').innerText = state.frame;
-        document.getElementById('playhead').style.left = `${(state.frame - 1) * 10}px`;
-        
-        // Centrar timeline automáticamente si se sale de vista
-        const tlBody = document.getElementById('tl-body');
-        const playheadPos = (state.frame - 1) * 10;
-        if (playheadPos > tlBody.scrollLeft + tlBody.clientWidth - 50) {
-            tlBody.scrollLeft = playheadPos - 100;
-        }
-
-        animateScene();
-    }
-
-    function animateScene() {
-        state.objects.forEach(obj => {
-            if (obj.keyframes.length === 0) return;
-
-            const sorted = [...obj.keyframes].sort((a, b) => a.frame - b.frame);
-            let before = sorted.filter(k => k.frame <= state.frame).pop();
-            let after = sorted.find(k => k.frame > state.frame);
-
-            if (before && after) {
-                const t = (state.frame - before.frame) / (after.frame - before.frame);
-                // Interpolación lineal de cada propiedad
-                const lerp = (v1, v2, t) => v1 + (v2 - v1) * t;
-                
-                obj.tx = lerp(before.tx, after.tx, t);
-                obj.ty = lerp(before.ty, after.ty, t);
-                obj.tz = lerp(before.tz, after.tz, t);
-                obj.rx = lerp(before.rx, after.rx, t);
-                obj.ry = lerp(before.ry, after.ry, t);
-                obj.rz = lerp(before.rz, after.rz, t);
-                obj.sx = lerp(before.sx, after.sx, t);
-                obj.sy = lerp(before.sy, after.sy, t);
-                obj.sz = lerp(before.sz, after.sz, t);
-            } else if (before) {
-                Object.assign(obj, before);
-            }
-        });
-        renderApp();
-    }
-
-    function addKeyframe() {
-        if (!state.selectedId) return;
-        const obj = state.objects.find(o => o.id === state.selectedId);
-        
-        // Actualizar valores desde inputs
-        obj.tx = parseFloat(document.getElementById('tx').value);
-        obj.ty = parseFloat(document.getElementById('ty').value);
-        obj.tz = parseFloat(document.getElementById('tz').value);
-        obj.rx = parseFloat(document.getElementById('rx').value);
-        obj.ry = parseFloat(document.getElementById('ry').value);
-        obj.rz = parseFloat(document.getElementById('rz').value);
-        obj.sx = parseFloat(document.getElementById('sx').value);
-        obj.sy = parseFloat(document.getElementById('sy').value);
-        obj.sz = parseFloat(document.getElementById('sz').value);
-
-        // Borrar anterior en mismo frame
-        obj.keyframes = obj.keyframes.filter(k => k.frame !== state.frame);
-        
-        // Guardar actual
-        obj.keyframes.push({
-            frame: state.frame,
-            tx: obj.tx, ty: obj.ty, tz: obj.tz,
-            rx: obj.rx, ry: obj.ry, rz: obj.rz,
-            sx: obj.sx, sy: obj.sy, sz: obj.sz
-        });
-
-        renderApp();
-    }
-
-    function renderKeyframes() {
-        document.querySelectorAll('.kf-marker').forEach(el => el.remove());
-        const grid = document.getElementById('tl-grid');
-        
-        state.objects.forEach(obj => {
-            if (state.selectedId === obj.id) {
-                obj.keyframes.forEach(kf => {
-                    const marker = document.createElement('div');
-                    marker.className = 'kf-marker';
-                    marker.style.left = `${(kf.frame - 1) * 10 - 4}px`;
-                    marker.onclick = () => setFrame(kf.frame);
-                    grid.appendChild(marker);
-                });
-            }
-        });
-    }
-
-    // --- Handlers de UI ---
-    function togglePlay() {
-        state.playing = !state.playing;
-        document.getElementById('play-btn').innerText = state.playing ? '⏸' : '▶';
-    }
-
-    setInterval(() => {
-        if (state.playing) {
-            let next = state.frame + 1;
-            if (next > 250) next = 1;
-            setFrame(next);
-        }
-    }, 41); // 24 FPS
-
-    // Click en Timeline para buscar frame
-    document.getElementById('tl-grid').onmousedown = function(e) {
-        const rect = this.getBoundingClientRect();
-        const f = Math.round((e.clientX - rect.left) / 10) + 1;
-        setFrame(f);
-    };
-
-    // Actualizar nombre
-    document.getElementById('obj-name').oninput = function() {
-        if (state.selectedId) {
-            const obj = state.objects.find(o => o.id === state.selectedId);
-            obj.name = this.value;
-            renderApp();
+    // Support Tab key in textarea
+    editor.onkeydown = function(e) {
+        if (e.keyCode === 9) { // Tab
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 2;
         }
     };
-
-    // Actualizar transformaciones en tiempo real
-    ['tx','ty','tz','rx','ry','rz','sx','sy','sz'].forEach(id => {
-        document.getElementById(id).oninput = function() {
-            if (state.selectedId) {
-                const obj = state.objects.find(o => o.id === state.selectedId);
-                obj[id] = parseFloat(this.value) || 0;
-                renderApp();
-            }
-        };
-    });
-
-    // Atajos
-    window.onkeydown = (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        if (e.key === 'i') addKeyframe();
-        if (e.key === ' ') { e.preventDefault(); togglePlay(); }
-    };
-
-    // Inicializar
-    renderApp();
-    setFrame(1);
-    selectObject('cube1');
-
 </script>
+
 </body>
 </html>
 
