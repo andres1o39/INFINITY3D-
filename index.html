@@ -3,249 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinity 3D - Pro Series Studio</title>
+    <title>Infinity 3D - Engine Pro + AutoRig</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;900&display=swap');
+        body { margin: 0; overflow: hidden; background: #050505; color: white; font-family: 'Segoe UI', sans-serif; }
+        #viewport { position: absolute; inset: 0; z-index: 1; }
         
-        :root {
-            --bg-deep: #050506;
-            --panel-bg: #0c0c0e;
-            --accent: #3b82f6;
-            --border: #1f1f23;
-            --text-muted: #63636b;
-        }
-
-        body { 
-            margin: 0; overflow: hidden; background: var(--bg-deep); 
-            color: #e4e4e7; font-family: 'Inter', sans-serif;
-        }
-
-        .studio-container {
-            display: grid;
-            grid-template-columns: 320px 1fr 320px;
-            grid-template-rows: 40px 1fr 260px;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        .panel { background: var(--panel-bg); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { background: #121215; padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .panel-title { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
-
-        #main-viewport { position: relative; background: #000; grid-row: 2/3; grid-column: 2/3; }
-        
-        .floating-tools {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(12,12,14,0.8); backdrop-filter: blur(10px);
-            padding: 6px; border-radius: 12px; border: 1px solid var(--border);
-            display: flex; gap: 4px; z-index: 200;
+        /* Toolbar lateral */
+        .left-toolbar {
+            position: absolute; left: 15px; top: 15px; bottom: 120px;
+            width: 50px; background: rgba(15, 15, 20, 0.9);
+            border: 1px solid #222; border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; padding: 12px 0; z-index: 10;
         }
         .tool-btn {
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-muted);
+            width: 36px; height: 36px; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; color: #666;
         }
-        .tool-btn:hover { background: rgba(59, 130, 246, 0.1); color: white; }
-        .tool-btn.active { background: var(--accent); color: white; }
+        .tool-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .tool-btn:hover:not(.active) { background: #1a1a1e; color: #eee; }
 
-        /* Modal de Rigging */
-        #rig-modal {
-            display: none;
-            position: fixed; inset: 0; z-index: 5000;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            align-items: center; justify-content: center;
-        }
-        .rig-card {
-            background: #141417; border: 1px solid #333; width: 600px;
-            border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        /* Panel Inspector */
+        .right-panel {
+            position: absolute; right: 0; top: 0; bottom: 100px;
+            width: 280px; background: rgba(10, 10, 12, 0.98);
+            border-left: 1px solid #1a1a1a; z-index: 10; padding: 20px;
+            display: flex; flex-direction: column; font-size: 11px;
         }
 
-        .rig-input-group {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px;
+        /* Timeline Inferior Estilo Tablet */
+        .bottom-timeline {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 100px; background: #08080a; border-top: 1px solid #1a1a1a;
+            z-index: 20; display: flex; flex-direction: column;
+        }
+        .ruler {
+            height: 35px; border-bottom: 1px solid #151518; position: relative;
+            overflow: hidden; font-size: 9px; color: #444; cursor: pointer;
+        }
+        .timeline-controls {
+            flex: 1; display: flex; align-items: center; padding: 0 20px; gap: 15px;
         }
 
-        .rig-point {
-            background: #09090b; padding: 10px; border-radius: 8px; border: 1px solid #1f1f23;
+        /* Botones Acción */
+        .action-btn {
+            background: #f59e0b; color: #000; font-weight: 800; font-size: 10px;
+            padding: 10px 18px; border-radius: 4px; text-transform: uppercase;
+            box-shadow: 0 2px 0 #b45309; transition: transform 0.1s;
+        }
+        .action-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .play-btn { background: #2563eb; color: white; padding: 8px 20px; border-radius: 4px; font-weight: bold; }
+
+        /* Notificación de Auto-Rig */
+        #rig-notif {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: white; padding: 8px 20px; border-radius: 20px;
+            font-size: 11px; font-weight: bold; z-index: 100; display: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
 
-        .prop-input { background: #000; border: 1px solid #222; border-radius: 4px; padding: 4px; font-size: 10px; color: #fbbf24; width: 100%; }
-
-        /* Scripting Editor */
-        .script-line { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid #16161a; }
-        .line-num { width: 30px; text-align: right; color: #333; font-family: 'JetBrains Mono'; font-size: 10px; }
-        .line-content { flex: 1; outline: none; font-size: 11px; color: #aaa; }
-
-        #timeline-scrubber { cursor: pointer; }
+        .prop-input { width: 100%; background: #000; border: 1px solid #222; color: #f59e0b; padding: 5px; border-radius: 3px; font-family: monospace; margin-top: 2px; }
+        #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; z-index: 30; }
     </style>
 </head>
 <body>
 
-    <div class="studio-container">
-        
-        <!-- HEADER -->
-        <header class="col-span-3 flex items-center px-4 gap-6 bg-[#050506] border-bottom border-zinc-900 z-[1000]">
-            <div class="flex items-center gap-2">
-                <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black italic text-[10px]">∞</div>
-                <span class="text-xs font-black tracking-tighter italic text-white">INFINITY <span class="text-blue-500">SERIES STUDIO</span></span>
-            </div>
-            <div class="h-4 w-px bg-zinc-800"></div>
-            <div class="flex gap-4">
-                <!-- BOTÓN IMPORTAR GLB -->
-                <button onclick="document.getElementById('glb-input').click()" class="bg-blue-600/10 border border-blue-600/30 text-blue-500 text-[9px] font-black px-4 py-1.5 rounded-full hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
-                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-                    IMPORTAR ACTOR (GLB)
-                </button>
-                <input type="file" id="glb-input" accept=".glb,.gltf" style="display: none;" onchange="handleGLBImport(event)">
-            </div>
-            <div class="flex-1"></div>
-            <div class="flex items-center gap-3">
-                <span class="text-[10px] font-black text-red-500 animate-pulse">● REC MODE</span>
-                <div class="bg-zinc-900 px-3 py-1 rounded text-[10px] font-mono text-blue-400" id="global-timer">00:00:00:00</div>
-            </div>
-        </header>
+    <div id="rig-notif">SISTEMA AUTO-RIG: Esqueleto detectado y vinculado con éxito.</div>
+    <div id="viewport"></div>
 
-        <!-- PANEL IZQUIERDO -->
-        <aside class="panel border-l-0 border-t-0">
-            <div class="flex-1 flex flex-col">
-                <div class="panel-header"><span class="panel-title">Guion y Diálogos</span></div>
-                <div class="flex-1 overflow-y-auto p-4 bg-[#08080a] font-mono">
-                    <div class="script-line"><span class="line-num">1</span><div class="line-content" contenteditable="true">EXT. CIUDAD FUTURISTA - NOCHE</div></div>
-                    <div class="script-line"><span class="line-num">2</span><div class="line-content" contenteditable="true">[Cámara pan hacia el Actor_Importado]</div></div>
-                    <div class="script-line"><span class="line-num">3</span><div class="line-content" contenteditable="true">ACTOR: "He llegado al destino."</div></div>
-                </div>
-            </div>
-            <div class="h-1/3 flex flex-col border-t border-zinc-800">
-                <div class="panel-header"><span class="panel-title">Outliner de Escena</span></div>
-                <div id="outliner" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
-            </div>
-        </aside>
-
-        <!-- VIEWPORT -->
-        <main id="main-viewport">
-            <div class="floating-tools">
-                <div id="t-move" class="tool-btn active"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
-                <div id="t-rotate" class="tool-btn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
-                <div id="t-scale" class="tool-btn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
-            </div>
-            <div id="viewport" class="w-full h-full"></div>
-        </main>
-
-        <!-- PANEL DERECHO -->
-        <aside class="panel border-r-0 border-t-0">
-            <div class="panel-header"><span class="panel-title">Propiedades del Actor</span></div>
-            <div id="inspector" class="flex-1 overflow-y-auto p-4"></div>
-            <div class="p-4 border-t border-zinc-800">
-                <button onclick="deleteSelected()" class="w-full py-2 bg-red-900/10 text-red-500 border border-red-900/30 text-[9px] font-black uppercase rounded hover:bg-red-500 hover:text-white transition">Eliminar Actor</button>
-            </div>
-        </aside>
-
-        <!-- TIMELINE -->
-        <footer class="col-span-3 panel border-none grid grid-cols-[320px_1fr]">
-            <div class="bg-[#09090b] border-right border-zinc-900 overflow-y-auto" id="track-list">
-                <div class="panel-header bg-[#050506]"><span class="panel-title">Tracks de Animación</span></div>
-            </div>
-            <div class="flex flex-col relative bg-[#050506]">
-                <div class="h-8 border-b border-zinc-900 relative">
-                    <div id="playhead" class="absolute top-0 bottom-0 w-px bg-red-500 z-50">
-                        <div class="w-3 h-3 bg-red-500 absolute -left-[5.5px] -top-1 rounded-sm rotate-45"></div>
-                    </div>
-                </div>
-                <div class="flex-1 relative">
-                    <input type="range" id="timeline-scrubber" min="0" max="1000" value="0" class="absolute inset-0 w-full h-full opacity-0 z-[60]">
-                </div>
-                <div class="h-12 bg-zinc-950 border-t border-zinc-900 flex items-center px-4 gap-6">
-                    <button onclick="togglePlay()" id="play-btn" class="text-blue-500"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-                    <div class="text-[12px] font-mono"><span id="frame-counter" class="text-white font-black">0000</span> / 1000</div>
-                    <div class="flex-1"></div>
-                    <button onclick="setKeyframe()" class="bg-blue-600 text-white text-[10px] font-black px-6 py-1.5 rounded-full">GUARDAR KEYFRAME</button>
-                </div>
-            </div>
-        </footer>
-
+    <!-- Herramientas Laterales -->
+    <div class="left-toolbar">
+        <div class="tool-btn active" id="t-move"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
+        <div class="tool-btn" id="t-rotate"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
+        <div class="tool-btn" id="t-scale"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
+        <div class="mt-auto"></div>
+        <div class="tool-btn" onclick="document.getElementById('glb-loader').click()"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg></div>
     </div>
 
-    <!-- MODAL DE RIGGING -->
-    <div id="rig-modal">
-        <div class="rig-card">
-            <div class="bg-blue-600 p-6 flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-black italic text-white leading-none">ASISTENTE DE RIGGING</h2>
-                    <p class="text-[10px] text-blue-200 mt-1 font-bold uppercase tracking-widest">Configuración de Esqueleto para Animación</p>
-                </div>
-                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg></div>
-            </div>
-            
-            <div class="p-6">
-                <p class="text-xs text-zinc-500 mb-6">Hemos detectado un modelo complejo. Asigna los nombres de los huesos del archivo GLB a los puntos de control del sistema para habilitar la animación por extremidades.</p>
-                
-                <div class="rig-input-group">
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Cabeza / Head</label>
-                        <select id="rig-head" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Tronco / Spine</label>
-                        <select id="rig-spine" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Brazo Izquierdo</label>
-                        <select id="rig-l-arm" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Brazo Derecho</label>
-                        <select id="rig-r-arm" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Pierna Izquierda</label>
-                        <select id="rig-l-leg" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                    <div class="rig-point">
-                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Pierna Derecha</label>
-                        <select id="rig-r-leg" class="prop-input"><option>Buscando huesos...</option></select>
-                    </div>
-                </div>
+    <!-- Inspector Pro -->
+    <div class="right-panel">
+        <h3 class="text-blue-500 font-black mb-6 uppercase text-xs">● Inspector Pro</h3>
+        <div id="inspector-content"></div>
+        
+        <div class="mt-10">
+            <h3 class="text-zinc-600 font-bold mb-4 uppercase text-[9px]">● Estructura del Actor</h3>
+            <div id="outliner" class="space-y-2"></div>
+        </div>
 
-                <div class="mt-6 flex gap-3">
-                    <button onclick="closeRigModal()" class="flex-1 bg-zinc-800 text-zinc-400 font-bold py-3 rounded-xl hover:bg-zinc-700 transition">OMITIR</button>
-                    <button onclick="applyRigging()" class="flex-[2] bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition">VINCULAR ESQUELETO</button>
-                </div>
-            </div>
+        <div class="mt-auto p-4 bg-zinc-900/50 rounded-lg">
+            <label class="text-[8px] text-zinc-500 block mb-2">MODO VISUALIZACIÓN</label>
+            <button onclick="toggleSkeleton()" class="w-full bg-zinc-800 text-[10px] py-2 border border-zinc-700 rounded mb-2">VER ESQUELETO (RIG)</button>
+            <button onclick="deleteSelected()" class="w-full text-red-500 text-[9px] font-bold">ELIMINAR SELECCIÓN</button>
         </div>
     </div>
 
+    <!-- Timeline Inferior -->
+    <div class="bottom-timeline">
+        <div class="ruler" id="timeline-ruler">
+            <div id="playhead"></div>
+        </div>
+        <div class="timeline-controls">
+            <button class="play-btn" id="btn-play">▶ PLAY</button>
+            <div class="bg-black border border-zinc-800 px-5 py-1.5 rounded text-orange-400 font-mono text-base font-bold" id="current-frame-label">0</div>
+            <button class="action-btn" onclick="addKeyframe()">INSERTAR KEY</button>
+            <button class="bg-zinc-800 text-zinc-400 px-4 py-2 rounded text-[10px] font-bold" onclick="resetAnimation()">RESET</button>
+        </div>
+    </div>
+
+    <input type="file" id="glb-loader" accept=".glb,.gltf" class="hidden" onchange="loadAndAutoRig(event)">
+
     <script>
         let scene, camera, renderer, orbit, transform;
-        let objects = [];
-        let animations = new Map();
-        let frame = 0, maxFrames = 1000, isPlaying = false;
-        let currentSelection = null;
-        let lastImportedObject = null;
+        let objects = [], animations = new Map();
+        let currentFrame = 0, totalFrames = 250, isPlaying = false;
+        let selectedObject = null;
+        let skeletonHelper = null;
 
-        window.onload = init;
+        // Diccionario de Auto-Rigging (Mapeo inteligente)
+        const RIG_KEYWORDS = {
+            head: ["head", "cabeza", "skull"],
+            spine: ["spine", "back", "hips", "root"],
+            arm_l: ["arm_l", "leftarm", "shoulder_l"],
+            arm_r: ["arm_r", "rightarm", "shoulder_r"],
+            leg_l: ["leg_l", "leftleg", "thigh_l"],
+            leg_r: ["leg_r", "rightleg", "thigh_r"]
+        };
 
         function init() {
-            const vp = document.getElementById('viewport');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050506);
+            scene.background = new THREE.Color(0x050505);
             
-            camera = new THREE.PerspectiveCamera(45, vp.clientWidth / vp.clientHeight, 0.1, 1000);
-            camera.position.set(20, 20, 20);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(12, 8, 12);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(vp.clientWidth, vp.clientHeight);
+            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
-            vp.appendChild(renderer.domElement);
+            document.getElementById('viewport').appendChild(renderer.domElement);
 
-            scene.add(new THREE.GridHelper(100, 50, 0x1f1f23, 0x0a0a0c));
+            const grid = new THREE.GridHelper(40, 40, 0x151515, 0x111111);
+            scene.add(grid);
+            
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true;
-            scene.add(sun);
+            const light = new THREE.PointLight(0xffffff, 1);
+            light.position.set(10, 20, 10);
+            scene.add(light);
 
             orbit = new THREE.OrbitControls(camera, renderer.domElement);
             transform = new THREE.TransformControls(camera, renderer.domElement);
@@ -253,196 +162,234 @@
             transform.addEventListener('change', updateInspector);
             scene.add(transform);
 
-            // Herramientas
-            const tools = {'t-move':'translate', 't-rotate':'rotate', 't-scale':'scale'};
-            Object.keys(tools).forEach(id => {
-                document.getElementById(id).onclick = () => {
-                    transform.setMode(tools[id]);
-                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-                    document.getElementById(id).classList.add('active');
-                };
-            });
-
-            document.getElementById('timeline-scrubber').oninput = (e) => {
-                frame = parseInt(e.target.value);
-                seekFrame();
-            };
-
+            initTimelineUI();
+            setupTools();
             animate();
         }
 
-        async function handleGLBImport(event) {
+        // --- SISTEMA AUTO-RIGGING ---
+        function loadAndAutoRig(event) {
             const file = event.target.files[0];
-            if (!file) return;
-
-            const url = URL.createObjectURL(file);
+            if(!file) return;
+            
             const loader = new THREE.GLTFLoader();
+            const url = URL.createObjectURL(file);
             
             loader.load(url, (gltf) => {
                 const model = gltf.scene;
                 model.name = file.name.split('.')[0];
+                model.id = THREE.MathUtils.generateUUID();
+                
+                let foundBones = [];
                 model.traverse(node => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
+                    if(node.isBone) {
+                        foundBones.push(node);
+                        // Auto-etiquetado inteligente
+                        const nameLower = node.name.toLowerCase();
+                        for(const [key, keywords] of Object.entries(RIG_KEYWORDS)) {
+                            if(keywords.some(k => nameLower.includes(k))) {
+                                node.userData.rigType = key;
+                            }
+                        }
                     }
                 });
-                
+
                 scene.add(model);
                 objects.push(model);
-                animations.set(model.id, []);
-                lastImportedObject = model;
-                
                 selectObject(model);
                 updateOutliner();
-                updateTimelineTracks();
-                
-                // Extraer huesos para el modal de rigging
-                const bones = [];
-                model.traverse(node => { if (node.isBone) bones.push(node.name); });
-                
-                if (bones.length > 0) {
-                    openRigModal(bones);
+
+                if(foundBones.length > 0) {
+                    showRigNotif();
+                    if(skeletonHelper) scene.remove(skeletonHelper);
+                    skeletonHelper = new THREE.SkeletonHelper(model);
+                    skeletonHelper.visible = false;
+                    scene.add(skeletonHelper);
                 }
             });
         }
 
-        function openRigModal(bones) {
-            const modal = document.getElementById('rig-modal');
-            modal.style.display = 'flex';
-            
-            const selects = ['rig-head', 'rig-spine', 'rig-l-arm', 'rig-r-arm', 'rig-l-leg', 'rig-r-leg'];
-            selects.forEach(id => {
-                const sel = document.getElementById(id);
-                sel.innerHTML = '<option value="">Ninguno</option>';
-                bones.forEach(b => {
-                    const opt = document.createElement('option');
-                    opt.value = b;
-                    opt.innerText = b;
-                    sel.appendChild(opt);
-                });
-            });
+        function showRigNotif() {
+            const n = document.getElementById('rig-notif');
+            n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 4000);
         }
 
-        function closeRigModal() {
-            document.getElementById('rig-modal').style.display = 'none';
+        function toggleSkeleton() {
+            if(skeletonHelper) skeletonHelper.visible = !skeletonHelper.visible;
         }
 
-        function applyRigging() {
-            // Aquí se guardaría el mapeo para controladores IK/FK
-            console.log("Rigging aplicado al actor:", lastImportedObject.name);
-            closeRigModal();
-        }
-
+        // --- GESTIÓN DE UI ---
         function selectObject(obj) {
-            currentSelection = obj;
-            if (obj) transform.attach(obj);
-            else transform.detach();
-            updateOutliner();
+            selectedObject = obj;
+            transform.attach(obj);
             updateInspector();
-        }
-
-        function updateOutliner() {
-            const list = document.getElementById('outliner');
-            list.innerHTML = '';
-            objects.forEach(obj => {
-                const item = document.createElement('div');
-                item.className = `p-2 text-[10px] cursor-pointer rounded ${currentSelection === obj ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800 text-zinc-500'}`;
-                item.innerText = "📦 " + obj.name;
-                item.onclick = () => selectObject(obj);
-                list.appendChild(item);
-            });
+            updateOutliner();
         }
 
         function updateInspector() {
-            const div = document.getElementById('inspector');
-            if (!currentSelection) {
-                div.innerHTML = '<p class="text-[10px] text-zinc-600 italic">Sin selección</p>';
-                return;
-            }
-            div.innerHTML = `
+            const container = document.getElementById('inspector-content');
+            if(!selectedObject) return;
+            
+            const p = selectedObject.position;
+            const r = selectedObject.rotation;
+            
+            container.innerHTML = `
+                <div class="bg-blue-500/5 p-3 rounded border border-blue-500/20 mb-4">
+                    <p class="text-[8px] text-blue-400 font-bold mb-1">TIPO: ${selectedObject.type}</p>
+                    <h4 class="text-white font-bold truncate">${selectedObject.name}</h4>
+                </div>
                 <div class="space-y-4">
-                    <span class="text-[9px] font-black text-blue-500 uppercase">Actor: ${currentSelection.name}</span>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-[8px] text-zinc-600">X</label><input class="prop-input" value="${currentSelection.position.x.toFixed(2)}"></div>
-                        <div><label class="text-[8px] text-zinc-600">Y</label><input class="prop-input" value="${currentSelection.position.y.toFixed(2)}"></div>
-                        <div><label class="text-[8px] text-zinc-600">Z</label><input class="prop-input" value="${currentSelection.position.z.toFixed(2)}"></div>
+                    <div>
+                        <span class="text-[9px] text-zinc-600 block mb-1">POSICIÓN</span>
+                        <div class="grid grid-cols-3 gap-1">
+                            <input class="prop-input" value="${p.x.toFixed(2)}">
+                            <input class="prop-input" value="${p.y.toFixed(2)}">
+                            <input class="prop-input" value="${p.z.toFixed(2)}">
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-zinc-600 block mb-1">ROTACIÓN (DEG)</span>
+                        <div class="grid grid-cols-3 gap-1">
+                            <input class="prop-input" value="${(r.x * 57.3).toFixed(0)}">
+                            <input class="prop-input" value="${(r.y * 57.3).toFixed(0)}">
+                            <input class="prop-input" value="${(r.z * 57.3).toFixed(0)}">
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        function updateTimelineTracks() {
-            const list = document.getElementById('track-list');
-            list.innerHTML = '<div class="panel-header bg-[#050506]"><span class="panel-title">Tracks de Animación</span></div>';
+        function updateOutliner() {
+            const container = document.getElementById('outliner');
+            container.innerHTML = '';
             objects.forEach(obj => {
-                const track = document.createElement('div');
-                track.className = "p-3 border-b border-zinc-900 text-[10px] font-bold text-zinc-400";
-                track.innerText = "🎬 " + obj.name;
-                list.appendChild(track);
+                const el = document.createElement('div');
+                el.className = `flex items-center gap-2 p-2 rounded cursor-pointer transition ${selectedObject === obj ? 'bg-blue-600' : 'bg-zinc-900/50 hover:bg-zinc-800'}`;
+                el.innerHTML = `<span class="text-[10px] opacity-70">📦</span> <span class="truncate">${obj.name}</span>`;
+                el.onclick = () => selectObject(obj);
+                container.appendChild(el);
             });
         }
 
-        function setKeyframe() {
-            if (!currentSelection) return;
-            const keys = animations.get(currentSelection.id);
+        // --- ANIMACIÓN ---
+        function addKeyframe() {
+            if(!selectedObject) return;
+            if(!animations.has(selectedObject.id)) animations.set(selectedObject.id, []);
+            
+            const track = animations.get(selectedObject.id);
             const key = {
-                f: frame,
-                p: currentSelection.position.clone(),
-                r: currentSelection.quaternion.clone(),
-                s: currentSelection.scale.clone()
+                frame: currentFrame,
+                pos: selectedObject.position.clone(),
+                rot: selectedObject.quaternion.clone(),
+                scale: selectedObject.scale.clone()
             };
-            const idx = keys.findIndex(k => k.f === frame);
-            if (idx >= 0) keys[idx] = key;
-            else keys.push(key);
-            keys.sort((a,b) => a.f - b.f);
+
+            const existingIdx = track.findIndex(k => k.frame === currentFrame);
+            if(existingIdx >= 0) track[existingIdx] = key;
+            else { track.push(key); track.sort((a,b) => a.frame - b.frame); }
+            
+            // Efecto visual en el botón
+            const btn = event.target;
+            btn.innerText = "KEY GUARDADA";
+            setTimeout(() => btn.innerText = "INSERTAR KEY", 1000);
         }
 
-        function seekFrame() {
-            document.getElementById('frame-counter').innerText = frame.toString().padStart(4, '0');
-            document.getElementById('playhead').style.left = (frame / maxFrames * 100) + "%";
+        function updateFrame() {
+            document.getElementById('current-frame-label').innerText = currentFrame;
+            document.getElementById('playhead').style.left = (currentFrame / totalFrames * 100) + '%';
             
             objects.forEach(obj => {
                 const keys = animations.get(obj.id);
-                if (!keys || keys.length === 0) return;
-                let prev = keys.filter(k => k.f <= frame).pop();
-                let next = keys.filter(k => k.f > frame)[0];
-                if (prev && next) {
-                    const t = (frame - prev.f) / (next.f - prev.f);
-                    obj.position.lerpVectors(prev.p, next.p, t);
-                    obj.quaternion.slerpQuaternions(prev.r, next.r, t);
-                } else if (prev) {
-                    obj.position.copy(prev.p);
-                    obj.quaternion.copy(prev.r);
+                if(!keys || keys.length === 0) return;
+
+                let prev = keys.filter(k => k.frame <= currentFrame).pop();
+                let next = keys.filter(k => k.frame > currentFrame)[0];
+
+                if(prev && next) {
+                    const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
+                    obj.position.lerpVectors(prev.pos, next.pos, t);
+                    obj.quaternion.slerpQuaternions(prev.rot, next.rot, t);
+                    obj.scale.lerpVectors(prev.scale, next.scale, t);
+                } else if(prev) {
+                    obj.position.copy(prev.pos);
+                    obj.quaternion.copy(prev.rot);
+                    obj.scale.copy(prev.scale);
                 }
             });
             updateInspector();
         }
 
-        function togglePlay() {
-            isPlaying = !isPlaying;
-            document.getElementById('play-btn').style.color = isPlaying ? '#ef4444' : '#3b82f6';
+        function animate() {
+            requestAnimationFrame(animate);
+            if(isPlaying) {
+                currentFrame++;
+                if(currentFrame > totalFrames) currentFrame = 0;
+                updateFrame();
+            }
+            if(skeletonHelper) skeletonHelper.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- UTILS UI ---
+        function initTimelineUI() {
+            const ruler = document.getElementById('timeline-ruler');
+            for(let i=0; i<=totalFrames; i+=25) {
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.left = (i/totalFrames * 100) + '%';
+                label.style.borderLeft = '1px solid #222';
+                label.style.height = '15px';
+                label.style.paddingLeft = '5px';
+                label.innerText = i;
+                ruler.appendChild(label);
+            }
+            ruler.onclick = (e) => {
+                const rect = ruler.getBoundingClientRect();
+                currentFrame = Math.round(((e.clientX - rect.left) / rect.width) * totalFrames);
+                currentFrame = Math.max(0, Math.min(totalFrames, currentFrame));
+                updateFrame();
+            };
+            document.getElementById('btn-play').onclick = () => {
+                isPlaying = !isPlaying;
+                document.getElementById('btn-play').innerText = isPlaying ? "⏸ PAUSE" : "▶ PLAY";
+            };
+        }
+
+        function setupTools() {
+            const modes = { 't-move': 'translate', 't-rotate': 'rotate', 't-scale': 'scale' };
+            Object.keys(modes).forEach(id => {
+                document.getElementById(id).onclick = () => {
+                    transform.setMode(modes[id]);
+                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                    document.getElementById(id).classList.add('active');
+                };
+            });
         }
 
         function deleteSelected() {
-            if (!currentSelection) return;
-            scene.remove(currentSelection);
-            objects = objects.filter(o => o !== currentSelection);
-            selectObject(null);
+            if(!selectedObject) return;
+            scene.remove(selectedObject);
+            objects = objects.filter(o => o !== selectedObject);
+            animations.delete(selectedObject.id);
+            transform.detach();
+            selectedObject = null;
             updateOutliner();
-            updateTimelineTracks();
+            updateInspector();
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            if (isPlaying) {
-                frame = (frame + 1) % (maxFrames + 1);
-                document.getElementById('timeline-scrubber').value = frame;
-                seekFrame();
-            }
-            orbit.update();
-            renderer.render(scene, camera);
+        function resetAnimation() {
+            isPlaying = false;
+            currentFrame = 0;
+            updateFrame();
         }
+
+        window.onload = init;
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
     </script>
 </body>
 </html>
