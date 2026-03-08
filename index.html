@@ -3,139 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinity 3D - Pro Studio</title>
+    <title>Infinity 3D - Ultimate Production Suite</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #050505; color: white; font-family: 'Inter', sans-serif; }
-        #viewport { position: absolute; inset: 0; z-index: 1; }
+        :root { --accent: #0ea5e9; --key: #facc15; }
+        body { margin: 0; overflow: hidden; background: #020203; color: #e2e8f0; font-family: 'Inter', sans-serif; }
         
-        /* Storyboard Panel */
+        /* Storyboard con Glassmorphism */
         #storyboard-container {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            width: 60%; height: 180px; background: rgba(10, 10, 15, 0.95);
-            border: 1px solid #333; border-radius: 12px; z-index: 50;
-            display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            width: 55%; height: 160px; background: rgba(10, 10, 15, 0.9);
+            border: 1px solid #334155; border-radius: 16px; z-index: 50;
+            display: flex; flex-direction: column; backdrop-filter: blur(10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); transition: 0.3s ease;
         }
-        .sb-header {
-            background: #111; padding: 5px 15px; display: flex; 
-            justify-content: space-between; align-items: center; border-bottom: 1px solid #222;
-        }
-        .sb-canvas-area { flex: 1; position: relative; background: #000; cursor: crosshair; }
-        #sb-canvas { width: 100%; height: 100%; }
 
-        /* Toolbar Lateral */
+        /* Toolbar Izquierda Pro */
         .left-toolbar {
-            position: absolute; left: 15px; top: 15px; bottom: 120px;
-            width: 55px; background: rgba(15, 15, 20, 0.9);
-            border: 1px solid #222; border-radius: 12px;
-            display: flex; flex-direction: column; align-items: center; padding: 15px 0; z-index: 10;
+            position: absolute; left: 12px; top: 12px; bottom: 130px;
+            width: 60px; background: #0f172a; border: 1px solid #1e293b;
+            border-radius: 16px; display: flex; flex-direction: column; 
+            align-items: center; padding: 15px 0; z-index: 40; gap: 8px;
         }
         .tool-btn {
-            width: 40px; height: 40px; margin-bottom: 12px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; cursor: pointer; transition: 0.2s; color: #666;
+            width: 42px; height: 42px; display: flex; align-items: center; 
+            justify-content: center; border-radius: 10px; cursor: pointer; 
+            transition: 0.2s; color: #64748b; border: 1px solid transparent;
         }
-        .tool-btn.active { background: #0ea5e9; color: white; box-shadow: 0 0 15px rgba(14, 165, 233, 0.5); }
-        .tool-btn:hover:not(.active) { background: #1a1a1e; color: #fff; }
+        .tool-btn.active { background: var(--accent); color: white; border-color: #38bdf8; }
+        .tool-btn:hover:not(.active) { background: #1e293b; color: #f1f5f9; }
 
-        /* Panel Derecho Inspector */
+        /* Inspector Derecho Multicapa */
         .right-panel {
-            position: absolute; right: 0; top: 0; bottom: 100px;
-            width: 300px; background: rgba(10, 10, 12, 0.98);
-            border-left: 1px solid #1a1a1a; z-index: 10; padding: 20px;
-            display: flex; flex-direction: column; font-size: 11px; overflow-y: auto;
+            position: absolute; right: 0; top: 0; bottom: 120px;
+            width: 320px; background: #0a0a0c; border-left: 1px solid #1e293b;
+            z-index: 40; display: flex; flex-direction: column; overflow: hidden;
         }
+        .tab-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-bottom: 2px solid transparent; color: #475569; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: #0f172a; }
 
-        /* Timeline Inferior */
+        /* Timeline con Indicadores de Keyframes */
         .bottom-timeline {
             position: absolute; bottom: 0; left: 0; right: 0;
-            height: 110px; background: #08080a; border-top: 1px solid #1a1a1a;
-            z-index: 20; display: flex; flex-direction: column;
+            height: 120px; background: #020617; border-top: 1px solid #1e293b;
+            z-index: 50; display: flex; flex-direction: column;
         }
         .ruler {
-            height: 40px; border-bottom: 1px solid #151518; position: relative;
-            overflow: hidden; font-size: 10px; color: #555; cursor: pointer;
+            height: 50px; background: #0f172a; position: relative;
+            overflow: hidden; cursor: pointer; border-bottom: 1px solid #1e293b;
         }
-        .timeline-controls {
-            flex: 1; display: flex; align-items: center; padding: 0 25px; gap: 15px;
+        .keyframe-marker {
+            position: absolute; width: 8px; height: 8px; background: var(--key);
+            transform: rotate(45deg) translateX(-50%); top: 50%; margin-top: -4px;
+            border: 1px solid #000; pointer-events: none; z-index: 25;
         }
 
-        .btn-insert-key {
-            background: #facc15; color: #000; font-weight: 900; font-size: 10px;
-            padding: 10px 20px; border-radius: 6px; text-transform: uppercase;
-        }
-        .btn-play { background: #3b82f6; color: white; padding: 8px 25px; border-radius: 6px; font-weight: bold; }
-        
-        #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; z-index: 30; }
+        /* Estilos de Inputs */
+        .prop-grid { display: grid; grid-template-cols: repeat(3, 1fr); gap: 4px; padding: 10px; }
+        .num-input { background: #000; border: 1px solid #334155; color: var(--key); padding: 4px; border-radius: 4px; font-size: 10px; text-align: center; }
 
-        .outliner-item {
-            display: flex; align-items: center; gap: 8px; padding: 6px;
-            border-radius: 4px; margin-bottom: 2px; cursor: pointer;
-            font-size: 10px;
-        }
-        .outliner-item.selected { background: #0ea5e9; }
+        #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #f43f5e; z-index: 30; box-shadow: 0 0 10px #f43f5e; }
+        #viewport { position: absolute; inset: 0; z-index: 5; }
 
-        #toast {
-            position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
-            background: #0ea5e9; color: white; padding: 8px 20px; border-radius: 50px;
-            font-weight: bold; font-size: 11px; z-index: 1000; display: none;
-        }
+        /* Scrollbars Custom */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="toast">MENSAJE</div>
+    <div id="viewport"></div>
 
     <!-- Panel Storyboard -->
     <div id="storyboard-container">
-        <div class="sb-header">
-            <span class="text-[10px] font-black tracking-widest text-zinc-400">STORYBOARD PANEL</span>
+        <div class="flex justify-between items-center px-4 py-2 bg-slate-900/50 rounded-t-16">
+            <span class="text-[9px] font-black tracking-widest text-slate-400">MODO STORYBOARD</span>
             <div class="flex gap-2">
-                <button onclick="setDrawMode('draw')" id="sb-draw" class="bg-blue-600 text-[9px] px-3 py-1 rounded font-bold">LÁPIZ</button>
-                <button onclick="setDrawMode('erase')" id="sb-erase" class="bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold">BORRADOR</button>
-                <button onclick="clearStoryboard()" class="bg-red-900/40 text-red-400 text-[9px] px-3 py-1 rounded font-bold">LIMPIAR</button>
-                <button onclick="toggleStoryboard()" class="bg-zinc-700 text-[9px] px-2 py-1 rounded">✖</button>
+                <button onclick="setDrawMode('draw')" id="btn-draw" class="bg-sky-600 px-3 py-1 rounded text-[10px] font-bold">LÁPIZ</button>
+                <button onclick="setDrawMode('erase')" id="btn-erase" class="bg-slate-700 px-3 py-1 rounded text-[10px] font-bold">GOMA</button>
+                <button onclick="clearStoryboard()" class="text-rose-400 text-[10px] px-2">LIMPIAR</button>
+                <button onclick="toggleStoryboard()" class="text-slate-500">✖</button>
             </div>
         </div>
-        <div class="sb-canvas-area" id="sb-wrapper">
-            <canvas id="sb-canvas"></canvas>
+        <div class="flex-1 relative bg-black/40" id="sb-wrapper">
+            <canvas id="sb-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
         </div>
     </div>
 
-    <div id="viewport"></div>
-
-    <!-- Barra de Herramientas Izquierda -->
+    <!-- Barra de Herramientas -->
     <div class="left-toolbar">
-        <div class="tool-btn active" id="t-move" title="Mover"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
-        <div class="tool-btn" id="t-rotate" title="Rotar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
-        <div class="tool-btn" id="t-scale" title="Escalar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
-        
-        <div class="w-full h-px bg-zinc-800 my-4"></div>
-        
-        <div class="tool-btn" onclick="addShape('cube')" title="Añadir Cubo"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/></svg></div>
-        <div class="tool-btn" onclick="toggleStoryboard()" title="Storyboard"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
-        
+        <div class="tool-btn active" id="t-move" title="Mover (W)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41-1.41 2.3 2.3H13z"/></svg></div>
+        <div class="tool-btn" id="t-rotate" title="Rotar (E)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
+        <div class="tool-btn" id="t-scale" title="Escalar (R)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
+        <div class="h-px w-8 bg-slate-800 my-2"></div>
+        <div class="tool-btn" onclick="addPrimitive('cube')" title="Cubo"><span class="text-xs">■</span></div>
+        <div class="tool-btn" onclick="addPrimitive('sphere')" title="Esfera"><span class="text-xs">●</span></div>
+        <div class="tool-btn" onclick="addPrimitive('light')" title="Luz"><span class="text-xs">💡</span></div>
+        <div class="tool-btn" onclick="toggleStoryboard()" title="Storyboard"><span class="text-xs">✎</span></div>
         <div class="mt-auto"></div>
-        <div class="tool-btn" onclick="document.getElementById('glb-loader').click()" title="Importar Actor"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg></div>
+        <div class="tool-btn" onclick="document.getElementById('file-in').click()" title="Importar GLB"><span class="text-xs">☁</span></div>
     </div>
 
     <!-- Inspector Pro -->
     <div class="right-panel">
-        <h3 class="text-sky-400 font-black mb-6 uppercase text-xs tracking-widest">● Inspector Pro</h3>
-        <div id="inspector-content"></div>
-        
-        <div class="mt-10">
-            <h3 class="text-zinc-500 font-bold mb-4 uppercase text-[9px]">● Escena / Outliner</h3>
-            <div id="outliner" class="space-y-1"></div>
+        <div class="flex bg-slate-900">
+            <button class="tab-btn active" onclick="setTab('props')">PROPS</button>
+            <button class="tab-btn" onclick="setTab('scene')">ESCENA</button>
+            <button class="tab-btn" onclick="setTab('mats')">MATS</button>
         </div>
 
-        <div class="mt-auto pt-4">
-            <button onclick="toggleSkeleton()" class="w-full bg-zinc-900 text-[10px] py-3 rounded-lg border border-zinc-800 mb-2">VER RIG (NEÓN)</button>
+        <div id="tab-content" class="flex-1 overflow-y-auto p-4">
+            <!-- Dinámico -->
+        </div>
+
+        <div class="p-4 border-t border-slate-900 bg-black/50">
+            <button onclick="toggleRig()" class="w-full bg-slate-800 py-2 rounded text-[10px] font-bold border border-slate-700 hover:bg-slate-700 transition">MOSTRAR SKELETON (RIG)</button>
+            <button onclick="deleteSelected()" class="w-full mt-2 text-rose-500 text-[10px] font-bold">BORRAR SELECCIONADO</button>
         </div>
     </div>
 
@@ -143,208 +130,173 @@
     <div class="bottom-timeline">
         <div class="ruler" id="timeline-ruler">
             <div id="playhead"></div>
+            <div id="keyframes-container"></div>
         </div>
-        <div class="timeline-controls">
-            <button class="btn-play" id="btn-play">▶ PLAY</button>
-            <div class="bg-black border border-zinc-800 px-6 py-2 rounded text-yellow-400 font-mono text-lg font-bold" id="current-frame-label">0</div>
-            <button class="btn-insert-key" onclick="addKeyframe()">Insertar Key</button>
-            <button class="bg-zinc-900 text-zinc-500 px-4 py-2 rounded text-[10px] font-bold border border-zinc-800" onclick="resetAnimation()">RESET</button>
+        <div class="flex items-center px-6 gap-6 h-full">
+            <button class="bg-sky-600 px-8 py-2 rounded-lg font-black text-xs hover:bg-sky-500" id="btn-play">PLAY</button>
+            <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 font-bold uppercase">Frame Actual</span>
+                <span class="text-2xl font-mono font-bold text-yellow-400" id="label-frame">0</span>
+            </div>
+            <button onclick="addKeyframe()" class="bg-yellow-500 text-black px-4 py-2 rounded font-black text-[10px] uppercase shadow-lg shadow-yellow-500/20">Insertar Keyframe</button>
+            <div class="ml-auto flex gap-4">
+                <input type="number" id="max-frames" value="250" class="bg-black border border-slate-800 w-16 text-center text-xs text-slate-400" onchange="updateMaxFrames()">
+                <button onclick="exportScene()" class="text-[10px] text-slate-500 underline">Exportar JSON</button>
+            </div>
         </div>
     </div>
 
-    <input type="file" id="glb-loader" accept=".glb,.gltf" class="hidden" onchange="handleImport(event)">
+    <input type="file" id="file-in" class="hidden" accept=".glb,.gltf" onchange="importModel(event)">
 
     <script>
         let scene, camera, renderer, orbit, transform;
-        let objects = [], animations = new Map();
-        let currentFrame = 0, totalFrames = 250, isPlaying = false;
-        let selectedObject = null;
-        let skeletonHelpers = [];
+        let objects = [], animations = new Map(), currentTab = 'props';
+        let currentFrame = 0, totalFrames = 250, isPlaying = false, selected = null;
+        let skeletonVisible = false, helpers = [];
 
-        // --- STORYBOARD LOGIC ---
-        let sbCanvas, sbCtx, drawing = false;
-        let drawMode = 'draw';
+        // Storyboard
+        let canvas, ctx, drawing = false, dMode = 'draw';
 
-        function initStoryboard() {
-            sbCanvas = document.getElementById('sb-canvas');
-            sbCtx = sbCanvas.getContext('2d');
-            resizeStoryboard();
-
-            sbCanvas.onmousedown = (e) => { drawing = true; draw(e); };
-            sbCanvas.onmousemove = draw;
-            window.onmouseup = () => { drawing = false; sbCtx.beginPath(); };
-        }
-
-        function resizeStoryboard() {
-            const wrapper = document.getElementById('sb-wrapper');
-            sbCanvas.width = wrapper.clientWidth;
-            sbCanvas.height = wrapper.clientHeight;
-        }
-
-        function draw(e) {
-            if (!drawing) return;
-            const rect = sbCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            sbCtx.lineWidth = drawMode === 'draw' ? 2 : 20;
-            sbCtx.lineCap = 'round';
-            sbCtx.strokeStyle = drawMode === 'draw' ? '#0ea5e9' : '#000';
-
-            sbCtx.lineTo(x, y);
-            sbCtx.stroke();
-            sbCtx.beginPath();
-            sbCtx.moveTo(x, y);
-        }
-
-        function setDrawMode(mode) {
-            drawMode = mode;
-            document.getElementById('sb-draw').className = mode === 'draw' ? 'bg-blue-600 text-[9px] px-3 py-1 rounded font-bold' : 'bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold';
-            document.getElementById('sb-erase').className = mode === 'erase' ? 'bg-blue-600 text-[9px] px-3 py-1 rounded font-bold' : 'bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold';
-        }
-
-        function clearStoryboard() { sbCtx.clearRect(0, 0, sbCanvas.width, sbCanvas.height); }
-
-        function toggleStoryboard() {
-            const panel = document.getElementById('storyboard-container');
-            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-            if(panel.style.display === 'flex') resizeStoryboard();
-        }
-
-        // --- ENGINE LOGIC ---
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(15, 12, 15);
+            scene.background = new THREE.Color(0x020203);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.set(20, 15, 20);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             document.getElementById('viewport').appendChild(renderer.domElement);
 
-            scene.add(new THREE.GridHelper(60, 60, 0x1a1a1a, 0x111111));
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const light = new THREE.DirectionalLight(0xffffff, 0.8);
-            light.position.set(10, 20, 10);
-            scene.add(light);
+            // Escena Inicial
+            scene.add(new THREE.GridHelper(100, 100, 0x1e293b, 0x0f172a));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(20, 50, 20);
+            sun.castShadow = true;
+            scene.add(sun);
 
             orbit = new THREE.OrbitControls(camera, renderer.domElement);
             transform = new THREE.TransformControls(camera, renderer.domElement);
             transform.addEventListener('dragging-changed', e => orbit.enabled = !e.value);
-            transform.addEventListener('change', updateInspector);
+            transform.addEventListener('change', updateUI);
             scene.add(transform);
 
-            initTimeline();
             initStoryboard();
-            addShape('cube', "Base_Cube");
+            initTimeline();
+            setTab('props');
             animate();
+
+            // Shortcut keys
+            window.addEventListener('keydown', e => {
+                if(e.key === 'w') setTool('translate', 't-move');
+                if(e.key === 'e') setTool('rotate', 't-rotate');
+                if(e.key === 'r') setTool('scale', 't-scale');
+            });
         }
 
-        function addShape(type, name = "") {
-            const geo = type === 'cube' ? new THREE.BoxGeometry(3,3,3) : new THREE.SphereGeometry(2,32,32);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9 });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.name = name || `${type}_${objects.length}`;
-            mesh.id = THREE.MathUtils.generateUUID();
-            scene.add(mesh);
-            objects.push(mesh);
-            selectObject(mesh);
-            updateOutliner();
+        function addPrimitive(type) {
+            let obj;
+            if(type === 'cube') {
+                obj = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
+            } else if(type === 'sphere') {
+                obj = new THREE.Mesh(new THREE.SphereGeometry(3,32,32), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
+            } else if(type === 'light') {
+                obj = new THREE.PointLight(0xfacc15, 2, 50);
+                obj.add(new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0xfacc15})));
+            }
+            obj.name = `${type}_${objects.length}`;
+            obj.castShadow = true;
+            obj.id = THREE.MathUtils.generateUUID();
+            scene.add(obj);
+            objects.push(obj);
+            select(obj);
         }
 
-        function handleImport(event) {
-            const file = event.target.files[0];
+        function importModel(e) {
+            const file = e.target.files[0];
             if(!file) return;
             const loader = new THREE.GLTFLoader();
             loader.load(URL.createObjectURL(file), (gltf) => {
                 const model = gltf.scene;
                 model.name = file.name;
-                model.id = THREE.MathUtils.generateUUID();
                 scene.add(model);
                 objects.push(model);
-                const helper = new THREE.SkeletonHelper(model);
-                helper.visible = false;
-                scene.add(helper);
-                skeletonHelpers.push(helper);
-                selectObject(model);
-                updateOutliner();
-                notify("ACTOR CARGADO");
+                const h = new THREE.SkeletonHelper(model);
+                h.visible = skeletonVisible;
+                scene.add(h);
+                helpers.push(h);
+                select(model);
             });
         }
 
-        function selectObject(obj) {
-            selectedObject = obj;
+        function select(obj) {
+            selected = obj;
             if(obj) transform.attach(obj);
             else transform.detach();
-            updateInspector();
-            updateOutliner();
+            updateUI();
         }
 
-        function updateInspector() {
-            const container = document.getElementById('inspector-content');
-            if(!selectedObject) { container.innerHTML = '<p class="text-zinc-600">Nada seleccionado</p>'; return; }
-            const p = selectedObject.position;
-            container.innerHTML = `
-                <div class="bg-sky-500/10 p-4 rounded-xl border border-sky-500/30 mb-4">
-                    <p class="text-[8px] font-bold text-sky-400 uppercase">Objeto Seleccionado</p>
-                    <h4 class="font-bold truncate">${selectedObject.name}</h4>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <span class="text-[9px] text-zinc-500 block mb-1">POSICIÓN</span>
-                        <div class="grid grid-cols-3 gap-1">
-                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.x.toFixed(2)}">
-                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.y.toFixed(2)}">
-                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.z.toFixed(2)}">
-                        </div>
+        function updateUI() {
+            const container = document.getElementById('tab-content');
+            if(currentTab === 'props') {
+                if(!selected) { container.innerHTML = '<p class="text-slate-600 italic">Selecciona un objeto...</p>'; return; }
+                const p = selected.position;
+                container.innerHTML = `
+                    <div class="bg-sky-500/10 p-3 rounded-lg border border-sky-500/20 mb-4">
+                        <span class="text-[8px] text-sky-400 font-bold uppercase">Activo</span>
+                        <h4 class="text-sm font-black truncate">${selected.name}</h4>
                     </div>
-                </div>
-            `;
-        }
-
-        function updateOutliner() {
-            const container = document.getElementById('outliner');
-            container.innerHTML = '';
-            objects.forEach(obj => {
-                const el = document.createElement('div');
-                el.className = `outliner-item ${selectedObject === obj ? 'selected' : 'hover:bg-zinc-900'}`;
-                el.innerHTML = `📦 ${obj.name}`;
-                el.onclick = () => selectObject(obj);
-                container.appendChild(el);
-                
-                // Huesos si es un actor
-                if(obj.type === 'Group' || obj.type === 'Scene') {
-                    obj.traverse(c => {
-                        if(c.isBone && c.name.length > 3) {
-                            const boneEl = document.createElement('div');
-                            boneEl.className = `outliner-item pl-6 ${selectedObject === c ? 'selected' : 'hover:bg-zinc-900'}`;
-                            boneEl.innerHTML = `🦴 ${c.name}`;
-                            boneEl.onclick = (e) => { e.stopPropagation(); selectObject(c); };
-                            container.appendChild(boneEl);
-                        }
-                    });
-                }
-            });
+                    <p class="text-[9px] text-slate-500 font-bold mb-2">TRANSFORMAR</p>
+                    <div class="prop-grid">
+                        <input class="num-input" value="${p.x.toFixed(2)}">
+                        <input class="num-input" value="${p.y.toFixed(2)}">
+                        <input class="num-input" value="${p.z.toFixed(2)}">
+                    </div>
+                `;
+            } else if(currentTab === 'scene') {
+                container.innerHTML = objects.map(o => `
+                    <div onclick="selectById('${o.uuid}')" class="p-2 mb-1 rounded cursor-pointer text-[10px] ${selected && selected.uuid === o.uuid ? 'bg-sky-600' : 'bg-slate-900 hover:bg-slate-800'}">
+                        📦 ${o.name}
+                    </div>
+                `).join('');
+            }
         }
 
         function addKeyframe() {
-            if(!selectedObject) return;
-            if(!animations.has(selectedObject.id)) animations.set(selectedObject.id, []);
-            const track = animations.get(selectedObject.id);
-            const key = { frame: currentFrame, pos: selectedObject.position.clone(), rot: selectedObject.quaternion.clone(), scale: selectedObject.scale.clone() };
+            if(!selected) return;
+            if(!animations.has(selected.uuid)) animations.set(selected.uuid, []);
+            const track = animations.get(selected.uuid);
+            const key = {
+                frame: currentFrame,
+                pos: selected.position.clone(),
+                rot: selected.quaternion.clone(),
+                scl: selected.scale.clone()
+            };
             const idx = track.findIndex(k => k.frame === currentFrame);
             if(idx >= 0) track[idx] = key; else { track.push(key); track.sort((a,b) => a.frame - b.frame); }
-            notify("KEY GUARDADA");
+            refreshKeyframeMarkers();
+        }
+
+        function refreshKeyframeMarkers() {
+            const container = document.getElementById('keyframes-container');
+            container.innerHTML = '';
+            if(!selected || !animations.has(selected.uuid)) return;
+            animations.get(selected.uuid).forEach(k => {
+                const marker = document.createElement('div');
+                marker.className = 'keyframe-marker';
+                marker.style.left = (k.frame / totalFrames * 100) + '%';
+                container.appendChild(marker);
+            });
         }
 
         function updateFrame() {
-            document.getElementById('current-frame-label').innerText = currentFrame;
+            document.getElementById('label-frame').innerText = currentFrame;
             document.getElementById('playhead').style.left = (currentFrame / totalFrames * 100) + '%';
             
-            // Aplicar animación a todos los nodos con keys
-            animations.forEach((keys, id) => {
-                const obj = scene.getObjectByProperty('id', id) || objects.find(o => o.id === id);
+            animations.forEach((keys, uuid) => {
+                const obj = scene.getObjectByProperty('uuid', uuid);
                 if(!obj) return;
                 let prev = keys.filter(k => k.frame <= currentFrame).pop();
                 let next = keys.filter(k => k.frame > currentFrame)[0];
@@ -352,11 +304,14 @@
                     const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
                     obj.position.lerpVectors(prev.pos, next.pos, t);
                     obj.quaternion.slerpQuaternions(prev.rot, next.rot, t);
-                    obj.scale.lerpVectors(prev.scale, next.scale, t);
+                    obj.scale.lerpVectors(prev.scl, next.scl, t);
                 } else if(prev) {
-                    obj.position.copy(prev.pos); obj.quaternion.copy(prev.rot); obj.scale.copy(prev.scale);
+                    obj.position.copy(prev.pos);
+                    obj.quaternion.copy(prev.rot);
+                    obj.scale.copy(prev.scl);
                 }
             });
+            updateUI();
         }
 
         function animate() {
@@ -366,39 +321,68 @@
                 if(currentFrame > totalFrames) currentFrame = 0;
                 updateFrame();
             }
-            skeletonHelpers.forEach(h => h.update());
+            helpers.forEach(h => h.update());
             renderer.render(scene, camera);
         }
 
+        // Helpers UI
+        function setTab(t) {
+            currentTab = t;
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['props','scene','mats'][i] === t));
+            updateUI();
+        }
+        function setTool(m, id) {
+            transform.setMode(m);
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.id === id));
+        }
+        function toggleRig() { skeletonVisible = !skeletonVisible; helpers.forEach(h => h.visible = skeletonVisible); }
+        function selectById(id) { const o = objects.find(obj => obj.uuid === id); if(o) select(o); }
+        function deleteSelected() { if(!selected) return; scene.remove(selected); objects = objects.filter(o => o !== selected); animations.delete(selected.uuid); select(null); }
+        
+        // Storyboard Logic
+        function initStoryboard() {
+            canvas = document.getElementById('sb-canvas');
+            ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('sb-wrapper');
+            canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight;
+            canvas.onmousedown = (e) => { drawing = true; draw(e); };
+            canvas.onmousemove = draw;
+            window.onmouseup = () => { drawing = false; ctx.beginPath(); };
+        }
+        function draw(e) {
+            if(!drawing) return;
+            const r = canvas.getBoundingClientRect();
+            const x = e.clientX - r.left; const y = e.clientY - r.top;
+            ctx.lineWidth = dMode === 'draw' ? 2 : 20;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = dMode === 'draw' ? '#0ea5e9' : '#000000';
+            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+        }
+        function setDrawMode(m) { dMode = m; document.getElementById('btn-draw').className = m==='draw'?'bg-sky-600 px-3 py-1 rounded text-[10px] font-bold':'bg-slate-700 px-3 py-1 rounded text-[10px] font-bold'; }
+        function clearStoryboard() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function toggleStoryboard() { const c = document.getElementById('storyboard-container'); c.style.display = c.style.display === 'none' ? 'flex' : 'none'; }
+
         function initTimeline() {
             const ruler = document.getElementById('timeline-ruler');
-            for(let i=0; i<=totalFrames; i+=25) {
-                const l = document.createElement('div');
-                l.style.position = 'absolute'; l.style.left = (i/totalFrames*100)+'%';
-                l.style.borderLeft='1px solid #222'; l.style.height='10px'; l.innerText=i; ruler.appendChild(l);
-            }
             ruler.onclick = (e) => {
                 const r = ruler.getBoundingClientRect();
-                currentFrame = Math.round(((e.clientX - r.left)/r.width)*totalFrames);
+                currentFrame = Math.round(((e.clientX - r.left) / r.width) * totalFrames);
                 updateFrame();
             };
             document.getElementById('btn-play').onclick = () => {
                 isPlaying = !isPlaying;
-                document.getElementById('btn-play').innerText = isPlaying ? "⏸ PAUSE" : "▶ PLAY";
+                document.getElementById('btn-play').innerText = isPlaying ? "PAUSE" : "PLAY";
             };
         }
 
-        function toggleSkeleton() { skeletonHelpers.forEach(h => h.visible = !h.visible); }
-        function notify(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display='none', 2000); }
-        function resetAnimation() { isPlaying = false; currentFrame = 0; updateFrame(); }
+        function exportScene() {
+            const data = objects.map(o => ({ name: o.name, pos: o.position }));
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'escena.json'; a.click();
+        }
 
         window.onload = init;
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            resizeStoryboard();
-        };
     </script>
 </body>
 </html>
