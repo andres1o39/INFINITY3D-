@@ -13,7 +13,22 @@
         body { margin: 0; overflow: hidden; background: #050505; color: white; font-family: 'Inter', sans-serif; }
         #viewport { position: absolute; inset: 0; z-index: 1; }
         
-        /* Toolbar Estilo Foto */
+        /* Storyboard Panel */
+        #storyboard-container {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 60%; height: 180px; background: rgba(10, 10, 15, 0.95);
+            border: 1px solid #333; border-radius: 12px; z-index: 50;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .sb-header {
+            background: #111; padding: 5px 15px; display: flex; 
+            justify-content: space-between; align-items: center; border-bottom: 1px solid #222;
+        }
+        .sb-canvas-area { flex: 1; position: relative; background: #000; cursor: crosshair; }
+        #sb-canvas { width: 100%; height: 100%; }
+
+        /* Toolbar Lateral */
         .left-toolbar {
             position: absolute; left: 15px; top: 15px; bottom: 120px;
             width: 55px; background: rgba(15, 15, 20, 0.9);
@@ -36,7 +51,7 @@
             display: flex; flex-direction: column; font-size: 11px; overflow-y: auto;
         }
 
-        /* Timeline Inferior (Fiel a la foto) */
+        /* Timeline Inferior */
         .bottom-timeline {
             position: absolute; bottom: 0; left: 0; right: 0;
             height: 110px; background: #08080a; border-top: 1px solid #1a1a1a;
@@ -50,85 +65,88 @@
             flex: 1; display: flex; align-items: center; padding: 0 25px; gap: 15px;
         }
 
-        /* Botones de acción */
         .btn-insert-key {
             background: #facc15; color: #000; font-weight: 900; font-size: 10px;
             padding: 10px 20px; border-radius: 6px; text-transform: uppercase;
         }
         .btn-play { background: #3b82f6; color: white; padding: 8px 25px; border-radius: 6px; font-weight: bold; }
         
-        .prop-input { 
-            width: 100%; background: #000; border: 1px solid #222; 
-            color: #facc15; padding: 6px; border-radius: 4px; 
-            font-family: monospace; font-size: 12px;
-        }
-
         #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; z-index: 30; }
 
-        /* Estilo de los items del outliner */
         .outliner-item {
-            display: flex; align-items: center; gap: 8px; padding: 8px;
-            border-radius: 6px; margin-bottom: 4px; cursor: pointer;
-            border: 1px solid transparent;
+            display: flex; align-items: center; gap: 8px; padding: 6px;
+            border-radius: 4px; margin-bottom: 2px; cursor: pointer;
+            font-size: 10px;
         }
-        .outliner-item.selected { background: #0ea5e9; border-color: #38bdf8; }
-        .outliner-item:hover:not(.selected) { background: #1a1a1e; }
-        
-        /* Notificaciones */
+        .outliner-item.selected { background: #0ea5e9; }
+
         #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #0ea5e9; color: white; padding: 10px 30px; border-radius: 50px;
-            font-weight: bold; font-size: 12px; z-index: 1000; display: none;
+            position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+            background: #0ea5e9; color: white; padding: 8px 20px; border-radius: 50px;
+            font-weight: bold; font-size: 11px; z-index: 1000; display: none;
         }
     </style>
 </head>
 <body>
 
     <div id="toast">MENSAJE</div>
+
+    <!-- Panel Storyboard -->
+    <div id="storyboard-container">
+        <div class="sb-header">
+            <span class="text-[10px] font-black tracking-widest text-zinc-400">STORYBOARD PANEL</span>
+            <div class="flex gap-2">
+                <button onclick="setDrawMode('draw')" id="sb-draw" class="bg-blue-600 text-[9px] px-3 py-1 rounded font-bold">LÁPIZ</button>
+                <button onclick="setDrawMode('erase')" id="sb-erase" class="bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold">BORRADOR</button>
+                <button onclick="clearStoryboard()" class="bg-red-900/40 text-red-400 text-[9px] px-3 py-1 rounded font-bold">LIMPIAR</button>
+                <button onclick="toggleStoryboard()" class="bg-zinc-700 text-[9px] px-2 py-1 rounded">✖</button>
+            </div>
+        </div>
+        <div class="sb-canvas-area" id="sb-wrapper">
+            <canvas id="sb-canvas"></canvas>
+        </div>
+    </div>
+
     <div id="viewport"></div>
 
     <!-- Barra de Herramientas Izquierda -->
     <div class="left-toolbar">
-        <div class="tool-btn active" id="t-move" title="Mover (T)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
-        <div class="tool-btn" id="t-rotate" title="Rotar (R)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
-        <div class="tool-btn" id="t-scale" title="Escalar (S)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
+        <div class="tool-btn active" id="t-move" title="Mover"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
+        <div class="tool-btn" id="t-rotate" title="Rotar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
+        <div class="tool-btn" id="t-scale" title="Escalar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
         
         <div class="w-full h-px bg-zinc-800 my-4"></div>
         
         <div class="tool-btn" onclick="addShape('cube')" title="Añadir Cubo"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/></svg></div>
-        <div class="tool-btn" onclick="addShape('sphere')" title="Añadir Esfera"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4Z"/></svg></div>
+        <div class="tool-btn" onclick="toggleStoryboard()" title="Storyboard"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
         
         <div class="mt-auto"></div>
-        <div class="tool-btn" onclick="document.getElementById('glb-loader').click()" title="Importar Actor (.glb)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg></div>
+        <div class="tool-btn" onclick="document.getElementById('glb-loader').click()" title="Importar Actor"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg></div>
     </div>
 
     <!-- Inspector Pro -->
     <div class="right-panel">
         <h3 class="text-sky-400 font-black mb-6 uppercase text-xs tracking-widest">● Inspector Pro</h3>
-        
-        <div id="inspector-content">
-            <p class="text-zinc-600 italic">Selecciona un objeto para ver sus propiedades.</p>
-        </div>
+        <div id="inspector-content"></div>
         
         <div class="mt-10">
-            <h3 class="text-zinc-500 font-bold mb-4 uppercase text-[9px] tracking-widest">● Outliner de Escena</h3>
+            <h3 class="text-zinc-500 font-bold mb-4 uppercase text-[9px]">● Escena / Outliner</h3>
             <div id="outliner" class="space-y-1"></div>
         </div>
 
-        <div class="mt-auto pt-6 border-t border-zinc-900">
-            <button onclick="toggleSkeleton()" class="w-full bg-zinc-900 text-[10px] py-3 rounded-lg border border-zinc-800 hover:bg-zinc-800 transition mb-3">VISUALIZAR RIG (NEÓN)</button>
-            <button onclick="deleteSelected()" class="w-full text-red-500 text-[9px] font-bold py-2 hover:bg-red-500/10 rounded transition">ELIMINAR SELECCIÓN</button>
+        <div class="mt-auto pt-4">
+            <button onclick="toggleSkeleton()" class="w-full bg-zinc-900 text-[10px] py-3 rounded-lg border border-zinc-800 mb-2">VER RIG (NEÓN)</button>
         </div>
     </div>
 
-    <!-- Timeline Inferior -->
+    <!-- Timeline -->
     <div class="bottom-timeline">
         <div class="ruler" id="timeline-ruler">
             <div id="playhead"></div>
         </div>
         <div class="timeline-controls">
             <button class="btn-play" id="btn-play">▶ PLAY</button>
-            <div class="bg-black border border-zinc-800 px-6 py-2 rounded text-yellow-400 font-mono text-lg font-bold min-w-[60px] text-center" id="current-frame-label">0</div>
+            <div class="bg-black border border-zinc-800 px-6 py-2 rounded text-yellow-400 font-mono text-lg font-bold" id="current-frame-label">0</div>
             <button class="btn-insert-key" onclick="addKeyframe()">Insertar Key</button>
             <button class="bg-zinc-900 text-zinc-500 px-4 py-2 rounded text-[10px] font-bold border border-zinc-800" onclick="resetAnimation()">RESET</button>
         </div>
@@ -143,264 +161,202 @@
         let selectedObject = null;
         let skeletonHelpers = [];
 
+        // --- STORYBOARD LOGIC ---
+        let sbCanvas, sbCtx, drawing = false;
+        let drawMode = 'draw';
+
+        function initStoryboard() {
+            sbCanvas = document.getElementById('sb-canvas');
+            sbCtx = sbCanvas.getContext('2d');
+            resizeStoryboard();
+
+            sbCanvas.onmousedown = (e) => { drawing = true; draw(e); };
+            sbCanvas.onmousemove = draw;
+            window.onmouseup = () => { drawing = false; sbCtx.beginPath(); };
+        }
+
+        function resizeStoryboard() {
+            const wrapper = document.getElementById('sb-wrapper');
+            sbCanvas.width = wrapper.clientWidth;
+            sbCanvas.height = wrapper.clientHeight;
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            const rect = sbCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            sbCtx.lineWidth = drawMode === 'draw' ? 2 : 20;
+            sbCtx.lineCap = 'round';
+            sbCtx.strokeStyle = drawMode === 'draw' ? '#0ea5e9' : '#000';
+
+            sbCtx.lineTo(x, y);
+            sbCtx.stroke();
+            sbCtx.beginPath();
+            sbCtx.moveTo(x, y);
+        }
+
+        function setDrawMode(mode) {
+            drawMode = mode;
+            document.getElementById('sb-draw').className = mode === 'draw' ? 'bg-blue-600 text-[9px] px-3 py-1 rounded font-bold' : 'bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold';
+            document.getElementById('sb-erase').className = mode === 'erase' ? 'bg-blue-600 text-[9px] px-3 py-1 rounded font-bold' : 'bg-zinc-800 text-[9px] px-3 py-1 rounded font-bold';
+        }
+
+        function clearStoryboard() { sbCtx.clearRect(0, 0, sbCanvas.width, sbCanvas.height); }
+
+        function toggleStoryboard() {
+            const panel = document.getElementById('storyboard-container');
+            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+            if(panel.style.display === 'flex') resizeStoryboard();
+        }
+
+        // --- ENGINE LOGIC ---
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050505);
-            
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(15, 10, 15);
+            camera.position.set(15, 12, 15);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             document.getElementById('viewport').appendChild(renderer.domElement);
 
-            // Grid y Luces Cinematográficas
-            const grid = new THREE.GridHelper(60, 60, 0x1a1a1a, 0x111111);
-            scene.add(grid);
-            
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            const spot = new THREE.SpotLight(0x0ea5e9, 1);
-            spot.position.set(15, 30, 15);
-            spot.castShadow = true;
-            scene.add(spot);
+            scene.add(new THREE.GridHelper(60, 60, 0x1a1a1a, 0x111111));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const light = new THREE.DirectionalLight(0xffffff, 0.8);
+            light.position.set(10, 20, 10);
+            scene.add(light);
 
-            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-            sun.position.set(-10, 20, 10);
-            scene.add(sun);
-
-            // Controles
             orbit = new THREE.OrbitControls(camera, renderer.domElement);
             transform = new THREE.TransformControls(camera, renderer.domElement);
             transform.addEventListener('dragging-changed', e => orbit.enabled = !e.value);
             transform.addEventListener('change', updateInspector);
             scene.add(transform);
 
-            // Atajos de teclado
-            window.addEventListener('keydown', (e) => {
-                switch(e.key.toLowerCase()) {
-                    case 't': setTool('translate', 't-move'); break;
-                    case 'r': setTool('rotate', 't-rotate'); break;
-                    case 's': setTool('scale', 't-scale'); break;
-                    case 'delete': deleteSelected(); break;
-                }
-            });
-
             initTimeline();
-            setupTools();
-            
-            // Objeto de inicio
-            addShape('cube', "Cubo_Inicio");
-            
+            initStoryboard();
+            addShape('cube', "Base_Cube");
             animate();
         }
 
-        // --- FUNCIONES DE CREACIÓN ---
         function addShape(type, name = "") {
-            let geometry, material;
-            material = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.3, metalness: 0.5 });
-            
-            if(type === 'cube') geometry = new THREE.BoxGeometry(3, 3, 3);
-            else if(type === 'sphere') geometry = new THREE.SphereGeometry(2, 32, 32);
-            
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.name = name || (type.charAt(0).toUpperCase() + type.slice(1) + "_" + objects.length);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
+            const geo = type === 'cube' ? new THREE.BoxGeometry(3,3,3) : new THREE.SphereGeometry(2,32,32);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.name = name || `${type}_${objects.length}`;
             mesh.id = THREE.MathUtils.generateUUID();
-            
             scene.add(mesh);
             objects.push(mesh);
             selectObject(mesh);
             updateOutliner();
-            notify("OBJETO AÑADIDO");
         }
 
         function handleImport(event) {
             const file = event.target.files[0];
             if(!file) return;
-            
-            notify("IMPORTANDO...");
             const loader = new THREE.GLTFLoader();
-            const url = URL.createObjectURL(file);
-            
-            loader.load(url, (gltf) => {
+            loader.load(URL.createObjectURL(file), (gltf) => {
                 const model = gltf.scene;
-                model.name = file.name.split('.')[0];
+                model.name = file.name;
                 model.id = THREE.MathUtils.generateUUID();
-                
-                // Configurar sombras y materiales
-                model.traverse(node => {
-                    if(node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                    }
-                });
-
                 scene.add(model);
                 objects.push(model);
-                
-                // Crear rig visual (estilo neón foto)
                 const helper = new THREE.SkeletonHelper(model);
                 helper.visible = false;
                 scene.add(helper);
                 skeletonHelpers.push(helper);
-
                 selectObject(model);
                 updateOutliner();
-                notify("ACTOR IMPORTADO Y RIGGEADO");
+                notify("ACTOR CARGADO");
             });
         }
 
-        // --- SISTEMA DE SELECCIÓN ---
         function selectObject(obj) {
-            if(!obj) {
-                transform.detach();
-                selectedObject = null;
-            } else {
-                selectedObject = obj;
-                transform.attach(obj);
-            }
+            selectedObject = obj;
+            if(obj) transform.attach(obj);
+            else transform.detach();
             updateInspector();
             updateOutliner();
         }
 
         function updateInspector() {
             const container = document.getElementById('inspector-content');
-            if(!selectedObject) {
-                container.innerHTML = '<p class="text-zinc-600 italic">Nada seleccionado.</p>';
-                return;
-            }
-            
+            if(!selectedObject) { container.innerHTML = '<p class="text-zinc-600">Nada seleccionado</p>'; return; }
             const p = selectedObject.position;
-            const r = selectedObject.rotation;
-            
             container.innerHTML = `
-                <div class="bg-sky-500/10 p-4 rounded-xl border border-sky-500/30 mb-6">
-                    <p class="text-[9px] text-sky-400 font-bold mb-1 tracking-widest">ELEMENTO SELECCIONADO</p>
-                    <h4 class="text-white text-sm font-bold truncate">${selectedObject.name}</h4>
+                <div class="bg-sky-500/10 p-4 rounded-xl border border-sky-500/30 mb-4">
+                    <p class="text-[8px] font-bold text-sky-400 uppercase">Objeto Seleccionado</p>
+                    <h4 class="font-bold truncate">${selectedObject.name}</h4>
                 </div>
-                
-                <div class="space-y-6">
-                    <section>
-                        <h5 class="text-zinc-500 text-[9px] font-bold mb-3 tracking-widest">POSICIÓN GLOBAL</h5>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <span class="text-red-500 font-bold w-4">X</span>
-                                <input class="prop-input" value="${p.x.toFixed(2)}" onchange="updateSelected('px', this.value)">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-green-500 font-bold w-4">Y</span>
-                                <input class="prop-input" value="${p.y.toFixed(2)}" onchange="updateSelected('py', this.value)">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-blue-500 font-bold w-4">Z</span>
-                                <input class="prop-input" value="${p.z.toFixed(2)}" onchange="updateSelected('pz', this.value)">
-                            </div>
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-[9px] text-zinc-500 block mb-1">POSICIÓN</span>
+                        <div class="grid grid-cols-3 gap-1">
+                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.x.toFixed(2)}">
+                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.y.toFixed(2)}">
+                            <input class="bg-black border border-zinc-800 p-1 text-yellow-400 text-xs" value="${p.z.toFixed(2)}">
                         </div>
-                    </section>
-
-                    <section>
-                        <h5 class="text-zinc-500 text-[9px] font-bold mb-3 tracking-widest">ROTACIÓN (DEG)</h5>
-                        <div class="grid grid-cols-1 gap-2">
-                            <input class="prop-input" value="${(r.x * 57.3).toFixed(1)}°">
-                            <input class="prop-input" value="${(r.y * 57.3).toFixed(1)}°">
-                            <input class="prop-input" value="${(r.z * 57.3).toFixed(1)}°">
-                        </div>
-                    </section>
+                    </div>
                 </div>
             `;
-        }
-
-        function updateSelected(axis, val) {
-            if(!selectedObject) return;
-            const nVal = parseFloat(val);
-            if(axis === 'px') selectedObject.position.x = nVal;
-            if(axis === 'py') selectedObject.position.y = nVal;
-            if(axis === 'pz') selectedObject.position.z = nVal;
         }
 
         function updateOutliner() {
             const container = document.getElementById('outliner');
             container.innerHTML = '';
-            
-            // Recorrer objetos y sus huesos si es un modelo importado
             objects.forEach(obj => {
-                addOutlinerItem(container, obj, 0);
+                const el = document.createElement('div');
+                el.className = `outliner-item ${selectedObject === obj ? 'selected' : 'hover:bg-zinc-900'}`;
+                el.innerHTML = `📦 ${obj.name}`;
+                el.onclick = () => selectObject(obj);
+                container.appendChild(el);
                 
-                // Si es un modelo complejo, mostrar huesos importantes para moverlos
+                // Huesos si es un actor
                 if(obj.type === 'Group' || obj.type === 'Scene') {
-                    obj.traverse(child => {
-                        if(child.isBone && child.name.length > 2) {
-                            addOutlinerItem(container, child, 12);
+                    obj.traverse(c => {
+                        if(c.isBone && c.name.length > 3) {
+                            const boneEl = document.createElement('div');
+                            boneEl.className = `outliner-item pl-6 ${selectedObject === c ? 'selected' : 'hover:bg-zinc-900'}`;
+                            boneEl.innerHTML = `🦴 ${c.name}`;
+                            boneEl.onclick = (e) => { e.stopPropagation(); selectObject(c); };
+                            container.appendChild(boneEl);
                         }
                     });
                 }
             });
         }
 
-        function addOutlinerItem(parent, obj, indent) {
-            const el = document.createElement('div');
-            el.className = `outliner-item ${selectedObject === obj ? 'selected' : ''}`;
-            el.style.paddingLeft = `${indent + 10}px`;
-            
-            const icon = obj.isBone ? '🦴' : '📦';
-            el.innerHTML = `<span class="text-[10px] opacity-60">${icon}</span> <span class="truncate">${obj.name}</span>`;
-            el.onclick = (e) => {
-                e.stopPropagation();
-                selectObject(obj);
-            };
-            parent.appendChild(el);
-        }
-
-        // --- ANIMACIÓN ---
         function addKeyframe() {
-            if(!selectedObject) {
-                notify("SELECCIONA ALGO PRIMERO");
-                return;
-            }
+            if(!selectedObject) return;
             if(!animations.has(selectedObject.id)) animations.set(selectedObject.id, []);
-            
             const track = animations.get(selectedObject.id);
-            const key = {
-                frame: currentFrame,
-                pos: selectedObject.position.clone(),
-                rot: selectedObject.quaternion.clone(),
-                scale: selectedObject.scale.clone()
-            };
-
+            const key = { frame: currentFrame, pos: selectedObject.position.clone(), rot: selectedObject.quaternion.clone(), scale: selectedObject.scale.clone() };
             const idx = track.findIndex(k => k.frame === currentFrame);
-            if(idx >= 0) track[idx] = key;
-            else { track.push(key); track.sort((a,b) => a.frame - b.frame); }
-            
-            notify("KEYFRAME GUARDADO");
+            if(idx >= 0) track[idx] = key; else { track.push(key); track.sort((a,b) => a.frame - b.frame); }
+            notify("KEY GUARDADA");
         }
 
         function updateFrame() {
             document.getElementById('current-frame-label').innerText = currentFrame;
             document.getElementById('playhead').style.left = (currentFrame / totalFrames * 100) + '%';
             
-            // Recorrer todos los objetos (incluyendo huesos animados)
-            objects.concat(scene.children.filter(c => c.isBone)).forEach(obj => {
-                const keys = animations.get(obj.id);
-                if(!keys || keys.length === 0) return;
-
+            // Aplicar animación a todos los nodos con keys
+            animations.forEach((keys, id) => {
+                const obj = scene.getObjectByProperty('id', id) || objects.find(o => o.id === id);
+                if(!obj) return;
                 let prev = keys.filter(k => k.frame <= currentFrame).pop();
                 let next = keys.filter(k => k.frame > currentFrame)[0];
-
                 if(prev && next) {
                     const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
                     obj.position.lerpVectors(prev.pos, next.pos, t);
                     obj.quaternion.slerpQuaternions(prev.rot, next.rot, t);
                     obj.scale.lerpVectors(prev.scale, next.scale, t);
                 } else if(prev) {
-                    obj.position.copy(prev.pos);
-                    obj.quaternion.copy(prev.rot);
-                    obj.scale.copy(prev.scale);
+                    obj.position.copy(prev.pos); obj.quaternion.copy(prev.rot); obj.scale.copy(prev.scale);
                 }
             });
-            updateInspector();
         }
 
         function animate() {
@@ -414,23 +370,16 @@
             renderer.render(scene, camera);
         }
 
-        // --- UI UTILS ---
         function initTimeline() {
             const ruler = document.getElementById('timeline-ruler');
             for(let i=0; i<=totalFrames; i+=25) {
-                const label = document.createElement('div');
-                label.style.position = 'absolute';
-                label.style.left = (i/totalFrames * 100) + '%';
-                label.style.borderLeft = '1px solid #222';
-                label.style.height = '15px';
-                label.style.paddingLeft = '5px';
-                label.innerText = i;
-                ruler.appendChild(label);
+                const l = document.createElement('div');
+                l.style.position = 'absolute'; l.style.left = (i/totalFrames*100)+'%';
+                l.style.borderLeft='1px solid #222'; l.style.height='10px'; l.innerText=i; ruler.appendChild(l);
             }
             ruler.onclick = (e) => {
-                const rect = ruler.getBoundingClientRect();
-                currentFrame = Math.round(((e.clientX - rect.left) / rect.width) * totalFrames);
-                currentFrame = Math.max(0, Math.min(totalFrames, currentFrame));
+                const r = ruler.getBoundingClientRect();
+                currentFrame = Math.round(((e.clientX - r.left)/r.width)*totalFrames);
                 updateFrame();
             };
             document.getElementById('btn-play').onclick = () => {
@@ -439,55 +388,16 @@
             };
         }
 
-        function setTool(mode, id) {
-            transform.setMode(mode);
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        function setupTools() {
-            const tools = { 't-move': 'translate', 't-rotate': 'rotate', 't-scale': 'scale' };
-            Object.keys(tools).forEach(id => {
-                document.getElementById(id).onclick = () => setTool(tools[id], id);
-            });
-        }
-
-        function toggleSkeleton() {
-            skeletonHelpers.forEach(h => h.visible = !h.visible);
-            notify("RIG VISUAL ACTUALIZADO");
-        }
-
-        function notify(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 2500);
-        }
-
-        function deleteSelected() {
-            if(!selectedObject) return;
-            scene.remove(selectedObject);
-            objects = objects.filter(o => o !== selectedObject);
-            animations.delete(selectedObject.id);
-            transform.detach();
-            selectedObject = null;
-            updateOutliner();
-            updateInspector();
-            notify("ELIMINADO");
-        }
-
-        function resetAnimation() {
-            isPlaying = false;
-            currentFrame = 0;
-            updateFrame();
-            document.getElementById('btn-play').innerText = "▶ PLAY";
-        }
+        function toggleSkeleton() { skeletonHelpers.forEach(h => h.visible = !h.visible); }
+        function notify(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display='none', 2000); }
+        function resetAnimation() { isPlaying = false; currentFrame = 0; updateFrame(); }
 
         window.onload = init;
         window.onresize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeStoryboard();
         };
     </script>
 </body>
