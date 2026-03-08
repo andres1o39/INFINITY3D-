@@ -3,536 +3,446 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinity 3D - Series Engine</title>
+    <title>Infinity 3D - Pro Series Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;900&display=swap');
         
         :root {
-            --bg-main: #0a0a0c;
-            --panel: #141417;
+            --bg-deep: #050506;
+            --panel-bg: #0c0c0e;
             --accent: #3b82f6;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --border: #26262b;
+            --border: #1f1f23;
+            --text-muted: #63636b;
         }
 
         body { 
-            margin: 0; overflow: hidden; background: var(--bg-main); 
-            color: #d1d1d6; font-family: 'Inter', sans-serif;
+            margin: 0; overflow: hidden; background: var(--bg-deep); 
+            color: #e4e4e7; font-family: 'Inter', sans-serif;
         }
 
-        /* Layout de Producción */
-        .grid-layout {
+        .studio-container {
             display: grid;
-            grid-template-columns: 64px 280px 1fr 300px;
-            grid-template-rows: 48px 1fr 240px;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: 40px 1fr 260px;
             height: 100vh;
+            width: 100vw;
         }
 
-        /* Elementos UI Premium */
-        .panel { background: var(--panel); border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; }
-        .header-ui { background: #1c1c21; padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .title-ui { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #71717a; }
+        .panel { background: var(--panel-bg); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header { background: #121215; padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .panel-title { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
 
-        /* Botones de Herramientas */
-        .tool-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; cursor: pointer; transition: 0.3s; color: #52525b; }
-        .tool-icon:hover { background: #27272a; color: white; }
-        .tool-icon.active { background: var(--accent); color: white; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-
-        /* Scrollbars Personalizados */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-
-        /* Estilo de Inputs */
-        .input-dark { background: #000; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-family: 'JetBrains Mono'; font-size: 11px; color: #fbbf24; width: 100%; }
+        #main-viewport { position: relative; background: #000; grid-row: 2/3; grid-column: 2/3; }
         
-        /* Línea de Tiempo de Serie */
-        .timeline-track { height: 40px; border-bottom: 1px solid #1a1a1e; position: relative; background: #0f0f12; }
-        .keyframe-dot { position: absolute; top: 50%; width: 10px; height: 10px; background: #fbbf24; transform: translate(-50%, -50%) rotate(45deg); border: 2px solid #000; cursor: pointer; z-index: 10; }
-        
-        /* Modos de Cámara */
-        .cam-overlay { position: absolute; top: 20px; left: 20px; padding: 10px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; backdrop-filter: blur(10px); z-index: 100; pointer-events: none; }
-        .rec-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: blink 1s infinite; }
-        
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* Adaptabilidad */
-        @media (max-width: 1024px) {
-            .grid-layout { grid-template-columns: 60px 1fr; }
-            .side-panel, .inspector { display: none; }
+        .floating-tools {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(12,12,14,0.8); backdrop-filter: blur(10px);
+            padding: 6px; border-radius: 12px; border: 1px solid var(--border);
+            display: flex; gap: 4px; z-index: 200;
         }
+        .tool-btn {
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-muted);
+        }
+        .tool-btn:hover { background: rgba(59, 130, 246, 0.1); color: white; }
+        .tool-btn.active { background: var(--accent); color: white; }
+
+        /* Modal de Rigging */
+        #rig-modal {
+            display: none;
+            position: fixed; inset: 0; z-index: 5000;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        .rig-card {
+            background: #141417; border: 1px solid #333; width: 600px;
+            border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .rig-input-group {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px;
+        }
+
+        .rig-point {
+            background: #09090b; padding: 10px; border-radius: 8px; border: 1px solid #1f1f23;
+        }
+
+        .prop-input { background: #000; border: 1px solid #222; border-radius: 4px; padding: 4px; font-size: 10px; color: #fbbf24; width: 100%; }
+
+        /* Scripting Editor */
+        .script-line { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid #16161a; }
+        .line-num { width: 30px; text-align: right; color: #333; font-family: 'JetBrains Mono'; font-size: 10px; }
+        .line-content { flex: 1; outline: none; font-size: 11px; color: #aaa; }
+
+        #timeline-scrubber { cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="grid-layout">
+    <div class="studio-container">
         
-        <!-- BARRA SUPERIOR (NAV) -->
-        <header class="col-span-4 panel border-none bg-[#0a0a0c] flex-row items-center px-4 gap-6 z-[1000]">
+        <!-- HEADER -->
+        <header class="col-span-3 flex items-center px-4 gap-6 bg-[#050506] border-bottom border-zinc-900 z-[1000]">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black italic text-white">∞</div>
-                <span class="font-black text-sm tracking-tighter italic">INFINITY <span class="text-blue-500">3D SERIES</span></span>
+                <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black italic text-[10px]">∞</div>
+                <span class="text-xs font-black tracking-tighter italic text-white">INFINITY <span class="text-blue-500">SERIES STUDIO</span></span>
             </div>
             <div class="h-4 w-px bg-zinc-800"></div>
-            <div class="flex gap-4 text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
-                <button class="hover:text-white transition">Escena</button>
-                <button class="hover:text-white transition">Personajes</button>
-                <button class="hover:text-white transition">Cámara</button>
-                <button class="hover:text-white transition">Efectos</button>
-                <button class="text-blue-500">Renderizar Serie</button>
+            <div class="flex gap-4">
+                <!-- BOTÓN IMPORTAR GLB -->
+                <button onclick="document.getElementById('glb-input').click()" class="bg-blue-600/10 border border-blue-600/30 text-blue-500 text-[9px] font-black px-4 py-1.5 rounded-full hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    IMPORTAR ACTOR (GLB)
+                </button>
+                <input type="file" id="glb-input" accept=".glb,.gltf" style="display: none;" onchange="handleGLBImport(event)">
             </div>
             <div class="flex-1"></div>
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
-                    <div class="rec-dot"></div>
-                    <span class="text-[9px] font-black text-zinc-400">MODO PRODUCCIÓN</span>
-                </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] font-black text-red-500 animate-pulse">● REC MODE</span>
+                <div class="bg-zinc-900 px-3 py-1 rounded text-[10px] font-mono text-blue-400" id="global-timer">00:00:00:00</div>
             </div>
         </header>
 
-        <!-- TOOLBAR LATERAL (HERRAMIENTAS) -->
-        <aside class="panel border-t-0 border-l-0 items-center py-4 gap-4">
-            <div id="t-move" class="tool-icon active" title="Mover"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
-            <div id="t-rotate" class="tool-icon" title="Rotar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
-            <div id="t-scale" class="tool-icon" title="Escalar"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
-            <div class="w-8 h-px bg-zinc-800 my-2"></div>
-            <div onclick="addShape('box')" class="tool-icon" title="Añadir Cubo"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44a1.002 1.002 0 0 1-1.14 0l-7.9-4.44A1 1 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.34-.14.57-.14s.41.05.57.14l7.9 4.44c.32.17.53.5.53.88v9z"/></svg></div>
-            <div onclick="addShape('sphere')" class="tool-icon" title="Añadir Esfera"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg></div>
-            <div onclick="addLight()" class="tool-icon text-yellow-500" title="Añadir Luz"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
-            <div onclick="addCamera()" class="tool-icon text-green-500" title="Añadir Cámara"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7zM1 19h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H1c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2z"/></svg></div>
-        </aside>
-
-        <!-- EXPLORADOR DE ESCENA (OUTLINER) -->
-        <aside class="side-panel panel border-t-0 border-l-0">
-            <div class="header-ui">
-                <span class="title-ui">Jerarquía de Episodio</span>
-                <span class="text-[9px] bg-blue-900/40 text-blue-400 px-1 rounded">E01</span>
-            </div>
-            <div id="outliner" class="flex-1 overflow-y-auto p-2 space-y-1">
-                <!-- Objetos dinámicos -->
-            </div>
-            <div class="p-3 bg-black/20 border-t border-zinc-800">
-                <button onclick="deleteSelected()" class="w-full py-2 bg-red-900/10 text-red-500 border border-red-900/30 text-[9px] font-black uppercase rounded hover:bg-red-500 hover:text-white transition">Eliminar Objeto</button>
-            </div>
-        </aside>
-
-        <!-- VIEWPORT PRINCIPAL (ESCENA 3D) -->
-        <main class="relative bg-black overflow-hidden group">
-            <div id="viewport" class="w-full h-full"></div>
-            
-            <div class="cam-overlay">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="rec-dot"></div>
-                    <span class="text-[10px] font-black text-white uppercase tracking-tighter">Vista: <span id="view-name">Cámara Libre</span></span>
+        <!-- PANEL IZQUIERDO -->
+        <aside class="panel border-l-0 border-t-0">
+            <div class="flex-1 flex flex-col">
+                <div class="panel-header"><span class="panel-title">Guion y Diálogos</span></div>
+                <div class="flex-1 overflow-y-auto p-4 bg-[#08080a] font-mono">
+                    <div class="script-line"><span class="line-num">1</span><div class="line-content" contenteditable="true">EXT. CIUDAD FUTURISTA - NOCHE</div></div>
+                    <div class="script-line"><span class="line-num">2</span><div class="line-content" contenteditable="true">[Cámara pan hacia el Actor_Importado]</div></div>
+                    <div class="script-line"><span class="line-num">3</span><div class="line-content" contenteditable="true">ACTOR: "He llegado al destino."</div></div>
                 </div>
-                <div class="text-[8px] font-mono text-zinc-500">FPS: 60 | RES: 1920x1080 | ISO: 800</div>
             </div>
+            <div class="h-1/3 flex flex-col border-t border-zinc-800">
+                <div class="panel-header"><span class="panel-title">Outliner de Escena</span></div>
+                <div id="outliner" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+            </div>
+        </aside>
 
-            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-[10px] font-bold hover:bg-blue-600">Enfocar</button>
-                <button class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-[10px] font-bold hover:bg-blue-600">Aislar</button>
-                <button class="bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-[10px] font-bold hover:bg-blue-600">Wireframe</button>
+        <!-- VIEWPORT -->
+        <main id="main-viewport">
+            <div class="floating-tools">
+                <div id="t-move" class="tool-btn active"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41 1.41 2.3 2.3H13z"/></svg></div>
+                <div id="t-rotate" class="tool-btn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
+                <div id="t-scale" class="tool-btn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
             </div>
+            <div id="viewport" class="w-full h-full"></div>
         </main>
 
-        <!-- INSPECTOR DE PROPIEDADES -->
-        <aside class="inspector panel border-t-0 border-r-0">
-            <div class="header-ui">
-                <span class="title-ui">Atributos de Serie</span>
-            </div>
-            <div id="inspector-content" class="flex-1 overflow-y-auto p-4">
-                <div class="text-center mt-20 opacity-20">
-                    <svg class="mx-auto mb-4" width="48" height="48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                    <p class="text-xs font-bold italic uppercase">Sin Selección</p>
-                </div>
+        <!-- PANEL DERECHO -->
+        <aside class="panel border-r-0 border-t-0">
+            <div class="panel-header"><span class="panel-title">Propiedades del Actor</span></div>
+            <div id="inspector" class="flex-1 overflow-y-auto p-4"></div>
+            <div class="p-4 border-t border-zinc-800">
+                <button onclick="deleteSelected()" class="w-full py-2 bg-red-900/10 text-red-500 border border-red-900/30 text-[9px] font-black uppercase rounded hover:bg-red-500 hover:text-white transition">Eliminar Actor</button>
             </div>
         </aside>
 
-        <!-- TIMELINE Y CONTROL DE ANIMACIÓN -->
-        <footer class="col-span-4 panel border-l-0 border-b-0 grid grid-cols-[344px_1fr]">
-            <!-- Canales de Animación -->
-            <div class="border-r border-zinc-800 flex flex-direction-column">
-                <div class="header-ui">
-                    <span class="title-ui">Canales de Serie</span>
-                </div>
-                <div class="flex-1 overflow-y-auto bg-[#0a0a0c]">
-                    <div class="p-3 border-b border-zinc-900 flex justify-between items-center group">
-                        <span class="text-[10px] font-bold text-blue-400">POSICIÓN_X</span>
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100">
-                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                        </div>
-                    </div>
-                    <div class="p-3 border-b border-zinc-900 flex justify-between items-center group">
-                        <span class="text-[10px] font-bold text-green-400">ROTACIÓN_Y</span>
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100">
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                        </div>
-                    </div>
-                </div>
+        <!-- TIMELINE -->
+        <footer class="col-span-3 panel border-none grid grid-cols-[320px_1fr]">
+            <div class="bg-[#09090b] border-right border-zinc-900 overflow-y-auto" id="track-list">
+                <div class="panel-header bg-[#050506]"><span class="panel-title">Tracks de Animación</span></div>
             </div>
-
-            <!-- Regla y Keyframes -->
-            <div class="flex flex-col relative overflow-hidden">
-                <div class="h-8 bg-black/40 border-b border-zinc-800 flex items-center px-4 gap-6">
-                    <div class="flex gap-4">
-                        <button onclick="togglePlay()" id="play-btn" class="text-white hover:text-blue-400 transition">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </button>
-                        <button onclick="setKeyframe()" class="text-[9px] font-black bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500">SET KEYFRAME</button>
-                    </div>
-                    <div class="h-4 w-px bg-zinc-800"></div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-bold text-zinc-500 uppercase">Frame Actual:</span>
-                        <span id="frame-counter" class="text-xl font-black text-white font-mono leading-none">000</span>
+            <div class="flex flex-col relative bg-[#050506]">
+                <div class="h-8 border-b border-zinc-900 relative">
+                    <div id="playhead" class="absolute top-0 bottom-0 w-px bg-red-500 z-50">
+                        <div class="w-3 h-3 bg-red-500 absolute -left-[5.5px] -top-1 rounded-sm rotate-45"></div>
                     </div>
                 </div>
-                
-                <div class="flex-1 relative bg-zinc-950/50 overflow-x-auto" id="timeline-scroll">
-                    <!-- Regla Numerada -->
-                    <div id="timeline-ruler" class="h-6 border-b border-zinc-900 relative"></div>
-                    <!-- Pista de Keyframes -->
-                    <div class="relative h-full w-[2500px]" id="keyframes-area">
-                        <div id="playhead" class="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none">
-                            <div class="w-3 h-3 bg-red-500 absolute -left-[5.5px] top-0 rounded-sm rotate-45"></div>
-                        </div>
-                        <input type="range" id="scrubber" min="0" max="1000" value="0" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-[60]">
-                    </div>
+                <div class="flex-1 relative">
+                    <input type="range" id="timeline-scrubber" min="0" max="1000" value="0" class="absolute inset-0 w-full h-full opacity-0 z-[60]">
+                </div>
+                <div class="h-12 bg-zinc-950 border-t border-zinc-900 flex items-center px-4 gap-6">
+                    <button onclick="togglePlay()" id="play-btn" class="text-blue-500"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+                    <div class="text-[12px] font-mono"><span id="frame-counter" class="text-white font-black">0000</span> / 1000</div>
+                    <div class="flex-1"></div>
+                    <button onclick="setKeyframe()" class="bg-blue-600 text-white text-[10px] font-black px-6 py-1.5 rounded-full">GUARDAR KEYFRAME</button>
                 </div>
             </div>
         </footer>
 
     </div>
 
-    <!-- SISTEMA DE MODALES -->
-    <div id="welcome-modal" class="fixed inset-0 z-[5000] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6">
-        <div class="max-w-md w-full bg-[#141417] border border-zinc-800 rounded-3xl p-8 shadow-2xl">
-            <h1 class="text-4xl font-black italic tracking-tighter mb-4">I-3D <span class="text-blue-600">PRO SERIES</span></h1>
-            <p class="text-zinc-500 text-xs font-bold uppercase tracking-[0.2em] mb-10 text-center">Software de Producción de Animación</p>
+    <!-- MODAL DE RIGGING -->
+    <div id="rig-modal">
+        <div class="rig-card">
+            <div class="bg-blue-600 p-6 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-black italic text-white leading-none">ASISTENTE DE RIGGING</h2>
+                    <p class="text-[10px] text-blue-200 mt-1 font-bold uppercase tracking-widest">Configuración de Esqueleto para Animación</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg></div>
+            </div>
             
-            <div class="space-y-4 mb-10">
-                <div class="flex items-center gap-5 p-4 bg-white/5 rounded-2xl border border-white/5">
-                    <div class="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-500"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16.5V7.5L12 2 3 7.5v9l9 5.5 9-5.5z"/></svg></div>
-                    <div>
-                        <h4 class="text-sm font-bold text-white">Render de Episodios</h4>
-                        <p class="text-[11px] text-zinc-500">Exporta escenas completas a MP4/PNG Sequence.</p>
+            <div class="p-6">
+                <p class="text-xs text-zinc-500 mb-6">Hemos detectado un modelo complejo. Asigna los nombres de los huesos del archivo GLB a los puntos de control del sistema para habilitar la animación por extremidades.</p>
+                
+                <div class="rig-input-group">
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Cabeza / Head</label>
+                        <select id="rig-head" class="prop-input"><option>Buscando huesos...</option></select>
+                    </div>
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Tronco / Spine</label>
+                        <select id="rig-spine" class="prop-input"><option>Buscando huesos...</option></select>
+                    </div>
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Brazo Izquierdo</label>
+                        <select id="rig-l-arm" class="prop-input"><option>Buscando huesos...</option></select>
+                    </div>
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Brazo Derecho</label>
+                        <select id="rig-r-arm" class="prop-input"><option>Buscando huesos...</option></select>
+                    </div>
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Pierna Izquierda</label>
+                        <select id="rig-l-leg" class="prop-input"><option>Buscando huesos...</option></select>
+                    </div>
+                    <div class="rig-point">
+                        <label class="text-[9px] font-black text-zinc-500 block mb-2 uppercase">Pierna Derecha</label>
+                        <select id="rig-r-leg" class="prop-input"><option>Buscando huesos...</option></select>
                     </div>
                 </div>
-                <div class="flex items-center gap-5 p-4 bg-white/5 rounded-2xl border border-white/5">
-                    <div class="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center text-green-500"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
-                    <div>
-                        <h4 class="text-sm font-bold text-white">Timeline de 1000 Frames</h4>
-                        <p class="text-[11px] text-zinc-500">Ideal para series cortas y motion graphics.</p>
-                    </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button onclick="closeRigModal()" class="flex-1 bg-zinc-800 text-zinc-400 font-bold py-3 rounded-xl hover:bg-zinc-700 transition">OMITIR</button>
+                    <button onclick="applyRigging()" class="flex-[2] bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg shadow-blue-900/30 hover:bg-blue-500 transition">VINCULAR ESQUELETO</button>
                 </div>
             </div>
-
-            <button onclick="startApp()" class="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-blue-600 hover:text-white transition-all duration-500 shadow-xl">INICIAR ESTUDIO</button>
         </div>
     </div>
 
     <script>
-        let scene, camera, freeCam, renderer, orbit, transform;
+        let scene, camera, renderer, orbit, transform;
         let objects = [];
-        let cameras = [];
-        let currentSelection = null;
+        let animations = new Map();
         let frame = 0, maxFrames = 1000, isPlaying = false;
-        let animations = new Map(); // Store keyframes: Map<objectId, Array<Keyframe>>
+        let currentSelection = null;
+        let lastImportedObject = null;
 
-        function startApp() {
-            document.getElementById('welcome-modal').style.display = 'none';
-            initEngine();
-            initTimeline();
-            animate();
-        }
+        window.onload = init;
 
-        function initEngine() {
+        function init() {
             const vp = document.getElementById('viewport');
-            
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0c);
-            scene.fog = new THREE.Fog(0x0a0a0c, 30, 150);
+            scene.background = new THREE.Color(0x050506);
+            
+            camera = new THREE.PerspectiveCamera(45, vp.clientWidth / vp.clientHeight, 0.1, 1000);
+            camera.position.set(20, 20, 20);
 
-            freeCam = new THREE.PerspectiveCamera(50, vp.clientWidth / vp.clientHeight, 0.1, 1000);
-            freeCam.position.set(20, 20, 20);
-            camera = freeCam;
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(vp.clientWidth, vp.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             vp.appendChild(renderer.domElement);
 
-            // Escena de fondo
-            const grid = new THREE.GridHelper(100, 100, 0x1a1a1f, 0x111114);
-            scene.add(grid);
+            scene.add(new THREE.GridHelper(100, 50, 0x1f1f23, 0x0a0a0c));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(10, 20, 10);
+            sun.castShadow = true;
+            scene.add(sun);
 
-            // Luces Cinematic
-            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-            scene.add(ambient);
-
-            const rimLight = new THREE.DirectionalLight(0x3b82f6, 1);
-            rimLight.position.set(-10, 10, -10);
-            scene.add(rimLight);
-
-            const keyLight = new THREE.SpotLight(0xffffff, 1.5);
-            keyLight.position.set(20, 40, 20);
-            keyLight.castShadow = true;
-            scene.add(keyLight);
-
-            // Controles
             orbit = new THREE.OrbitControls(camera, renderer.domElement);
-            orbit.enableDamping = true;
-
             transform = new THREE.TransformControls(camera, renderer.domElement);
-            transform.addEventListener('dragging-changed', (e) => orbit.enabled = !e.value);
+            transform.addEventListener('dragging-changed', e => orbit.enabled = !e.value);
             transform.addEventListener('change', updateInspector);
             scene.add(transform);
 
-            // Inicializar Herramientas
-            const tools = { 't-move': 'translate', 't-rotate': 'rotate', 't-scale': 'scale' };
+            // Herramientas
+            const tools = {'t-move':'translate', 't-rotate':'rotate', 't-scale':'scale'};
             Object.keys(tools).forEach(id => {
                 document.getElementById(id).onclick = () => {
                     transform.setMode(tools[id]);
-                    document.querySelectorAll('.tool-icon').forEach(i => i.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                     document.getElementById(id).classList.add('active');
                 };
             });
 
-            // Primer Objeto (Actor Principal)
-            addShape('box');
+            document.getElementById('timeline-scrubber').oninput = (e) => {
+                frame = parseInt(e.target.value);
+                seekFrame();
+            };
+
+            animate();
         }
 
-        function addShape(type) {
-            let geo = type === 'box' ? new THREE.BoxGeometry(4,4,4) : new THREE.SphereGeometry(3, 32, 32);
-            let mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.1, metalness: 0.5 });
-            let mesh = new THREE.Mesh(geo, mat);
-            
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            mesh.name = (type === 'box' ? 'Actor_Cubo' : 'Actor_Esfera') + "_" + objects.length;
-            mesh.position.y = 2;
+        async function handleGLBImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            scene.add(mesh);
-            objects.push(mesh);
-            animations.set(mesh.id, []);
-            selectObject(mesh);
-            updateOutliner();
+            const url = URL.createObjectURL(file);
+            const loader = new THREE.GLTFLoader();
+            
+            loader.load(url, (gltf) => {
+                const model = gltf.scene;
+                model.name = file.name.split('.')[0];
+                model.traverse(node => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(model);
+                objects.push(model);
+                animations.set(model.id, []);
+                lastImportedObject = model;
+                
+                selectObject(model);
+                updateOutliner();
+                updateTimelineTracks();
+                
+                // Extraer huesos para el modal de rigging
+                const bones = [];
+                model.traverse(node => { if (node.isBone) bones.push(node.name); });
+                
+                if (bones.length > 0) {
+                    openRigModal(bones);
+                }
+            });
         }
 
-        function addCamera() {
-            const cam = new THREE.PerspectiveCamera(45, 16/9, 0.1, 100);
-            const helper = new THREE.CameraHelper(cam);
-            cam.name = "Cámara_Escena_" + (cameras.length + 1);
-            cam.position.set(0, 10, 30);
+        function openRigModal(bones) {
+            const modal = document.getElementById('rig-modal');
+            modal.style.display = 'flex';
             
-            scene.add(cam);
-            scene.add(helper);
-            cameras.push(cam);
-            objects.push(cam); // For tracking in outliner
-            animations.set(cam.id, []);
-            updateOutliner();
-            selectObject(cam);
+            const selects = ['rig-head', 'rig-spine', 'rig-l-arm', 'rig-r-arm', 'rig-l-leg', 'rig-r-leg'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '<option value="">Ninguno</option>';
+                bones.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.innerText = b;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        function closeRigModal() {
+            document.getElementById('rig-modal').style.display = 'none';
+        }
+
+        function applyRigging() {
+            // Aquí se guardaría el mapeo para controladores IK/FK
+            console.log("Rigging aplicado al actor:", lastImportedObject.name);
+            closeRigModal();
         }
 
         function selectObject(obj) {
             currentSelection = obj;
             if (obj) transform.attach(obj);
             else transform.detach();
-            
             updateOutliner();
             updateInspector();
-            renderKeyframesInTimeline();
         }
 
         function updateOutliner() {
-            const container = document.getElementById('outliner');
-            container.innerHTML = '';
+            const list = document.getElementById('outliner');
+            list.innerHTML = '';
             objects.forEach(obj => {
                 const item = document.createElement('div');
-                const isCam = obj instanceof THREE.Camera;
-                item.className = `flex items-center gap-2 p-3 rounded-xl cursor-pointer text-[10px] font-bold transition ${currentSelection === obj ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800 text-zinc-500'}`;
-                item.innerHTML = `
-                    <span>${isCam ? '📹' : '📦'}</span>
-                    <span class="truncate uppercase italic">${obj.name}</span>
-                `;
+                item.className = `p-2 text-[10px] cursor-pointer rounded ${currentSelection === obj ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800 text-zinc-500'}`;
+                item.innerText = "📦 " + obj.name;
                 item.onclick = () => selectObject(obj);
-                container.appendChild(item);
+                list.appendChild(item);
             });
         }
 
         function updateInspector() {
-            const container = document.getElementById('inspector-content');
+            const div = document.getElementById('inspector');
             if (!currentSelection) {
-                container.innerHTML = `<div class="text-center mt-20 opacity-20"><p class="text-xs font-bold italic uppercase">Selecciona algo para animar</p></div>`;
+                div.innerHTML = '<p class="text-[10px] text-zinc-600 italic">Sin selección</p>';
                 return;
             }
-
-            const p = currentSelection.position;
-            const r = currentSelection.rotation;
-
-            container.innerHTML = `
-                <div class="space-y-6">
-                    <div>
-                        <span class="text-[8px] font-black text-zinc-600 uppercase mb-2 block">Nombre del Elemento</span>
-                        <input class="input-dark text-blue-400" value="${currentSelection.name}" onchange="currentSelection.name = this.value; updateOutliner();">
-                    </div>
-                    
-                    <div>
-                        <span class="text-[8px] font-black text-zinc-600 uppercase mb-2 block">Transformación Espacial</span>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div><label class="text-[7px] block mb-1">X</label><input class="input-dark" value="${p.x.toFixed(2)}"></div>
-                            <div><label class="text-[7px] block mb-1">Y</label><input class="input-dark" value="${p.y.toFixed(2)}"></div>
-                            <div><label class="text-[7px] block mb-1">Z</label><input class="input-dark" value="${p.z.toFixed(2)}"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <span class="text-[8px] font-black text-zinc-600 uppercase mb-2 block">Material Cinemático</span>
-                        <div class="flex gap-4 items-center">
-                            <input type="color" class="bg-transparent border-0 w-10 h-10 cursor-pointer" value="#${currentSelection.material?.color?.getHexString() || 'ffffff'}" 
-                            oninput="if(currentSelection.material) currentSelection.material.color.set(this.value)">
-                            <div class="flex-1">
-                                <span class="text-[7px] block uppercase font-bold text-zinc-500">Color de Difusión</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-6 border-t border-zinc-800">
-                        <span class="text-[8px] font-black text-zinc-600 uppercase mb-2 block">Física de Serie</span>
-                        <select class="input-dark">
-                            <option>Estático</option>
-                            <option>Cinemático (Animado)</option>
-                            <option>Dinámico (Gravedad)</option>
-                        </select>
+            div.innerHTML = `
+                <div class="space-y-4">
+                    <span class="text-[9px] font-black text-blue-500 uppercase">Actor: ${currentSelection.name}</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[8px] text-zinc-600">X</label><input class="prop-input" value="${currentSelection.position.x.toFixed(2)}"></div>
+                        <div><label class="text-[8px] text-zinc-600">Y</label><input class="prop-input" value="${currentSelection.position.y.toFixed(2)}"></div>
+                        <div><label class="text-[8px] text-zinc-600">Z</label><input class="prop-input" value="${currentSelection.position.z.toFixed(2)}"></div>
                     </div>
                 </div>
             `;
         }
 
-        function initTimeline() {
-            const ruler = document.getElementById('timeline-ruler');
-            const totalWidth = 2500; // Simulating a long timeline
-            
-            for (let i = 0; i <= maxFrames; i += 20) {
-                const mark = document.createElement('div');
-                mark.className = "absolute bottom-0 w-px h-2 bg-zinc-800";
-                mark.style.left = (i / maxFrames * 100) + "%";
-                if (i % 100 === 0) {
-                    mark.style.height = "5px";
-                    mark.style.backgroundColor = "#52525b";
-                    const txt = document.createElement('span');
-                    txt.className = "absolute -top-4 -left-2 text-[8px] font-mono text-zinc-600";
-                    txt.innerText = i;
-                    mark.appendChild(txt);
-                }
-                ruler.appendChild(mark);
-            }
-
-            const scrubber = document.getElementById('scrubber');
-            scrubber.oninput = (e) => {
-                frame = parseInt(e.target.value);
-                updateTimelineState();
-            };
-        }
-
-        function togglePlay() {
-            isPlaying = !isPlaying;
-            const btn = document.getElementById('play-btn');
-            btn.innerHTML = isPlaying ? 
-                '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>' : 
-                '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        function updateTimelineTracks() {
+            const list = document.getElementById('track-list');
+            list.innerHTML = '<div class="panel-header bg-[#050506]"><span class="panel-title">Tracks de Animación</span></div>';
+            objects.forEach(obj => {
+                const track = document.createElement('div');
+                track.className = "p-3 border-b border-zinc-900 text-[10px] font-bold text-zinc-400";
+                track.innerText = "🎬 " + obj.name;
+                list.appendChild(track);
+            });
         }
 
         function setKeyframe() {
             if (!currentSelection) return;
             const keys = animations.get(currentSelection.id);
-            const keyData = {
+            const key = {
                 f: frame,
                 p: currentSelection.position.clone(),
                 r: currentSelection.quaternion.clone(),
                 s: currentSelection.scale.clone()
             };
-            
-            const existingIdx = keys.findIndex(k => k.f === frame);
-            if (existingIdx >= 0) keys[existingIdx] = keyData;
-            else keys.push(keyData);
-            
-            keys.sort((a, b) => a.f - b.f);
-            renderKeyframesInTimeline();
+            const idx = keys.findIndex(k => k.f === frame);
+            if (idx >= 0) keys[idx] = key;
+            else keys.push(key);
+            keys.sort((a,b) => a.f - b.f);
         }
 
-        function renderKeyframesInTimeline() {
-            const area = document.getElementById('keyframes-area');
-            area.querySelectorAll('.keyframe-dot').forEach(el => el.remove());
-            
-            if (!currentSelection) return;
-            const keys = animations.get(currentSelection.id);
-            keys.forEach(k => {
-                const dot = document.createElement('div');
-                dot.className = "keyframe-dot";
-                dot.style.left = (k.f / maxFrames * 100) + "%";
-                area.appendChild(dot);
-            });
-        }
-
-        function updateTimelineState() {
-            document.getElementById('frame-counter').innerText = frame.toString().padStart(3, '0');
+        function seekFrame() {
+            document.getElementById('frame-counter').innerText = frame.toString().padStart(4, '0');
             document.getElementById('playhead').style.left = (frame / maxFrames * 100) + "%";
             
-            // Apply Animations to ALL objects
             objects.forEach(obj => {
                 const keys = animations.get(obj.id);
                 if (!keys || keys.length === 0) return;
-
                 let prev = keys.filter(k => k.f <= frame).pop();
                 let next = keys.filter(k => k.f > frame)[0];
-
                 if (prev && next) {
                     const t = (frame - prev.f) / (next.f - prev.f);
-                    const alpha = t * t * (3 - 2 * t); // Smooth interpolation
-                    obj.position.lerpVectors(prev.p, next.p, alpha);
-                    obj.quaternion.slerpQuaternions(prev.r, next.r, alpha);
-                    obj.scale.lerpVectors(prev.s, next.s, alpha);
+                    obj.position.lerpVectors(prev.p, next.p, t);
+                    obj.quaternion.slerpQuaternions(prev.r, next.r, t);
                 } else if (prev) {
                     obj.position.copy(prev.p);
                     obj.quaternion.copy(prev.r);
-                    obj.scale.copy(prev.s);
                 }
             });
             updateInspector();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('play-btn').style.color = isPlaying ? '#ef4444' : '#3b82f6';
         }
 
         function deleteSelected() {
             if (!currentSelection) return;
             scene.remove(currentSelection);
             objects = objects.filter(o => o !== currentSelection);
-            animations.delete(currentSelection.id);
             selectObject(null);
             updateOutliner();
+            updateTimelineTracks();
         }
 
         function animate() {
             requestAnimationFrame(animate);
             if (isPlaying) {
                 frame = (frame + 1) % (maxFrames + 1);
-                document.getElementById('scrubber').value = frame;
-                updateTimelineState();
+                document.getElementById('timeline-scrubber').value = frame;
+                seekFrame();
             }
             orbit.update();
             renderer.render(scene, camera);
         }
-
-        window.onresize = () => {
-            const vp = document.getElementById('viewport');
-            camera.aspect = vp.clientWidth / vp.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(vp.clientWidth, vp.clientHeight);
-        };
     </script>
 </body>
 </html>
