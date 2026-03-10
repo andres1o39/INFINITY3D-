@@ -1,7 +1,441 @@
-```jsx
-import { useState, useRef, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeMind — IA para Programar</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-const SYSTEM_PROMPT = `Eres un experto programador y asistente de desarrollo de software. 
+  :root {
+    --bg: #050810;
+    --surface: #0c1018;
+    --surface2: #131925;
+    --border: #1e2840;
+    --border2: #263050;
+    --text: #dde6f5;
+    --muted: #5a6a8a;
+    --accent: #4f8cff;
+    --green: #3ecf8e;
+    --red: #ff5f6d;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,140,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,140,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    z-index: 10;
+    background: rgba(12,16,24,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(79,140,255,0.3);
+  }
+
+  .logo-text h1 {
+    font-size: 15px; font-weight: 800; color: #eef2ff; letter-spacing: -0.5px;
+  }
+  .logo-text p {
+    font-size: 10px; color: var(--green); display: flex; align-items: center; gap: 4px; font-weight: 400;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
+
+  .header-controls {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .token-selector {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+  .token-selector span { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .tok-btn {
+    font-size: 10px; padding: 2px 8px; border-radius: 5px; border: none;
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-family: var(--sans); transition: all 0.15s;
+  }
+  .tok-btn:hover { color: var(--text); }
+  .tok-btn.active { background: var(--accent); color: #fff; }
+
+  .clear-btn {
+    font-size: 11px; padding: 5px 12px; border-radius: 7px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; font-family: var(--sans);
+    transition: all 0.15s; display: none;
+  }
+  .clear-btn:hover { border-color: var(--red); color: var(--red); }
+  .clear-btn.visible { display: block; }
+
+  /* ── Messages ── */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 24px;
+    position: relative;
+    z-index: 1;
+    scroll-behavior: smooth;
+  }
+
+  #messages::-webkit-scrollbar { width: 5px; }
+  #messages::-webkit-scrollbar-track { background: transparent; }
+  #messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .msgs-inner { max-width: 880px; margin: 0 auto; }
+
+  /* ── Empty state ── */
+  #empty-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+  #empty-state .icon { font-size: 54px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(79,140,255,0.4)); }
+  #empty-state h2 { font-size: 26px; font-weight: 800; color: #eef2ff; margin-bottom: 8px; letter-spacing: -1px; }
+  #empty-state p { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  #empty-state small { font-size: 12px; color: #2d3a52; }
+  #empty-state small strong { color: var(--accent); }
+
+  .suggestions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 620px;
+    margin: 28px auto 24px;
+  }
+
+  .sug-btn {
+    padding: 13px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    display: flex; gap: 10px; align-items: flex-start;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: var(--sans);
+    line-height: 1.4;
+  }
+  .sug-btn:hover { border-color: var(--accent); background: var(--surface2); }
+  .sug-btn .sug-icon { flex-shrink: 0; font-size: 16px; }
+
+  .lang-pills { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .lang-pill {
+    padding: 4px 13px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 12px; cursor: pointer;
+    font-family: var(--sans); transition: all 0.15s;
+  }
+  .lang-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Message bubbles ── */
+  .msg {
+    display: flex; gap: 14px; margin-bottom: 24px;
+    animation: fadeUp 0.25s ease;
+  }
+  .msg.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 7px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; align-self: flex-start;
+  }
+  .msg.user .avatar { background: #1a3a6e; }
+  .msg.ai .avatar { background: linear-gradient(135deg, var(--accent), var(--green)); box-shadow: 0 0 12px rgba(79,140,255,0.3); }
+
+  .bubble {
+    max-width: 83%;
+    padding: 13px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 14px 4px 14px 14px;
+  }
+  .msg.ai .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px;
+  }
+
+  /* ── Code blocks ── */
+  .code-block {
+    margin: 12px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border2);
+    background: #07090f;
+  }
+  .code-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 14px;
+    background: #0e1420;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-lang { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; }
+  .code-meta { font-size: 10px; color: #2d3a52; font-family: var(--mono); }
+  .copy-btn {
+    font-size: 11px; padding: 2px 10px; border-radius: 5px;
+    border: 1px solid var(--border); background: none;
+    color: var(--muted); cursor: pointer; font-family: var(--mono);
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  .code-body {
+    overflow-x: auto; overflow-y: auto;
+    max-height: 520px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: #c9d8f0;
+  }
+  .code-body::-webkit-scrollbar { width: 5px; height: 5px; }
+  .code-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .code-table { border-collapse: collapse; width: 100%; }
+  .code-table td { padding: 0; }
+  .line-num {
+    width: 42px; text-align: right; padding: 0 12px 0 8px;
+    color: #2d3a52; user-select: none;
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .line-code { padding: 0 16px; white-space: pre; }
+
+  /* Cursor blink */
+  .cursor {
+    display: inline-block; width: 8px; height: 15px;
+    background: var(--accent); vertical-align: text-bottom;
+    margin-left: 2px; animation: blink 1s step-end infinite;
+  }
+
+  /* Typing indicator */
+  #typing {
+    display: none;
+    gap: 14px; margin-bottom: 24px;
+  }
+  #typing.visible { display: flex; }
+  .typing-bubble {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px;
+    padding: 14px 18px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+  .typing-label { font-size: 12px; color: var(--muted); margin-left: 6px; font-family: var(--mono); }
+
+  /* ── Input area ── */
+  footer {
+    position: relative; z-index: 10;
+    border-top: 1px solid var(--border);
+    padding: 16px 24px 20px;
+    background: rgba(12,16,24,0.97);
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    max-width: 880px; margin: 0 auto;
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+
+  .input-wrap {
+    flex: 1;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface2);
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+
+  #user-input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 14px; resize: none;
+    font-family: var(--sans); line-height: 1.6;
+    width: 100%; max-height: 160px; overflow-y: auto;
+    min-height: 22px;
+  }
+  #user-input::placeholder { color: var(--muted); font-size: 13px; }
+  #user-input::-webkit-scrollbar { width: 4px; }
+  #user-input::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  #send-btn {
+    width: 44px; height: 44px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    color: #fff; font-size: 20px; cursor: pointer;
+    flex-shrink: 0; transition: all 0.2s;
+    box-shadow: 0 0 16px rgba(79,140,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #send-btn:disabled {
+    background: var(--surface2); box-shadow: none; cursor: not-allowed; opacity: 0.5;
+  }
+  #send-btn:not(:disabled):hover { transform: scale(1.05); box-shadow: 0 0 24px rgba(79,140,255,0.5); }
+
+  .footer-meta {
+    max-width: 880px; margin: 8px auto 0;
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #2d3a52; font-family: var(--mono);
+  }
+  .footer-meta span strong { color: var(--accent); }
+
+  /* ── Animations ── */
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes bounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-5px);opacity:1} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+
+  /* Loading shimmer on streaming */
+  .streaming .bubble {
+    background-image: linear-gradient(90deg, var(--surface) 40%, #1a2540 50%, var(--surface) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">⚡</div>
+  <div class="logo-text">
+    <h1>CodeMind</h1>
+    <p><span class="dot"></span> IA lista · código largo garantizado</p>
+  </div>
+  <div class="header-controls">
+    <div class="token-selector">
+      <span>Longitud:</span>
+      <button class="tok-btn" data-val="2000">Normal</button>
+      <button class="tok-btn active" data-val="4000">Largo</button>
+      <button class="tok-btn" data-val="8000">Máximo</button>
+    </div>
+    <button class="clear-btn" id="clear-btn">🗑 Limpiar</button>
+  </div>
+</header>
+
+<!-- MESSAGES -->
+<div id="messages">
+  <div class="msgs-inner">
+
+    <!-- Empty state -->
+    <div id="empty-state">
+      <div class="icon">⚡</div>
+      <h2>Código largo, completo y real</h2>
+      <p>Pide proyectos enteros, APIs, sistemas completos — sin truncar nada.</p>
+      <small>Ajusta la <strong>longitud</strong> arriba según lo que necesites</small>
+
+      <div class="suggestions-grid">
+        <button class="sug-btn" data-prompt="Crea una API REST completa con Node.js + Express + MongoDB con autenticación JWT, CRUD de usuarios, middleware de errores y validaciones">
+          <span class="sug-icon">🏗️</span>API REST completa con Node.js + Express + MongoDB
+        </button>
+        <button class="sug-btn" data-prompt="Crea una aplicación React completa con autenticación, routing con React Router, estado global con Context API y componentes reutilizables">
+          <span class="sug-icon">⚛️</span>App React con auth, routing y estado global
+        </button>
+        <button class="sug-btn" data-prompt="Escribe un web scraper completo en Python con requests y BeautifulSoup, manejo de errores, reintentos, guardado en CSV y logging">
+          <span class="sug-icon">🐍</span>Web scraper en Python con manejo de errores
+        </button>
+        <button class="sug-btn" data-prompt="Diseña un sistema completo de base de datos con SQLAlchemy ORM, modelos relacionales, migraciones, repositorios y servicio de datos">
+          <span class="sug-icon">🗃️</span>Sistema de base de datos con ORM completo
+        </button>
+      </div>
+
+      <div class="lang-pills">
+        <button class="lang-pill" data-lang="JavaScript">JavaScript</button>
+        <button class="lang-pill" data-lang="Python">Python</button>
+        <button class="lang-pill" data-lang="TypeScript">TypeScript</button>
+        <button class="lang-pill" data-lang="Go">Go</button>
+        <button class="lang-pill" data-lang="Rust">Rust</button>
+        <button class="lang-pill" data-lang="Java">Java</button>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div id="typing">
+      <div class="avatar">⚡</div>
+      <div class="typing-bubble">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <span class="typing-label">Generando código...</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="input-row">
+    <div class="input-wrap">
+      <textarea id="user-input" rows="1"
+        placeholder="Pide código largo: 'Crea una API REST completa con JWT, CRUD, validaciones...' (Enter para enviar)"></textarea>
+    </div>
+    <button id="send-btn" disabled title="Enviar">↑</button>
+  </div>
+  <div class="footer-meta">
+    <span>Shift+Enter = nueva línea</span>
+    <span>Tokens: <strong id="tok-display">4,000</strong> · Streaming activado</span>
+  </div>
+</footer>
+
+<script>
+const SYSTEM_PROMPT = `Eres un experto programador y asistente de desarrollo de software.
 Tu nombre es CodeMind. Ayudas con:
 - Escribir, depurar y optimizar código en cualquier lenguaje
 - Explicar conceptos de programación y arquitectura
@@ -15,288 +449,235 @@ Escribe CADA línea de código necesaria para que funcione al 100%.
 Cuando escribas código, usa bloques de código con el lenguaje especificado.
 Sé preciso y práctico. Responde siempre en el idioma del usuario.`;
 
-function CodeBlock({ code, lang }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  const lines = code.split("\n").length;
-  return (
-    <div style={{ position: "relative", margin: "12px 0", borderRadius: 8, overflow: "hidden", background: "#0d1117", border: "1px solid #30363d" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 14px", background: "#161b22", borderBottom: "1px solid #30363d" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#8b949e", fontFamily: "monospace", letterSpacing: 1 }}>{lang || "code"}</span>
-          <span style={{ fontSize: 10, color: "#484f58", fontFamily: "monospace" }}>{lines} líneas</span>
-        </div>
-        <button onClick={copy} style={{ background: "none", border: "1px solid #30363d", borderRadius: 5, color: copied ? "#3fb950" : "#8b949e", padding: "2px 10px", fontSize: 11, cursor: "pointer", fontFamily: "monospace" }}>
-          {copied ? "✓ copiado" : "copiar"}
-        </button>
-      </div>
-      <pre style={{ margin: 0, padding: "14px 0", overflowX: "auto", fontSize: 13, lineHeight: 1.6, color: "#e6edf3", fontFamily: "'Fira Code', 'Cascadia Code', monospace", maxHeight: 500, overflowY: "auto" }}>
-        <table style={{ borderCollapse: "collapse", width: "100%" }}>
-          <tbody>
-            {code.split("\n").map((line, i) => (
-              <tr key={i}>
-                <td style={{ width: 40, textAlign: "right", paddingRight: 16, paddingLeft: 12, color: "#484f58", fontSize: 11, userSelect: "none", borderRight: "1px solid #21262d" }}>{i + 1}</td>
-                <td style={{ paddingLeft: 16, paddingRight: 16, whiteSpace: "pre" }}>{line || " "}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </pre>
-    </div>
-  );
+let messages = [];
+let maxTokens = 4000;
+let isLoading = false;
+
+const messagesEl = document.getElementById('messages');
+const msgsInner = messagesEl.querySelector('.msgs-inner');
+const emptyState = document.getElementById('empty-state');
+const typingEl = document.getElementById('typing');
+const inputEl = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const clearBtn = document.getElementById('clear-btn');
+const tokDisplay = document.getElementById('tok-display');
+
+// Token selector
+document.querySelectorAll('.tok-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tok-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    maxTokens = parseInt(btn.dataset.val);
+    tokDisplay.textContent = maxTokens.toLocaleString();
+  });
+});
+
+// Suggestions
+document.querySelectorAll('.sug-btn').forEach(btn => {
+  btn.addEventListener('click', () => send(btn.dataset.prompt));
+});
+
+// Lang pills
+document.querySelectorAll('.lang-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    inputEl.value = `Escríbeme una aplicación completa en ${pill.dataset.lang} con todas las funciones necesarias: `;
+    inputEl.dispatchEvent(new Event('input'));
+    inputEl.focus();
+  });
+});
+
+// Clear
+clearBtn.addEventListener('click', () => {
+  messages = [];
+  document.querySelectorAll('.msg').forEach(m => m.remove());
+  emptyState.style.display = 'block';
+  clearBtn.classList.remove('visible');
+});
+
+// Input auto-resize
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+  sendBtn.disabled = !inputEl.value.trim() || isLoading;
+});
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) send();
+  }
+});
+
+sendBtn.addEventListener('click', () => send());
+
+function scrollBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function MessageContent({ content }) {
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderContent(content) {
   const parts = [];
   const regex = /```(\w*)\n?([\s\S]*?)```/g;
   let last = 0, match;
   while ((match = regex.exec(content)) !== null) {
-    if (match.index > last) parts.push({ type: "text", value: content.slice(last, match.index) });
-    parts.push({ type: "code", lang: match[1], value: match[2].trim() });
+    if (match.index > last) {
+      parts.push({ type: 'text', value: content.slice(last, match.index) });
+    }
+    parts.push({ type: 'code', lang: match[1] || 'code', value: match[2].trim() });
     last = match.index + match[0].length;
   }
-  if (last < content.length) parts.push({ type: "text", value: content.slice(last) });
+  if (last < content.length) parts.push({ type: 'text', value: content.slice(last) });
 
-  return (
-    <div>
-      {parts.map((p, i) =>
-        p.type === "code" ? (
-          <CodeBlock key={i} code={p.value} lang={p.lang} />
-        ) : (
-          <span key={i} style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{p.value}</span>
-        )
-      )}
-    </div>
-  );
-}
-
-function TypingIndicator() {
-  return (
-    <div style={{ display: "flex", gap: 14, marginBottom: 24 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 7, background: "linear-gradient(135deg, #58a6ff, #3fb950)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>⚡</div>
-      <div style={{ background: "#0d1117", border: "1px solid #21262d", borderRadius: "4px 14px 14px 14px", padding: "14px 20px", display: "flex", gap: 6, alignItems: "center" }}>
-        {[0, 1, 2].map(d => (
-          <div key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "#58a6ff", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${d * 0.2}s` }} />
-        ))}
-        <span style={{ marginLeft: 8, fontSize: 12, color: "#484f58" }}>Generando código...</span>
-      </div>
-    </div>
-  );
-}
-
-const SUGGESTIONS = [
-  { icon: "🏗️", text: "API REST completa con Node.js + Express + MongoDB" },
-  { icon: "⚛️", text: "App React con auth, routing y estado global" },
-  { icon: "🐍", text: "Web scraper en Python con manejo de errores" },
-  { icon: "🗃️", text: "Sistema de base de datos con ORM completo" },
-];
-
-const LANGS = ["JavaScript", "Python", "TypeScript", "Go", "Rust", "Java"];
-
-export default function CodeMind() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [streaming, setStreaming] = useState("");
-  const [maxTokens, setMaxTokens] = useState(4000);
-  const bottomRef = useRef(null);
-  const textareaRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, streaming]);
-
-  const sendMessage = async (overrideInput) => {
-    const text = (overrideInput || input).trim();
-    if (!text || loading) return;
-
-    const userMsg = { role: "user", content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
-    setStreaming("");
-
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: maxTokens,
-          system: SYSTEM_PROMPT,
-          messages: newMessages,
-          stream: true,
-        }),
-      });
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let full = "";
-      setLoading(false);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter(l => l.startsWith("data: "));
-        for (const line of lines) {
-          try {
-            const json = JSON.parse(line.slice(6));
-            if (json.type === "content_block_delta" && json.delta?.text) {
-              full += json.delta.text;
-              setStreaming(full);
-            }
-          } catch {}
-        }
-      }
-
-      setStreaming("");
-      setMessages(prev => [...prev, { role: "assistant", content: full || "Sin respuesta." }]);
-    } catch (e) {
-      setLoading(false);
-      setStreaming("");
-      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error al conectar con la API." }]);
+  return parts.map(p => {
+    if (p.type === 'text') {
+      return `<span style="white-space:pre-wrap">${escapeHtml(p.value)}</span>`;
+    } else {
+      const lines = p.value.split('\n');
+      const rows = lines.map((line, i) =>
+        `<tr><td class="line-num">${i + 1}</td><td class="line-code">${escapeHtml(line) || ' '}</td></tr>`
+      ).join('');
+      const id = 'cb' + Math.random().toString(36).slice(2);
+      return `
+        <div class="code-block">
+          <div class="code-header">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="code-lang">${escapeHtml(p.lang)}</span>
+              <span class="code-meta">${lines.length} líneas</span>
+            </div>
+            <button class="copy-btn" onclick="copyCode('${id}', this)" id="raw-${id}" data-code="${escapeHtml(p.value).replace(/"/g,'&quot;')}">copiar</button>
+          </div>
+          <div class="code-body">
+            <table class="code-table" id="${id}"><tbody>${rows}</tbody></table>
+          </div>
+        </div>`;
     }
-  };
-
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
-
-  const clearChat = () => { setMessages([]); setStreaming(""); };
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#010409", color: "#e6edf3", fontFamily: "'Segoe UI', system-ui, sans-serif", display: "flex", flexDirection: "column" }}>
-
-      {/* Header */}
-      <div style={{ borderBottom: "1px solid #21262d", padding: "12px 24px", background: "#0d1117", display: "flex", alignItems: "center", gap: 14, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg, #58a6ff, #3fb950)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#f0f6fc" }}>CodeMind</div>
-          <div style={{ fontSize: 11, color: "#3fb950", display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3fb950", display: "inline-block" }}></span>
-            IA lista · código completo garantizado
-          </div>
-        </div>
-
-        {/* Token selector */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#161b22", border: "1px solid #30363d", borderRadius: 8, padding: "4px 10px" }}>
-            <span style={{ fontSize: 11, color: "#8b949e" }}>Longitud:</span>
-            {[
-              { label: "Normal", val: 2000 },
-              { label: "Largo", val: 4000 },
-              { label: "Máximo", val: 8000 },
-            ].map(opt => (
-              <button key={opt.val} onClick={() => setMaxTokens(opt.val)}
-                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, border: "none", background: maxTokens === opt.val ? "#1f6feb" : "transparent", color: maxTokens === opt.val ? "#fff" : "#8b949e", cursor: "pointer" }}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {messages.length > 0 && (
-            <button onClick={clearChat} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 7, border: "1px solid #30363d", background: "transparent", color: "#8b949e", cursor: "pointer" }}>
-              🗑 Limpiar
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px", maxWidth: 900, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
-        {messages.length === 0 && !streaming && (
-          <div style={{ textAlign: "center", marginTop: 50 }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>⚡</div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: "#f0f6fc", marginBottom: 6 }}>Código largo, complejo y completo</h2>
-            <p style={{ color: "#8b949e", fontSize: 14, marginBottom: 8 }}>Pide proyectos enteros, APIs completas, sistemas complejos — sin truncar.</p>
-            <p style={{ color: "#484f58", fontSize: 12, marginBottom: 32 }}>Ajusta la <strong style={{color:"#58a6ff"}}>longitud</strong> arriba según lo que necesites</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 620, margin: "0 auto 32px" }}>
-              {SUGGESTIONS.map(s => (
-                <button key={s.text} onClick={() => sendMessage(s.text)}
-                  style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #30363d", background: "#0d1117", color: "#c9d1d9", fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", gap: 10, alignItems: "flex-start", transition: "border-color 0.2s" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = "#58a6ff"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = "#30363d"}>
-                  <span>{s.icon}</span><span>{s.text}</span>
-                </button>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              {LANGS.map(l => (
-                <button key={l} onClick={() => { setInput(`Escríbeme una aplicación completa en ${l} con todas las funciones necesarias: `); textareaRef.current?.focus(); }}
-                  style={{ padding: "4px 12px", borderRadius: 20, border: "1px solid #30363d", background: "transparent", color: "#8b949e", fontSize: 12, cursor: "pointer" }}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((m, i) => (
-          <div key={i} style={{ marginBottom: 24, display: "flex", gap: 14, flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: m.role === "user" ? "#1f6feb" : "linear-gradient(135deg, #58a6ff, #3fb950)" }}>
-              {m.role === "user" ? "👤" : "⚡"}
-            </div>
-            <div style={{ maxWidth: "85%", background: m.role === "user" ? "#1c2128" : "#0d1117", border: `1px solid ${m.role === "user" ? "#30363d" : "#21262d"}`, borderRadius: m.role === "user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px", padding: "12px 16px", fontSize: 14 }}>
-              <MessageContent content={m.content} />
-            </div>
-          </div>
-        ))}
-
-        {/* Streaming message */}
-        {streaming && (
-          <div style={{ marginBottom: 24, display: "flex", gap: 14 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #58a6ff, #3fb950)" }}>⚡</div>
-            <div style={{ maxWidth: "85%", background: "#0d1117", border: "1px solid #21262d", borderRadius: "4px 14px 14px 14px", padding: "12px 16px", fontSize: 14 }}>
-              <MessageContent content={streaming} />
-              <span style={{ display: "inline-block", width: 8, height: 14, background: "#58a6ff", animation: "blink 1s step-end infinite", marginLeft: 2, verticalAlign: "text-bottom" }} />
-            </div>
-          </div>
-        )}
-
-        {loading && <TypingIndicator />}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div style={{ borderTop: "1px solid #21262d", padding: "16px 24px", background: "#0d1117", position: "sticky", bottom: 0 }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 10, alignItems: "flex-end" }}>
-          <div style={{ flex: 1, border: "1px solid #30363d", borderRadius: 10, background: "#161b22", padding: "10px 14px" }}>
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Pide código largo: 'Crea una API REST completa con autenticación JWT, CRUD de usuarios...' (Enter para enviar)"
-              rows={1}
-              style={{ background: "none", border: "none", outline: "none", color: "#e6edf3", fontSize: 14, resize: "none", fontFamily: "inherit", lineHeight: 1.6, width: "100%", maxHeight: 160, overflow: "auto", boxSizing: "border-box" }}
-              onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px"; }}
-            />
-          </div>
-          <button onClick={() => sendMessage()} disabled={!input.trim() || loading || !!streaming}
-            style={{ width: 44, height: 44, borderRadius: 10, border: "none", background: input.trim() && !loading && !streaming ? "linear-gradient(135deg, #58a6ff, #3fb950)" : "#21262d", color: "#fff", fontSize: 20, cursor: input.trim() && !loading && !streaming ? "pointer" : "not-allowed", flexShrink: 0, transition: "all 0.2s" }}>
-            ↑
-          </button>
-        </div>
-        <div style={{ maxWidth: 900, margin: "8px auto 0", display: "flex", justifyContent: "space-between", fontSize: 11, color: "#484f58" }}>
-          <span>Shift+Enter para nueva línea</span>
-          <span>Tokens: <strong style={{ color: "#58a6ff" }}>{maxTokens.toLocaleString()}</strong> · Streaming activado</span>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #010409; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-      `}</style>
-    </div>
-  );
+  }).join('');
 }
-```
 
+function copyCode(id, btn) {
+  const raw = document.getElementById('raw-' + id).dataset.code;
+  const decoded = raw.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+  navigator.clipboard.writeText(decoded).then(() => {
+    btn.textContent = '✓ copiado';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function addMessage(role, content, streaming = false) {
+  emptyState.style.display = 'none';
+  clearBtn.classList.add('visible');
+
+  const div = document.createElement('div');
+  div.className = `msg ${role === 'user' ? 'user' : 'ai'}${streaming ? ' streaming' : ''}`;
+
+  const avatar = role === 'user' ? '👤' : '⚡';
+  div.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div class="bubble" id="bubble-${div.id || Date.now()}"></div>
+  `;
+
+  // Insert before typing indicator
+  msgsInner.insertBefore(div, typingEl);
+  scrollBottom();
+  return div.querySelector('.bubble');
+}
+
+async function send(overrideText) {
+  const text = (overrideText || inputEl.value).trim();
+  if (!text || isLoading) return;
+
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+  isLoading = true;
+
+  // User bubble
+  const userBubble = addMessage('user', text);
+  userBubble.innerHTML = escapeHtml(text);
+
+  messages.push({ role: 'user', content: text });
+
+  // Show typing
+  typingEl.classList.add('visible');
+  scrollBottom();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        system: SYSTEM_PROMPT,
+        messages,
+        stream: true
+      })
+    });
+
+    typingEl.classList.remove('visible');
+
+    const aiBubble = addMessage('assistant', '', true);
+    const msgDiv = aiBubble.closest('.msg');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    let buffer = '';
+
+    // Render loop with throttle
+    let renderPending = false;
+    function scheduleRender() {
+      if (renderPending) return;
+      renderPending = true;
+      requestAnimationFrame(() => {
+        renderPending = false;
+        // Show partial content: text up to last complete code block
+        const partial = full;
+        // Simple streaming display: show raw text with cursor
+        aiBubble.innerHTML = renderContent(partial) + '<span class="cursor"></span>';
+        scrollBottom();
+      });
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const json = JSON.parse(data);
+          if (json.type === 'content_block_delta' && json.delta?.text) {
+            full += json.delta.text;
+            scheduleRender();
+          }
+        } catch {}
+      }
+    }
+
+    // Final render without cursor
+    msgDiv.classList.remove('streaming');
+    aiBubble.innerHTML = renderContent(full || 'Sin respuesta.');
+    messages.push({ role: 'assistant', content: full || 'Sin respuesta.' });
+    scrollBottom();
+
+  } catch (err) {
+    typingEl.classList.remove('visible');
+    const errBubble = addMessage('assistant', '');
+    errBubble.textContent = '⚠️ Error al conectar con la API. Verifica tu conexión.';
+  }
+
+  isLoading = false;
+  sendBtn.disabled = !inputEl.value.trim();
+}
+</script>
+</body>
+</html>
