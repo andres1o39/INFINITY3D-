@@ -1,389 +1,302 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinity 3D - Ultimate Production Suite</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root { --accent: #0ea5e9; --key: #facc15; }
-        body { margin: 0; overflow: hidden; background: #020203; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-        
-        /* Storyboard con Glassmorphism */
-        #storyboard-container {
-            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-            width: 55%; height: 160px; background: rgba(10, 10, 15, 0.9);
-            border: 1px solid #334155; border-radius: 16px; z-index: 50;
-            display: flex; flex-direction: column; backdrop-filter: blur(10px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8); transition: 0.3s ease;
-        }
+```jsx
+import { useState, useRef, useEffect } from "react";
 
-        /* Toolbar Izquierda Pro */
-        .left-toolbar {
-            position: absolute; left: 12px; top: 12px; bottom: 130px;
-            width: 60px; background: #0f172a; border: 1px solid #1e293b;
-            border-radius: 16px; display: flex; flex-direction: column; 
-            align-items: center; padding: 15px 0; z-index: 40; gap: 8px;
-        }
-        .tool-btn {
-            width: 42px; height: 42px; display: flex; align-items: center; 
-            justify-content: center; border-radius: 10px; cursor: pointer; 
-            transition: 0.2s; color: #64748b; border: 1px solid transparent;
-        }
-        .tool-btn.active { background: var(--accent); color: white; border-color: #38bdf8; }
-        .tool-btn:hover:not(.active) { background: #1e293b; color: #f1f5f9; }
+const SYSTEM_PROMPT = `Eres un experto programador y asistente de desarrollo de software. 
+Tu nombre es CodeMind. Ayudas con:
+- Escribir, depurar y optimizar código en cualquier lenguaje
+- Explicar conceptos de programación y arquitectura
+- Revisar código y sugerir mejoras
+- Resolver errores y problemas técnicos
+- Diseñar sistemas y estructuras de datos
 
-        /* Inspector Derecho Multicapa */
-        .right-panel {
-            position: absolute; right: 0; top: 0; bottom: 120px;
-            width: 320px; background: #0a0a0c; border-left: 1px solid #1e293b;
-            z-index: 40; display: flex; flex-direction: column; overflow: hidden;
-        }
-        .tab-btn { flex: 1; padding: 10px; font-size: 10px; font-weight: 800; border-bottom: 2px solid transparent; color: #475569; }
-        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: #0f172a; }
+IMPORTANTE: Cuando el usuario pida código largo, complejo o completo, SIEMPRE escribe el código COMPLETO sin omitir nada.
+No uses "// ... resto del código", "// continúa aquí", ni ningún placeholder.
+Escribe CADA línea de código necesaria para que funcione al 100%.
+Cuando escribas código, usa bloques de código con el lenguaje especificado.
+Sé preciso y práctico. Responde siempre en el idioma del usuario.`;
 
-        /* Timeline con Indicadores de Keyframes */
-        .bottom-timeline {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 120px; background: #020617; border-top: 1px solid #1e293b;
-            z-index: 50; display: flex; flex-direction: column;
-        }
-        .ruler {
-            height: 50px; background: #0f172a; position: relative;
-            overflow: hidden; cursor: pointer; border-bottom: 1px solid #1e293b;
-        }
-        .keyframe-marker {
-            position: absolute; width: 8px; height: 8px; background: var(--key);
-            transform: rotate(45deg) translateX(-50%); top: 50%; margin-top: -4px;
-            border: 1px solid #000; pointer-events: none; z-index: 25;
-        }
-
-        /* Estilos de Inputs */
-        .prop-grid { display: grid; grid-template-cols: repeat(3, 1fr); gap: 4px; padding: 10px; }
-        .num-input { background: #000; border: 1px solid #334155; color: var(--key); padding: 4px; border-radius: 4px; font-size: 10px; text-align: center; }
-
-        #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #f43f5e; z-index: 30; box-shadow: 0 0 10px #f43f5e; }
-        #viewport { position: absolute; inset: 0; z-index: 5; }
-
-        /* Scrollbars Custom */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    </style>
-</head>
-<body>
-
-    <div id="viewport"></div>
-
-    <!-- Panel Storyboard -->
-    <div id="storyboard-container">
-        <div class="flex justify-between items-center px-4 py-2 bg-slate-900/50 rounded-t-16">
-            <span class="text-[9px] font-black tracking-widest text-slate-400">MODO STORYBOARD</span>
-            <div class="flex gap-2">
-                <button onclick="setDrawMode('draw')" id="btn-draw" class="bg-sky-600 px-3 py-1 rounded text-[10px] font-bold">LÁPIZ</button>
-                <button onclick="setDrawMode('erase')" id="btn-erase" class="bg-slate-700 px-3 py-1 rounded text-[10px] font-bold">GOMA</button>
-                <button onclick="clearStoryboard()" class="text-rose-400 text-[10px] px-2">LIMPIAR</button>
-                <button onclick="toggleStoryboard()" class="text-slate-500">✖</button>
-            </div>
+function CodeBlock({ code, lang }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const lines = code.split("\n").length;
+  return (
+    <div style={{ position: "relative", margin: "12px 0", borderRadius: 8, overflow: "hidden", background: "#0d1117", border: "1px solid #30363d" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 14px", background: "#161b22", borderBottom: "1px solid #30363d" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, color: "#8b949e", fontFamily: "monospace", letterSpacing: 1 }}>{lang || "code"}</span>
+          <span style={{ fontSize: 10, color: "#484f58", fontFamily: "monospace" }}>{lines} líneas</span>
         </div>
-        <div class="flex-1 relative bg-black/40" id="sb-wrapper">
-            <canvas id="sb-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
-        </div>
+        <button onClick={copy} style={{ background: "none", border: "1px solid #30363d", borderRadius: 5, color: copied ? "#3fb950" : "#8b949e", padding: "2px 10px", fontSize: 11, cursor: "pointer", fontFamily: "monospace" }}>
+          {copied ? "✓ copiado" : "copiar"}
+        </button>
+      </div>
+      <pre style={{ margin: 0, padding: "14px 0", overflowX: "auto", fontSize: 13, lineHeight: 1.6, color: "#e6edf3", fontFamily: "'Fira Code', 'Cascadia Code', monospace", maxHeight: 500, overflowY: "auto" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <tbody>
+            {code.split("\n").map((line, i) => (
+              <tr key={i}>
+                <td style={{ width: 40, textAlign: "right", paddingRight: 16, paddingLeft: 12, color: "#484f58", fontSize: 11, userSelect: "none", borderRight: "1px solid #21262d" }}>{i + 1}</td>
+                <td style={{ paddingLeft: 16, paddingRight: 16, whiteSpace: "pre" }}>{line || " "}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </pre>
     </div>
+  );
+}
 
-    <!-- Barra de Herramientas -->
-    <div class="left-toolbar">
-        <div class="tool-btn active" id="t-move" title="Mover (W)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 11V5.41l2.3 2.3 1.41-1.42L12 1.58l-4.71 4.71 1.41 1.42 2.3-2.3V11H5.41l2.3-2.3-1.42-1.41L1.58 12l4.71 4.71 1.42-1.41-2.3-2.3H11v5.59l-2.3-2.3-1.41 1.42L12 22.42l4.71-4.71-1.41-1.42-2.3 2.3V13h5.59l-2.3 2.3 1.41 1.42L22.42 12l-4.71-4.71-1.41-1.41 2.3 2.3H13z"/></svg></div>
-        <div class="tool-btn" id="t-rotate" title="Rotar (E)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8v3L17 3l-5-4v3c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg></div>
-        <div class="tool-btn" id="t-scale" title="Escalar (R)"><svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 19H5V5h14v14zM3 3v18h18V3H3zm15 15h-2V7h-4V5h6v13z"/></svg></div>
-        <div class="h-px w-8 bg-slate-800 my-2"></div>
-        <div class="tool-btn" onclick="addPrimitive('cube')" title="Cubo"><span class="text-xs">■</span></div>
-        <div class="tool-btn" onclick="addPrimitive('sphere')" title="Esfera"><span class="text-xs">●</span></div>
-        <div class="tool-btn" onclick="addPrimitive('light')" title="Luz"><span class="text-xs">💡</span></div>
-        <div class="tool-btn" onclick="toggleStoryboard()" title="Storyboard"><span class="text-xs">✎</span></div>
-        <div class="mt-auto"></div>
-        <div class="tool-btn" onclick="document.getElementById('file-in').click()" title="Importar GLB"><span class="text-xs">☁</span></div>
+function MessageContent({ content }) {
+  const parts = [];
+  const regex = /```(\w*)\n?([\s\S]*?)```/g;
+  let last = 0, match;
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > last) parts.push({ type: "text", value: content.slice(last, match.index) });
+    parts.push({ type: "code", lang: match[1], value: match[2].trim() });
+    last = match.index + match[0].length;
+  }
+  if (last < content.length) parts.push({ type: "text", value: content.slice(last) });
+
+  return (
+    <div>
+      {parts.map((p, i) =>
+        p.type === "code" ? (
+          <CodeBlock key={i} code={p.value} lang={p.lang} />
+        ) : (
+          <span key={i} style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{p.value}</span>
+        )
+      )}
     </div>
+  );
+}
 
-    <!-- Inspector Pro -->
-    <div class="right-panel">
-        <div class="flex bg-slate-900">
-            <button class="tab-btn active" onclick="setTab('props')">PROPS</button>
-            <button class="tab-btn" onclick="setTab('scene')">ESCENA</button>
-            <button class="tab-btn" onclick="setTab('mats')">MATS</button>
-        </div>
-
-        <div id="tab-content" class="flex-1 overflow-y-auto p-4">
-            <!-- Dinámico -->
-        </div>
-
-        <div class="p-4 border-t border-slate-900 bg-black/50">
-            <button onclick="toggleRig()" class="w-full bg-slate-800 py-2 rounded text-[10px] font-bold border border-slate-700 hover:bg-slate-700 transition">MOSTRAR SKELETON (RIG)</button>
-            <button onclick="deleteSelected()" class="w-full mt-2 text-rose-500 text-[10px] font-bold">BORRAR SELECCIONADO</button>
-        </div>
+function TypingIndicator() {
+  return (
+    <div style={{ display: "flex", gap: 14, marginBottom: 24 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 7, background: "linear-gradient(135deg, #58a6ff, #3fb950)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>⚡</div>
+      <div style={{ background: "#0d1117", border: "1px solid #21262d", borderRadius: "4px 14px 14px 14px", padding: "14px 20px", display: "flex", gap: 6, alignItems: "center" }}>
+        {[0, 1, 2].map(d => (
+          <div key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "#58a6ff", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${d * 0.2}s` }} />
+        ))}
+        <span style={{ marginLeft: 8, fontSize: 12, color: "#484f58" }}>Generando código...</span>
+      </div>
     </div>
+  );
+}
 
-    <!-- Timeline -->
-    <div class="bottom-timeline">
-        <div class="ruler" id="timeline-ruler">
-            <div id="playhead"></div>
-            <div id="keyframes-container"></div>
-        </div>
-        <div class="flex items-center px-6 gap-6 h-full">
-            <button class="bg-sky-600 px-8 py-2 rounded-lg font-black text-xs hover:bg-sky-500" id="btn-play">PLAY</button>
-            <div class="flex flex-col">
-                <span class="text-[8px] text-slate-500 font-bold uppercase">Frame Actual</span>
-                <span class="text-2xl font-mono font-bold text-yellow-400" id="label-frame">0</span>
-            </div>
-            <button onclick="addKeyframe()" class="bg-yellow-500 text-black px-4 py-2 rounded font-black text-[10px] uppercase shadow-lg shadow-yellow-500/20">Insertar Keyframe</button>
-            <div class="ml-auto flex gap-4">
-                <input type="number" id="max-frames" value="250" class="bg-black border border-slate-800 w-16 text-center text-xs text-slate-400" onchange="updateMaxFrames()">
-                <button onclick="exportScene()" class="text-[10px] text-slate-500 underline">Exportar JSON</button>
-            </div>
-        </div>
-    </div>
+const SUGGESTIONS = [
+  { icon: "🏗️", text: "API REST completa con Node.js + Express + MongoDB" },
+  { icon: "⚛️", text: "App React con auth, routing y estado global" },
+  { icon: "🐍", text: "Web scraper en Python con manejo de errores" },
+  { icon: "🗃️", text: "Sistema de base de datos con ORM completo" },
+];
 
-    <input type="file" id="file-in" class="hidden" accept=".glb,.gltf" onchange="importModel(event)">
+const LANGS = ["JavaScript", "Python", "TypeScript", "Go", "Rust", "Java"];
 
-    <script>
-        let scene, camera, renderer, orbit, transform;
-        let objects = [], animations = new Map(), currentTab = 'props';
-        let currentFrame = 0, totalFrames = 250, isPlaying = false, selected = null;
-        let skeletonVisible = false, helpers = [];
+export default function CodeMind() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState("");
+  const [maxTokens, setMaxTokens] = useState(4000);
+  const bottomRef = useRef(null);
+  const textareaRef = useRef(null);
 
-        // Storyboard
-        let canvas, ctx, drawing = false, dMode = 'draw';
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading, streaming]);
 
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020203);
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.set(20, 15, 20);
+  const sendMessage = async (overrideInput) => {
+    const text = (overrideInput || input).trim();
+    if (!text || loading) return;
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            document.getElementById('viewport').appendChild(renderer.domElement);
+    const userMsg = { role: "user", content: text };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput("");
+    setLoading(true);
+    setStreaming("");
 
-            // Escena Inicial
-            scene.add(new THREE.GridHelper(100, 100, 0x1e293b, 0x0f172a));
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(20, 50, 20);
-            sun.castShadow = true;
-            scene.add(sun);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: maxTokens,
+          system: SYSTEM_PROMPT,
+          messages: newMessages,
+          stream: true,
+        }),
+      });
 
-            orbit = new THREE.OrbitControls(camera, renderer.domElement);
-            transform = new THREE.TransformControls(camera, renderer.domElement);
-            transform.addEventListener('dragging-changed', e => orbit.enabled = !e.value);
-            transform.addEventListener('change', updateUI);
-            scene.add(transform);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+      setLoading(false);
 
-            initStoryboard();
-            initTimeline();
-            setTab('props');
-            animate();
-
-            // Shortcut keys
-            window.addEventListener('keydown', e => {
-                if(e.key === 'w') setTool('translate', 't-move');
-                if(e.key === 'e') setTool('rotate', 't-rotate');
-                if(e.key === 'r') setTool('scale', 't-scale');
-            });
-        }
-
-        function addPrimitive(type) {
-            let obj;
-            if(type === 'cube') {
-                obj = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
-            } else if(type === 'sphere') {
-                obj = new THREE.Mesh(new THREE.SphereGeometry(3,32,32), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
-            } else if(type === 'light') {
-                obj = new THREE.PointLight(0xfacc15, 2, 50);
-                obj.add(new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0xfacc15})));
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n").filter(l => l.startsWith("data: "));
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line.slice(6));
+            if (json.type === "content_block_delta" && json.delta?.text) {
+              full += json.delta.text;
+              setStreaming(full);
             }
-            obj.name = `${type}_${objects.length}`;
-            obj.castShadow = true;
-            obj.id = THREE.MathUtils.generateUUID();
-            scene.add(obj);
-            objects.push(obj);
-            select(obj);
+          } catch {}
         }
+      }
 
-        function importModel(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const loader = new THREE.GLTFLoader();
-            loader.load(URL.createObjectURL(file), (gltf) => {
-                const model = gltf.scene;
-                model.name = file.name;
-                scene.add(model);
-                objects.push(model);
-                const h = new THREE.SkeletonHelper(model);
-                h.visible = skeletonVisible;
-                scene.add(h);
-                helpers.push(h);
-                select(model);
-            });
-        }
+      setStreaming("");
+      setMessages(prev => [...prev, { role: "assistant", content: full || "Sin respuesta." }]);
+    } catch (e) {
+      setLoading(false);
+      setStreaming("");
+      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error al conectar con la API." }]);
+    }
+  };
 
-        function select(obj) {
-            selected = obj;
-            if(obj) transform.attach(obj);
-            else transform.detach();
-            updateUI();
-        }
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  };
 
-        function updateUI() {
-            const container = document.getElementById('tab-content');
-            if(currentTab === 'props') {
-                if(!selected) { container.innerHTML = '<p class="text-slate-600 italic">Selecciona un objeto...</p>'; return; }
-                const p = selected.position;
-                container.innerHTML = `
-                    <div class="bg-sky-500/10 p-3 rounded-lg border border-sky-500/20 mb-4">
-                        <span class="text-[8px] text-sky-400 font-bold uppercase">Activo</span>
-                        <h4 class="text-sm font-black truncate">${selected.name}</h4>
-                    </div>
-                    <p class="text-[9px] text-slate-500 font-bold mb-2">TRANSFORMAR</p>
-                    <div class="prop-grid">
-                        <input class="num-input" value="${p.x.toFixed(2)}">
-                        <input class="num-input" value="${p.y.toFixed(2)}">
-                        <input class="num-input" value="${p.z.toFixed(2)}">
-                    </div>
-                `;
-            } else if(currentTab === 'scene') {
-                container.innerHTML = objects.map(o => `
-                    <div onclick="selectById('${o.uuid}')" class="p-2 mb-1 rounded cursor-pointer text-[10px] ${selected && selected.uuid === o.uuid ? 'bg-sky-600' : 'bg-slate-900 hover:bg-slate-800'}">
-                        📦 ${o.name}
-                    </div>
-                `).join('');
-            }
-        }
+  const clearChat = () => { setMessages([]); setStreaming(""); };
 
-        function addKeyframe() {
-            if(!selected) return;
-            if(!animations.has(selected.uuid)) animations.set(selected.uuid, []);
-            const track = animations.get(selected.uuid);
-            const key = {
-                frame: currentFrame,
-                pos: selected.position.clone(),
-                rot: selected.quaternion.clone(),
-                scl: selected.scale.clone()
-            };
-            const idx = track.findIndex(k => k.frame === currentFrame);
-            if(idx >= 0) track[idx] = key; else { track.push(key); track.sort((a,b) => a.frame - b.frame); }
-            refreshKeyframeMarkers();
-        }
+  return (
+    <div style={{ minHeight: "100vh", background: "#010409", color: "#e6edf3", fontFamily: "'Segoe UI', system-ui, sans-serif", display: "flex", flexDirection: "column" }}>
 
-        function refreshKeyframeMarkers() {
-            const container = document.getElementById('keyframes-container');
-            container.innerHTML = '';
-            if(!selected || !animations.has(selected.uuid)) return;
-            animations.get(selected.uuid).forEach(k => {
-                const marker = document.createElement('div');
-                marker.className = 'keyframe-marker';
-                marker.style.left = (k.frame / totalFrames * 100) + '%';
-                container.appendChild(marker);
-            });
-        }
+      {/* Header */}
+      <div style={{ borderBottom: "1px solid #21262d", padding: "12px 24px", background: "#0d1117", display: "flex", alignItems: "center", gap: 14, position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg, #58a6ff, #3fb950)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#f0f6fc" }}>CodeMind</div>
+          <div style={{ fontSize: 11, color: "#3fb950", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3fb950", display: "inline-block" }}></span>
+            IA lista · código completo garantizado
+          </div>
+        </div>
 
-        function updateFrame() {
-            document.getElementById('label-frame').innerText = currentFrame;
-            document.getElementById('playhead').style.left = (currentFrame / totalFrames * 100) + '%';
-            
-            animations.forEach((keys, uuid) => {
-                const obj = scene.getObjectByProperty('uuid', uuid);
-                if(!obj) return;
-                let prev = keys.filter(k => k.frame <= currentFrame).pop();
-                let next = keys.filter(k => k.frame > currentFrame)[0];
-                if(prev && next) {
-                    const t = (currentFrame - prev.frame) / (next.frame - prev.frame);
-                    obj.position.lerpVectors(prev.pos, next.pos, t);
-                    obj.quaternion.slerpQuaternions(prev.rot, next.rot, t);
-                    obj.scale.lerpVectors(prev.scl, next.scl, t);
-                } else if(prev) {
-                    obj.position.copy(prev.pos);
-                    obj.quaternion.copy(prev.rot);
-                    obj.scale.copy(prev.scl);
-                }
-            });
-            updateUI();
-        }
+        {/* Token selector */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#161b22", border: "1px solid #30363d", borderRadius: 8, padding: "4px 10px" }}>
+            <span style={{ fontSize: 11, color: "#8b949e" }}>Longitud:</span>
+            {[
+              { label: "Normal", val: 2000 },
+              { label: "Largo", val: 4000 },
+              { label: "Máximo", val: 8000 },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => setMaxTokens(opt.val)}
+                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, border: "none", background: maxTokens === opt.val ? "#1f6feb" : "transparent", color: maxTokens === opt.val ? "#fff" : "#8b949e", cursor: "pointer" }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {messages.length > 0 && (
+            <button onClick={clearChat} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 7, border: "1px solid #30363d", background: "transparent", color: "#8b949e", cursor: "pointer" }}>
+              🗑 Limpiar
+            </button>
+          )}
+        </div>
+      </div>
 
-        function animate() {
-            requestAnimationFrame(animate);
-            if(isPlaying) {
-                currentFrame++;
-                if(currentFrame > totalFrames) currentFrame = 0;
-                updateFrame();
-            }
-            helpers.forEach(h => h.update());
-            renderer.render(scene, camera);
-        }
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px", maxWidth: 900, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
+        {messages.length === 0 && !streaming && (
+          <div style={{ textAlign: "center", marginTop: 50 }}>
+            <div style={{ fontSize: 52, marginBottom: 12 }}>⚡</div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: "#f0f6fc", marginBottom: 6 }}>Código largo, complejo y completo</h2>
+            <p style={{ color: "#8b949e", fontSize: 14, marginBottom: 8 }}>Pide proyectos enteros, APIs completas, sistemas complejos — sin truncar.</p>
+            <p style={{ color: "#484f58", fontSize: 12, marginBottom: 32 }}>Ajusta la <strong style={{color:"#58a6ff"}}>longitud</strong> arriba según lo que necesites</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 620, margin: "0 auto 32px" }}>
+              {SUGGESTIONS.map(s => (
+                <button key={s.text} onClick={() => sendMessage(s.text)}
+                  style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #30363d", background: "#0d1117", color: "#c9d1d9", fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", gap: 10, alignItems: "flex-start", transition: "border-color 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#58a6ff"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "#30363d"}>
+                  <span>{s.icon}</span><span>{s.text}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              {LANGS.map(l => (
+                <button key={l} onClick={() => { setInput(`Escríbeme una aplicación completa en ${l} con todas las funciones necesarias: `); textareaRef.current?.focus(); }}
+                  style={{ padding: "4px 12px", borderRadius: 20, border: "1px solid #30363d", background: "transparent", color: "#8b949e", fontSize: 12, cursor: "pointer" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        // Helpers UI
-        function setTab(t) {
-            currentTab = t;
-            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['props','scene','mats'][i] === t));
-            updateUI();
-        }
-        function setTool(m, id) {
-            transform.setMode(m);
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.id === id));
-        }
-        function toggleRig() { skeletonVisible = !skeletonVisible; helpers.forEach(h => h.visible = skeletonVisible); }
-        function selectById(id) { const o = objects.find(obj => obj.uuid === id); if(o) select(o); }
-        function deleteSelected() { if(!selected) return; scene.remove(selected); objects = objects.filter(o => o !== selected); animations.delete(selected.uuid); select(null); }
-        
-        // Storyboard Logic
-        function initStoryboard() {
-            canvas = document.getElementById('sb-canvas');
-            ctx = canvas.getContext('2d');
-            const wrapper = document.getElementById('sb-wrapper');
-            canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight;
-            canvas.onmousedown = (e) => { drawing = true; draw(e); };
-            canvas.onmousemove = draw;
-            window.onmouseup = () => { drawing = false; ctx.beginPath(); };
-        }
-        function draw(e) {
-            if(!drawing) return;
-            const r = canvas.getBoundingClientRect();
-            const x = e.clientX - r.left; const y = e.clientY - r.top;
-            ctx.lineWidth = dMode === 'draw' ? 2 : 20;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = dMode === 'draw' ? '#0ea5e9' : '#000000';
-            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
-        }
-        function setDrawMode(m) { dMode = m; document.getElementById('btn-draw').className = m==='draw'?'bg-sky-600 px-3 py-1 rounded text-[10px] font-bold':'bg-slate-700 px-3 py-1 rounded text-[10px] font-bold'; }
-        function clearStoryboard() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-        function toggleStoryboard() { const c = document.getElementById('storyboard-container'); c.style.display = c.style.display === 'none' ? 'flex' : 'none'; }
+        {messages.map((m, i) => (
+          <div key={i} style={{ marginBottom: 24, display: "flex", gap: 14, flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: m.role === "user" ? "#1f6feb" : "linear-gradient(135deg, #58a6ff, #3fb950)" }}>
+              {m.role === "user" ? "👤" : "⚡"}
+            </div>
+            <div style={{ maxWidth: "85%", background: m.role === "user" ? "#1c2128" : "#0d1117", border: `1px solid ${m.role === "user" ? "#30363d" : "#21262d"}`, borderRadius: m.role === "user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px", padding: "12px 16px", fontSize: 14 }}>
+              <MessageContent content={m.content} />
+            </div>
+          </div>
+        ))}
 
-        function initTimeline() {
-            const ruler = document.getElementById('timeline-ruler');
-            ruler.onclick = (e) => {
-                const r = ruler.getBoundingClientRect();
-                currentFrame = Math.round(((e.clientX - r.left) / r.width) * totalFrames);
-                updateFrame();
-            };
-            document.getElementById('btn-play').onclick = () => {
-                isPlaying = !isPlaying;
-                document.getElementById('btn-play').innerText = isPlaying ? "PAUSE" : "PLAY";
-            };
-        }
+        {/* Streaming message */}
+        {streaming && (
+          <div style={{ marginBottom: 24, display: "flex", gap: 14 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #58a6ff, #3fb950)" }}>⚡</div>
+            <div style={{ maxWidth: "85%", background: "#0d1117", border: "1px solid #21262d", borderRadius: "4px 14px 14px 14px", padding: "12px 16px", fontSize: 14 }}>
+              <MessageContent content={streaming} />
+              <span style={{ display: "inline-block", width: 8, height: 14, background: "#58a6ff", animation: "blink 1s step-end infinite", marginLeft: 2, verticalAlign: "text-bottom" }} />
+            </div>
+          </div>
+        )}
 
-        function exportScene() {
-            const data = objects.map(o => ({ name: o.name, pos: o.position }));
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'escena.json'; a.click();
-        }
+        {loading && <TypingIndicator />}
+        <div ref={bottomRef} />
+      </div>
 
-        window.onload = init;
-    </script>
-</body>
-</html>
+      {/* Input */}
+      <div style={{ borderTop: "1px solid #21262d", padding: "16px 24px", background: "#0d1117", position: "sticky", bottom: 0 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 10, alignItems: "flex-end" }}>
+          <div style={{ flex: 1, border: "1px solid #30363d", borderRadius: 10, background: "#161b22", padding: "10px 14px" }}>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Pide código largo: 'Crea una API REST completa con autenticación JWT, CRUD de usuarios...' (Enter para enviar)"
+              rows={1}
+              style={{ background: "none", border: "none", outline: "none", color: "#e6edf3", fontSize: 14, resize: "none", fontFamily: "inherit", lineHeight: 1.6, width: "100%", maxHeight: 160, overflow: "auto", boxSizing: "border-box" }}
+              onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px"; }}
+            />
+          </div>
+          <button onClick={() => sendMessage()} disabled={!input.trim() || loading || !!streaming}
+            style={{ width: 44, height: 44, borderRadius: 10, border: "none", background: input.trim() && !loading && !streaming ? "linear-gradient(135deg, #58a6ff, #3fb950)" : "#21262d", color: "#fff", fontSize: 20, cursor: input.trim() && !loading && !streaming ? "pointer" : "not-allowed", flexShrink: 0, transition: "all 0.2s" }}>
+            ↑
+          </button>
+        </div>
+        <div style={{ maxWidth: 900, margin: "8px auto 0", display: "flex", justifyContent: "space-between", fontSize: 11, color: "#484f58" }}>
+          <span>Shift+Enter para nueva línea</span>
+          <span>Tokens: <strong style={{ color: "#58a6ff" }}>{maxTokens.toLocaleString()}</strong> · Streaming activado</span>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #010409; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+      `}</style>
+    </div>
+  );
+}
+```
 
