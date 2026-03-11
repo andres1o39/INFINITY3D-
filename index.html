@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Patok AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap');
@@ -674,6 +674,122 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* =============================================
+     RESPONSIVE MÓVIL
+     ============================================= */
+
+  /* Ocultar sidebar en móvil */
+  @media (max-width: 640px) {
+    header {
+      padding: 10px 14px;
+    }
+
+    .logo-text { font-size: 18px; }
+    .logo-sub { display: none; }
+    .stat-pill { display: none; }
+
+    .main-layout {
+      flex-direction: column;
+    }
+
+    /* Sidebar se convierte en bottom sheet / drawer */
+    .sidebar {
+      width: 100%;
+      height: auto;
+      max-height: 0;
+      overflow: hidden;
+      border-right: none;
+      border-top: 1px solid var(--border);
+      padding: 0 12px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+      transition: max-height 0.35s ease, padding 0.3s ease;
+      order: 2;
+    }
+
+    .sidebar.open {
+      max-height: 280px;
+      padding: 12px;
+      overflow-y: auto;
+    }
+
+    .sidebar-title { display: none; }
+    .divider { display: none; }
+
+    .mode-btn {
+      padding: 8px 10px;
+      font-size: 10px;
+      flex: 1;
+      min-width: 90px;
+    }
+
+    .vocab-panel { display: none; }
+
+    /* Chat zone full height */
+    .chat-zone { order: 1; flex: 1; min-height: 0; }
+
+    /* Barra de análisis: más compacta */
+    .analysis-bar { padding: 5px 12px; gap: 3px; }
+    .analysis-row1 { gap: 6px; }
+    .analysis-row2 { display: none; }
+    .conf-wrap { gap: 4px; }
+    .conf-track { width: 50px; }
+
+    /* Mensajes */
+    #chat-messages {
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .message { max-width: 94%; }
+    .bubble { font-size: 12px; padding: 10px 12px; }
+    .bubble pre { font-size: 10px; padding: 8px; }
+    .avatar { width: 28px; height: 28px; font-size: 12px; }
+
+    /* Welcome screen */
+    .welcome-screen { padding: 20px 16px; gap: 14px; }
+    .welcome-logo { width: 56px; height: 56px; font-size: 26px; }
+    .welcome-title { font-size: 22px; }
+    .welcome-sub { font-size: 11px; }
+    .welcome-chips { gap: 8px; }
+    .welcome-chip { font-size: 10px; padding: 7px 10px; }
+    .new-ai-banner { font-size: 10px; padding: 10px 14px; }
+
+    /* Input zone */
+    .input-zone { padding: 10px 12px; gap: 8px; }
+    .hints-row { display: none; }
+    #user-input { font-size: 14px; padding: 10px 12px; }
+    .send-btn { width: 42px; height: 42px; font-size: 16px; }
+
+    /* Botón hamburguesa para sidebar */
+    .menu-toggle {
+      display: flex !important;
+    }
+  }
+
+  /* Botón de menú — oculto en desktop */
+  .menu-toggle {
+    display: none;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .menu-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
 </style>
 </head>
 <body>
@@ -692,6 +808,7 @@
     <span style="color:var(--accent);font-size:10px;">ACTIVO</span>
     <div class="stat-pill">Palabras: <span id="word-count">0</span></div>
     <div class="stat-pill">Modo: <span id="mode-label">Chat</span></div>
+    <div class="menu-toggle" onclick="toggleSidebar()" title="Menú">☰</div>
   </div>
 </header>
 
@@ -1385,6 +1502,12 @@ for (const cat of Object.values(LEXICAL_DB)) {
   if (cat.triggers) dbWordCount += cat.triggers.length;
 }
 document.getElementById('word-count').textContent = dbWordCount;
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  sidebar.classList.toggle('open');
+}
+
 </script>
 </body>
 </html>
