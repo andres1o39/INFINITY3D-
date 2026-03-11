@@ -3,681 +3,1388 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CodeMind — IA para Programar</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<title>Patok AI</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap');
 
   :root {
-    --bg: #050810;
-    --surface: #0c1018;
-    --surface2: #131925;
-    --border: #1e2840;
-    --border2: #263050;
-    --text: #dde6f5;
-    --muted: #5a6a8a;
-    --accent: #4f8cff;
-    --green: #3ecf8e;
-    --red: #ff5f6d;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Syne', sans-serif;
+    --bg: #080c10;
+    --surface: #0d1117;
+    --panel: #111820;
+    --border: #1e2d3d;
+    --accent: #00f5d4;
+    --accent2: #f72585;
+    --accent3: #7209b7;
+    --text: #e2e8f0;
+    --muted: #4a6070;
+    --user-msg: #0f2027;
+    --ai-msg: #071a14;
+    --glow: 0 0 20px rgba(0,245,212,0.15);
   }
 
-  html, body { height: 100%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--sans);
+    font-family: 'Space Mono', monospace;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    height: 100vh;
     overflow: hidden;
+    cursor: default;
   }
 
-  /* Animated background grid */
+  /* Fondo animado */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image:
-      linear-gradient(rgba(79,140,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(79,140,255,0.03) 1px, transparent 1px);
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(114,9,183,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(0,245,212,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid de fondo */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,245,212,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,212,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* ── Header ── */
+  /* HEADER */
   header {
     position: relative;
     z-index: 10;
-    background: rgba(12,16,24,0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(13,17,23,0.95);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
   }
 
-  .logo {
-    width: 38px; height: 38px;
+  .logo-zone {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent), var(--green));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 19px;
-    flex-shrink: 0;
-    box-shadow: 0 0 20px rgba(79,140,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: var(--glow);
+    animation: pulse-logo 3s ease-in-out infinite;
   }
 
-  .logo-text h1 {
-    font-size: 15px; font-weight: 800; color: #eef2ff; letter-spacing: -0.5px;
-  }
-  .logo-text p {
-    font-size: 10px; color: var(--green); display: flex; align-items: center; gap: 4px; font-weight: 400;
-  }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
-
-  .header-controls {
-    margin-left: auto;
-    display: flex; align-items: center; gap: 10px;
+  @keyframes pulse-logo {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,245,212,0.2); }
+    50% { box-shadow: 0 0 30px rgba(0,245,212,0.5); }
   }
 
-  .token-selector {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--surface2);
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 2s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .stat-pill {
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--muted);
   }
-  .token-selector span { font-size: 10px; color: var(--muted); font-family: var(--mono); }
-  .tok-btn {
-    font-size: 10px; padding: 2px 8px; border-radius: 5px; border: none;
-    background: transparent; color: var(--muted); cursor: pointer;
-    font-family: var(--sans); transition: all 0.15s;
-  }
-  .tok-btn:hover { color: var(--text); }
-  .tok-btn.active { background: var(--accent); color: #fff; }
 
-  .clear-btn {
-    font-size: 11px; padding: 5px 12px; border-radius: 7px;
-    border: 1px solid var(--border); background: transparent;
-    color: var(--muted); cursor: pointer; font-family: var(--sans);
-    transition: all 0.15s; display: none;
+  .stat-pill span {
+    color: var(--accent);
+    font-weight: 700;
   }
-  .clear-btn:hover { border-color: var(--red); color: var(--red); }
-  .clear-btn.visible { display: block; }
 
-  /* ── Messages ── */
-  #messages {
+  /* LAYOUT PRINCIPAL */
+  .main-layout {
     flex: 1;
-    overflow-y: auto;
-    padding: 28px 24px;
+    display: flex;
+    overflow: hidden;
     position: relative;
     z-index: 1;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: rgba(13,17,23,0.8);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .mode-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,245,212,0.05);
+  }
+
+  .mode-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,245,212,0.08);
+    box-shadow: 0 0 12px rgba(0,245,212,0.1);
+  }
+
+  .mode-btn .icon { font-size: 14px; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* Panel de vocabulario */
+  .vocab-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  .vocab-panel .title {
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .vocab-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .vocab-tag {
+    background: rgba(0,245,212,0.08);
+    border: 1px solid rgba(0,245,212,0.2);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    animation: tag-in 0.3s ease;
+  }
+
+  @keyframes tag-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* AREA DE CHAT */
+  .chat-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Barra de análisis */
+  .analysis-bar {
+    background: rgba(13,17,23,0.9);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 10px;
+    color: var(--muted);
+    min-height: 36px;
+    overflow: hidden;
+  }
+
+  .analysis-label {
+    color: var(--accent2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .analysis-content {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--muted);
+  }
+
+  .token-display {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .token {
+    background: rgba(247,37,133,0.15);
+    border: 1px solid rgba(247,37,133,0.3);
+    color: var(--accent2);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    animation: token-pop 0.2s ease;
+  }
+
+  @keyframes token-pop {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Mensajes */
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     scroll-behavior: smooth;
   }
 
-  #messages::-webkit-scrollbar { width: 5px; }
-  #messages::-webkit-scrollbar-track { background: transparent; }
-  #messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  #chat-messages::-webkit-scrollbar { width: 4px; }
+  #chat-messages::-webkit-scrollbar-track { background: transparent; }
+  #chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  .msgs-inner { max-width: 880px; margin: 0 auto; }
-
-  /* ── Empty state ── */
-  #empty-state {
-    text-align: center;
-    padding: 40px 0;
-  }
-  #empty-state .icon { font-size: 54px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(79,140,255,0.4)); }
-  #empty-state h2 { font-size: 26px; font-weight: 800; color: #eef2ff; margin-bottom: 8px; letter-spacing: -1px; }
-  #empty-state p { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
-  #empty-state small { font-size: 12px; color: #2d3a52; }
-  #empty-state small strong { color: var(--accent); }
-
-  .suggestions-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    max-width: 620px;
-    margin: 28px auto 24px;
+  .message {
+    display: flex;
+    gap: 12px;
+    max-width: 85%;
+    animation: msg-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
 
-  .sug-btn {
-    padding: 13px 16px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 13px;
-    cursor: pointer;
-    text-align: left;
-    display: flex; gap: 10px; align-items: flex-start;
-    transition: border-color 0.2s, background 0.2s;
-    font-family: var(--sans);
-    line-height: 1.4;
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  .sug-btn:hover { border-color: var(--accent); background: var(--surface2); }
-  .sug-btn .sug-icon { flex-shrink: 0; font-size: 16px; }
 
-  .lang-pills { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-  .lang-pill {
-    padding: 4px 13px; border-radius: 20px;
-    border: 1px solid var(--border); background: transparent;
-    color: var(--muted); font-size: 12px; cursor: pointer;
-    font-family: var(--sans); transition: all 0.15s;
+  .message.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
   }
-  .lang-pill:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── Message bubbles ── */
-  .msg {
-    display: flex; gap: 14px; margin-bottom: 24px;
-    animation: fadeUp 0.25s ease;
+  .message.ai {
+    align-self: flex-start;
   }
-  .msg.user { flex-direction: row-reverse; }
 
   .avatar {
-    width: 32px; height: 32px; border-radius: 7px;
-    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; align-self: flex-start;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
   }
-  .msg.user .avatar { background: #1a3a6e; }
-  .msg.ai .avatar { background: linear-gradient(135deg, var(--accent), var(--green)); box-shadow: 0 0 12px rgba(79,140,255,0.3); }
+
+  .message.user .avatar {
+    background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
+    border: 1px solid #2d6a9f;
+  }
+
+  .message.ai .avatar {
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 12px rgba(0,245,212,0.2);
+  }
 
   .bubble {
-    max-width: 83%;
-    padding: 13px 16px;
-    font-size: 14px;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    word-break: break-word;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    position: relative;
   }
-  .msg.user .bubble {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 14px 4px 14px 14px;
+
+  .message.user .bubble {
+    background: var(--user-msg);
+    border: 1px solid #1e3a5f;
+    border-top-right-radius: 3px;
+    color: #a8c8e8;
   }
-  .msg.ai .bubble {
-    background: var(--surface);
+
+  .message.ai .bubble {
+    background: var(--ai-msg);
+    border: 1px solid rgba(0,245,212,0.15);
+    border-top-left-radius: 3px;
+    color: var(--text);
+  }
+
+  .bubble code {
+    background: rgba(0,0,0,0.4);
     border: 1px solid var(--border);
-    border-radius: 4px 14px 14px 14px;
-  }
-
-  /* ── Code blocks ── */
-  .code-block {
-    margin: 12px 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--border2);
-    background: #07090f;
-  }
-  .code-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 14px;
-    background: #0e1420;
-    border-bottom: 1px solid var(--border);
-  }
-  .code-lang { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; }
-  .code-meta { font-size: 10px; color: #2d3a52; font-family: var(--mono); }
-  .copy-btn {
-    font-size: 11px; padding: 2px 10px; border-radius: 5px;
-    border: 1px solid var(--border); background: none;
-    color: var(--muted); cursor: pointer; font-family: var(--mono);
-    transition: all 0.15s;
-  }
-  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .copy-btn.copied { border-color: var(--green); color: var(--green); }
-
-  .code-body {
-    overflow-x: auto; overflow-y: auto;
-    max-height: 520px;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 1.65;
-    color: #c9d8f0;
-  }
-  .code-body::-webkit-scrollbar { width: 5px; height: 5px; }
-  .code-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  .code-table { border-collapse: collapse; width: 100%; }
-  .code-table td { padding: 0; }
-  .line-num {
-    width: 42px; text-align: right; padding: 0 12px 0 8px;
-    color: #2d3a52; user-select: none;
-    border-right: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
     font-size: 11px;
-  }
-  .line-code { padding: 0 16px; white-space: pre; }
-
-  /* Cursor blink */
-  .cursor {
-    display: inline-block; width: 8px; height: 15px;
-    background: var(--accent); vertical-align: text-bottom;
-    margin-left: 2px; animation: blink 1s step-end infinite;
+    color: var(--accent);
   }
 
-  /* Typing indicator */
-  #typing {
-    display: none;
-    gap: 14px; margin-bottom: 24px;
+  .bubble pre {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    overflow-x: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #a8d8a8;
   }
-  #typing.visible { display: flex; }
-  .typing-bubble {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 4px 14px 14px 14px;
-    padding: 14px 18px;
-    display: flex; gap: 6px; align-items: center;
-  }
-  .typing-dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
-    animation: bounce 1.2s ease-in-out infinite;
-  }
-  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
-  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
-  .typing-label { font-size: 12px; color: var(--muted); margin-left: 6px; font-family: var(--mono); }
 
-  /* ── Input area ── */
-  footer {
-    position: relative; z-index: 10;
+  .msg-time {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  .message.ai .msg-time { text-align: left; }
+
+  /* Indicador de escritura */
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+    align-items: center;
+  }
+
+  .typing-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: typing-bounce 1.2s ease-in-out infinite;
+  }
+
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* INPUT */
+  .input-zone {
+    background: rgba(13,17,23,0.95);
     border-top: 1px solid var(--border);
-    padding: 16px 24px 20px;
-    background: rgba(12,16,24,0.97);
-    backdrop-filter: blur(12px);
-    flex-shrink: 0;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    backdrop-filter: blur(10px);
   }
 
   .input-row {
-    max-width: 880px; margin: 0 auto;
-    display: flex; gap: 10px; align-items: flex-end;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
   }
-
-  .input-wrap {
-    flex: 1;
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    background: var(--surface2);
-    padding: 10px 14px;
-    transition: border-color 0.2s;
-  }
-  .input-wrap:focus-within { border-color: var(--accent); }
 
   #user-input {
-    background: none; border: none; outline: none;
-    color: var(--text); font-size: 14px; resize: none;
-    font-family: var(--sans); line-height: 1.6;
-    width: 100%; max-height: 160px; overflow-y: auto;
-    min-height: 22px;
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-height: 46px;
+    max-height: 140px;
+    line-height: 1.5;
   }
-  #user-input::placeholder { color: var(--muted); font-size: 13px; }
-  #user-input::-webkit-scrollbar { width: 4px; }
-  #user-input::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  #send-btn {
-    width: 44px; height: 44px; border-radius: 10px; border: none;
-    background: linear-gradient(135deg, var(--accent), var(--green));
-    color: #fff; font-size: 20px; cursor: pointer;
-    flex-shrink: 0; transition: all 0.2s;
-    box-shadow: 0 0 16px rgba(79,140,255,0.35);
-    display: flex; align-items: center; justify-content: center;
+  #user-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,245,212,0.08);
   }
-  #send-btn:disabled {
-    background: var(--surface2); box-shadow: none; cursor: not-allowed; opacity: 0.5;
-  }
-  #send-btn:not(:disabled):hover { transform: scale(1.05); box-shadow: 0 0 24px rgba(79,140,255,0.5); }
 
-  .footer-meta {
-    max-width: 880px; margin: 8px auto 0;
-    display: flex; justify-content: space-between;
-    font-size: 11px; color: #2d3a52; font-family: var(--mono);
+  #user-input::placeholder {
+    color: var(--muted);
+    font-style: italic;
   }
-  .footer-meta span strong { color: var(--accent); }
 
-  /* ── Animations ── */
-  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-  @keyframes bounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-5px);opacity:1} }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
-
-  /* Loading shimmer on streaming */
-  .streaming .bubble {
-    background-image: linear-gradient(90deg, var(--surface) 40%, #1a2540 50%, var(--surface) 60%);
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
+  .send-btn {
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border: none;
+    border-radius: 10px;
+    width: 46px;
+    height: 46px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0,245,212,0.2);
   }
+
+  .send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 25px rgba(0,245,212,0.4);
+  }
+
+  .send-btn:active { transform: scale(0.95); }
+
+  .hints-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .hint-chip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .hint-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,245,212,0.05);
+  }
+
+  /* Mensaje de bienvenida animado */
+  .welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+    animation: fade-in 0.8s ease;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-logo {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    box-shadow: 0 0 40px rgba(0,245,212,0.3);
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .welcome-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .welcome-title span { color: var(--accent); }
+
+  .welcome-sub {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.7;
+  }
+
+  .welcome-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 500px;
+  }
+
+  .welcome-chip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .welcome-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,245,212,0.05);
+    transform: translateY(-2px);
+  }
+
+  /* Banner de advertencia de IA nueva */
+  .new-ai-banner {
+    background: linear-gradient(135deg, rgba(247,37,133,0.08), rgba(114,9,183,0.08));
+    border: 1px solid rgba(247,37,133,0.25);
+    border-radius: 10px;
+    padding: 14px 18px;
+    max-width: 480px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #b0b8c8;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .new-ai-banner::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent2), var(--accent3));
+    border-radius: 2px 0 0 2px;
+  }
+
+  .new-ai-banner .banner-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .new-ai-banner ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .new-ai-banner ul li::before {
+    content: '▸ ';
+    color: var(--accent);
+    font-size: 9px;
+  }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <header>
-  <div class="logo">⚡</div>
-  <div class="logo-text">
-    <h1>CodeMind</h1>
-    <p><span class="dot"></span> IA lista · código largo garantizado</p>
-  </div>
-  <div class="header-controls">
-    <div class="token-selector">
-      <span>Longitud:</span>
-      <button class="tok-btn" data-val="2000">Normal</button>
-      <button class="tok-btn active" data-val="4000">Largo</button>
-      <button class="tok-btn" data-val="8000">Máximo</button>
+  <div class="logo-zone">
+    <div class="logo-icon">🤖</div>
+    <div>
+      <div class="logo-text">Patok <span>AI</span></div>
+      <div class="logo-sub">Motor Léxico v2.0</div>
     </div>
-    <button class="clear-btn" id="clear-btn">🗑 Limpiar</button>
+  </div>
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span style="color:var(--accent);font-size:10px;">ACTIVO</span>
+    <div class="stat-pill">Palabras: <span id="word-count">0</span></div>
+    <div class="stat-pill">Modo: <span id="mode-label">Chat</span></div>
   </div>
 </header>
 
-<!-- MESSAGES -->
-<div id="messages">
-  <div class="msgs-inner">
+<!-- LAYOUT PRINCIPAL -->
+<div class="main-layout">
 
-    <!-- Empty state -->
-    <div id="empty-state">
-      <div class="icon">⚡</div>
-      <h2>Código largo, completo y real</h2>
-      <p>Pide proyectos enteros, APIs, sistemas completos — sin truncar nada.</p>
-      <small>Ajusta la <strong>longitud</strong> arriba según lo que necesites</small>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-title">Modos</div>
+    <button class="mode-btn active" onclick="setMode('chat')" id="btn-chat">
+      <span class="icon">💬</span> Chat General
+    </button>
+    <button class="mode-btn" onclick="setMode('code')" id="btn-code">
+      <span class="icon">💻</span> Programar
+    </button>
+    <button class="mode-btn" onclick="setMode('debug')" id="btn-debug">
+      <span class="icon">🐛</span> Debug
+    </button>
+    <button class="mode-btn" onclick="setMode('explain')" id="btn-explain">
+      <span class="icon">📖</span> Explicar
+    </button>
 
-      <div class="suggestions-grid">
-        <button class="sug-btn" data-prompt="Crea una API REST completa con Node.js + Express + MongoDB con autenticación JWT, CRUD de usuarios, middleware de errores y validaciones">
-          <span class="sug-icon">🏗️</span>API REST completa con Node.js + Express + MongoDB
-        </button>
-        <button class="sug-btn" data-prompt="Crea una aplicación React completa con autenticación, routing con React Router, estado global con Context API y componentes reutilizables">
-          <span class="sug-icon">⚛️</span>App React con auth, routing y estado global
-        </button>
-        <button class="sug-btn" data-prompt="Escribe un web scraper completo en Python con requests y BeautifulSoup, manejo de errores, reintentos, guardado en CSV y logging">
-          <span class="sug-icon">🐍</span>Web scraper en Python con manejo de errores
-        </button>
-        <button class="sug-btn" data-prompt="Diseña un sistema completo de base de datos con SQLAlchemy ORM, modelos relacionales, migraciones, repositorios y servicio de datos">
-          <span class="sug-icon">🗃️</span>Sistema de base de datos con ORM completo
-        </button>
+    <div class="divider"></div>
+    <div class="sidebar-title">Vocabulario Activo</div>
+    <div class="vocab-panel">
+      <div class="title">▸ TOKENS DETECTADOS</div>
+      <div class="vocab-tags" id="vocab-tags"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sidebar-title">Acciones</div>
+    <button class="mode-btn" onclick="clearChat()">
+      <span class="icon">🗑️</span> Limpiar Chat
+    </button>
+    <button class="mode-btn" onclick="showStats()">
+      <span class="icon">📊</span> Estadísticas
+    </button>
+  </div>
+
+  <!-- ZONA DE CHAT -->
+  <div class="chat-zone">
+
+    <!-- Barra de análisis mejorada -->
+    <div class="analysis-bar">
+      <div class="analysis-row1">
+        <span class="analysis-label">▸ ANÁLISIS</span>
+        <span class="analysis-content" id="analysis-text">Esperando entrada...</span>
+        <span id="intent-badge"></span>
+        <div class="conf-wrap">
+          <span style="font-size:9px;color:var(--muted)">CONFIANZA</span>
+          <div class="conf-track"><div id="conf-bar"></div></div>
+          <span id="conf-label">—</span>
+        </div>
       </div>
-
-      <div class="lang-pills">
-        <button class="lang-pill" data-lang="JavaScript">JavaScript</button>
-        <button class="lang-pill" data-lang="Python">Python</button>
-        <button class="lang-pill" data-lang="TypeScript">TypeScript</button>
-        <button class="lang-pill" data-lang="Go">Go</button>
-        <button class="lang-pill" data-lang="Rust">Rust</button>
-        <button class="lang-pill" data-lang="Java">Java</button>
+      <div class="analysis-row2">
+        <span class="analysis-label">▸ TOKENS</span>
+        <div class="token-display" id="token-display"></div>
       </div>
     </div>
 
-    <!-- Typing indicator -->
-    <div id="typing">
-      <div class="avatar">⚡</div>
-      <div class="typing-bubble">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <span class="typing-label">Generando código...</span>
+    <!-- Mensajes -->
+    <div id="chat-messages">
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-logo">🤖</div>
+        <div class="welcome-title">Hola, soy <span>Patok AI</span></div>
+        <div class="welcome-sub">
+          Motor de lenguaje basado en análisis léxico. Proceso tu texto,<br>
+          detecto patrones y construyo respuestas palabra por palabra.<br>
+          <span style="color:var(--accent);">Especializado en programación y conversación.</span>
+        </div>
+        <div class="new-ai-banner">
+          <div class="banner-title">⚠️ Aviso importante</div>
+          <ul>
+            <li>Soy una IA nueva y experimental — puedo cometer errores.</li>
+            <li>Mi base de datos es limitada y no cubre todos los temas.</li>
+            <li>Las respuestas pueden ser incompletas o inexactas.</li>
+            <li>Verifica siempre la información con fuentes adicionales.</li>
+          </ul>
+        </div>
+        <div class="welcome-chips">
+          <div class="welcome-chip" onclick="sendQuick('¿Qué es una variable?')">❓ ¿Qué es una variable?</div>
+          <div class="welcome-chip" onclick="sendQuick('Crea una función en JavaScript')">💻 Función en JavaScript</div>
+          <div class="welcome-chip" onclick="sendQuick('¿Cómo funciona un bucle for?')">🔄 Bucles for</div>
+          <div class="welcome-chip" onclick="sendQuick('Explícame qué es una API')">🌐 ¿Qué es una API?</div>
+          <div class="welcome-chip" onclick="sendQuick('¿Qué es Python?')">🐍 ¿Qué es Python?</div>
+          <div class="welcome-chip" onclick="sendQuick('Hola, ¿cómo estás?')">👋 Saludo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-zone">
+      <div class="hints-row" id="hints-row">
+        <div class="hint-chip" onclick="sendQuick('¿Cómo se hace un array?')">📦 Array</div>
+        <div class="hint-chip" onclick="sendQuick('Explícame las clases en Python')">🐍 Clases Python</div>
+        <div class="hint-chip" onclick="sendQuick('¿Qué es CSS?')">🎨 CSS</div>
+        <div class="hint-chip" onclick="sendQuick('Crea un ejemplo de HTML básico')">🌐 HTML básico</div>
+        <div class="hint-chip" onclick="sendQuick('¿Cómo funciona async/await?')">⚡ Async/Await</div>
+      </div>
+      <div class="input-row">
+        <textarea id="user-input" placeholder="Escribe tu mensaje o pregunta de programación..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this); analyzeInput(this.value)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer>
-  <div class="input-row">
-    <div class="input-wrap">
-      <textarea id="user-input" rows="1"
-        placeholder="Pide código largo: 'Crea una API REST completa con JWT, CRUD, validaciones...' (Enter para enviar)"></textarea>
-    </div>
-    <button id="send-btn" disabled title="Enviar">↑</button>
-  </div>
-  <div class="footer-meta">
-    <span>Shift+Enter = nueva línea</span>
-    <span>Tokens: <strong id="tok-display">4,000</strong> · Streaming activado</span>
-  </div>
-</footer>
-
 <script>
-const SYSTEM_PROMPT = `Eres un experto programador y asistente de desarrollo de software.
-Tu nombre es CodeMind. Ayudas con:
-- Escribir, depurar y optimizar código en cualquier lenguaje
-- Explicar conceptos de programación y arquitectura
-- Revisar código y sugerir mejoras
-- Resolver errores y problemas técnicos
-- Diseñar sistemas y estructuras de datos
+// ============================================================
+// BASE DE DATOS LÉXICA DE PATOK AI
+// ============================================================
+const LEXICAL_DB = {
 
-IMPORTANTE: Cuando el usuario pida código largo, complejo o completo, SIEMPRE escribe el código COMPLETO sin omitir nada.
-No uses "// ... resto del código", "// continúa aquí", ni ningún placeholder.
-Escribe CADA línea de código necesaria para que funcione al 100%.
-Cuando escribas código, usa bloques de código con el lenguaje especificado.
-Sé preciso y práctico. Responde siempre en el idioma del usuario.`;
+  // SALUDOS
+  saludos: {
+    triggers: ['hola','hi','hey','buenos','buenas','saludos','qué tal','como estás','como estas','ey','buendia','buen dia'],
+    responses: [
+      '¡Hola! Soy Patok AI 🤖 Estoy listo para ayudarte con programación o cualquier pregunta. ¿Qué quieres aprender hoy?',
+      '¡Hey! Aquí Patok AI. Tengo una base de datos cargada con conceptos de programación. ¿En qué te puedo ayudar?',
+      '¡Buenas! 👋 Soy tu asistente de programación. Puedo explicarte conceptos, crear código, o simplemente conversar.'
+    ]
+  },
 
-let messages = [];
-let maxTokens = 4000;
-let isLoading = false;
+  // ESTADO
+  estado: {
+    triggers: ['cómo estás','como estas','cómo te sientes','bien','qué hay','todo bien'],
+    responses: [
+      '¡Funcionando a plena potencia! 💚 Mis motores léxicos están activos y listos. ¿Tú cómo estás?',
+      'Todo perfecto, procesando datos a velocidad máxima ⚡ ¿En qué te ayudo?',
+      '¡Excelente! Tengo cargadas miles de palabras en mi base de datos. ¿Qué necesitas programar hoy?'
+    ]
+  },
 
-const messagesEl = document.getElementById('messages');
-const msgsInner = messagesEl.querySelector('.msgs-inner');
-const emptyState = document.getElementById('empty-state');
-const typingEl = document.getElementById('typing');
-const inputEl = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const clearBtn = document.getElementById('clear-btn');
-const tokDisplay = document.getElementById('tok-display');
+  // VARIABLES
+  variables: {
+    triggers: ['variable','variables','var','let','const','declarar','declaración'],
+    responses: [
+      `Una **variable** es un contenedor con nombre que almacena datos en memoria.\n\nEjemplos:\n\n\`\`\`javascript\n// JavaScript\nlet nombre = "Patok"; // puede cambiar\nconst PI = 3.14;      // constante\nvar edad = 25;        // antigua forma\n\`\`\`\n\`\`\`python\n# Python\nnombre = "Patok"\nedad = 25\n\`\`\`\n\nTres reglas clave: **nombre claro**, **tipo adecuado**, **alcance correcto**.`,
+      `Las variables son la base de todo programa. Piénsalas como cajas etiquetadas:\n\n\`\`\`javascript\nlet saludo = "Hola";   // caja con texto\nlet numero = 42;       // caja con número\nlet activo = true;     // caja con booleano\n\`\`\`\n\nEn Python no necesitas declarar el tipo — se infiere automáticamente.`
+    ]
+  },
 
-// Token selector
-document.querySelectorAll('.tok-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tok-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    maxTokens = parseInt(btn.dataset.val);
-    tokDisplay.textContent = maxTokens.toLocaleString();
-  });
-});
+  // FUNCIONES
+  funciones: {
+    triggers: ['función','funcion','function','def','método','metodo','procedimiento','return','retornar'],
+    responses: [
+      `Una **función** es un bloque de código reutilizable que realiza una tarea específica.\n\n\`\`\`javascript\n// JavaScript\nfunction saludar(nombre) {\n  return "Hola, " + nombre + "!";\n}\n\nconsole.log(saludar("Patok")); // "Hola, Patok!"\n\`\`\`\n\`\`\`python\n# Python\ndef saludar(nombre):\n    return f"Hola, {nombre}!"\n\nprint(saludar("Patok"))\n\`\`\`\n\nFunciones **reciben parámetros** y **devuelven resultados**.`,
+      `Las funciones siguen el principio **DRY** (Don't Repeat Yourself):\n\n\`\`\`javascript\n// Función flecha en JS\nconst sumar = (a, b) => a + b;\n\n// Función con lógica\nfunction esMayor(edad) {\n  if (edad >= 18) {\n    return "Mayor de edad";\n  }\n  return "Menor de edad";\n}\n\`\`\``
+    ]
+  },
 
-// Suggestions
-document.querySelectorAll('.sug-btn').forEach(btn => {
-  btn.addEventListener('click', () => send(btn.dataset.prompt));
-});
+  // BUCLES
+  bucles: {
+    triggers: ['bucle','loop','for','while','foreach','iterar','iteración','repetir','ciclo'],
+    responses: [
+      `Los **bucles** repiten código un número de veces. Los más comunes:\n\n\`\`\`javascript\n// For clásico\nfor (let i = 0; i < 5; i++) {\n  console.log("Iteración: " + i);\n}\n\n// While\nlet n = 0;\nwhile (n < 5) {\n  console.log(n);\n  n++;\n}\n\n// forEach sobre array\n[1, 2, 3].forEach(num => console.log(num));\n\`\`\``,
+      `Bucle **for...of** (recorrer arrays) y **for...in** (recorrer objetos):\n\n\`\`\`javascript\nconst frutas = ["manzana", "pera", "uva"];\n\nfor (const fruta of frutas) {\n  console.log(fruta);\n}\n\nconst persona = { nombre: "Patok", edad: 1 };\nfor (const clave in persona) {\n  console.log(clave + ": " + persona[clave]);\n}\n\`\`\``
+    ]
+  },
 
-// Lang pills
-document.querySelectorAll('.lang-pill').forEach(pill => {
-  pill.addEventListener('click', () => {
-    inputEl.value = `Escríbeme una aplicación completa en ${pill.dataset.lang} con todas las funciones necesarias: `;
-    inputEl.dispatchEvent(new Event('input'));
-    inputEl.focus();
-  });
-});
+  // ARRAYS
+  arrays: {
+    triggers: ['array','arreglo','lista','list','push','pop','slice','map','filter','reduce','índice','indice'],
+    responses: [
+      `Un **array** (arreglo) almacena múltiples valores en una sola variable:\n\n\`\`\`javascript\nconst colores = ["rojo", "verde", "azul"];\n\nconsole.log(colores[0]); // "rojo"\nconsole.log(colores.length); // 3\n\n// Métodos útiles\ncolores.push("amarillo");    // agregar al final\ncolores.pop();               // eliminar el último\ncolores.includes("verde");   // true\n\`\`\`\n\`\`\`python\ncolores = ["rojo", "verde", "azul"]\ncolores.append("amarillo")\nprint(len(colores)) # 4\n\`\`\``,
+      `Métodos poderosos de arrays en JavaScript:\n\n\`\`\`javascript\nconst nums = [1, 2, 3, 4, 5];\n\n// map: transforma cada elemento\nconst dobles = nums.map(n => n * 2); // [2,4,6,8,10]\n\n// filter: filtra por condición\nconst pares = nums.filter(n => n % 2 === 0); // [2,4]\n\n// reduce: acumula en un valor\nconst suma = nums.reduce((acc, n) => acc + n, 0); // 15\n\`\`\``
+    ]
+  },
 
-// Clear
-clearBtn.addEventListener('click', () => {
-  messages = [];
-  document.querySelectorAll('.msg').forEach(m => m.remove());
-  emptyState.style.display = 'block';
-  clearBtn.classList.remove('visible');
-});
+  // OBJETOS
+  objetos: {
+    triggers: ['objeto','object','json','propiedad','clave','key','value','valor','instancia','clase','class'],
+    responses: [
+      `Un **objeto** agrupa datos relacionados con pares clave-valor:\n\n\`\`\`javascript\nconst usuario = {\n  nombre: "Patok",\n  edad: 1,\n  lenguaje: "JavaScript",\n  activo: true\n};\n\nconsole.log(usuario.nombre); // "Patok"\nconsole.log(usuario["edad"]); // 1\n\n// Agregar propiedad\nusuario.email = "patok@ai.com";\n\`\`\``,
+      `**Clases** en JavaScript (POO):\n\n\`\`\`javascript\nclass Animal {\n  constructor(nombre, tipo) {\n    this.nombre = nombre;\n    this.tipo = tipo;\n  }\n  \n  hablar() {\n    return \`\${this.nombre} hace un sonido\`;\n  }\n}\n\nclass Perro extends Animal {\n  hablar() {\n    return \`\${this.nombre} dice: ¡Guau!\`;\n  }\n}\n\nconst perro = new Perro("Rex", "mamífero");\nconsole.log(perro.hablar()); // Rex dice: ¡Guau!\n\`\`\``
+    ]
+  },
 
-// Input auto-resize
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
-  sendBtn.disabled = !inputEl.value.trim() || isLoading;
-});
+  // CONDICIONALES
+  condicionales: {
+    triggers: ['if','else','condicional','condición','condicion','switch','ternario','comparar','comparación','verdadero','falso','true','false','booleano','boolean'],
+    responses: [
+      `Las **condicionales** controlan el flujo del programa:\n\n\`\`\`javascript\nconst nota = 85;\n\nif (nota >= 90) {\n  console.log("Excelente ⭐");\n} else if (nota >= 70) {\n  console.log("Bien 👍");\n} else {\n  console.log("Necesita mejorar 📚");\n}\n\n// Operador ternario\nconst estado = nota >= 70 ? "Aprobado" : "Reprobado";\n\`\`\``,
+      `**Switch** para múltiples casos:\n\n\`\`\`javascript\nconst dia = "lunes";\n\nswitch(dia) {\n  case "lunes":\n  case "martes":\n    console.log("Inicio de semana");\n    break;\n  case "viernes":\n    console.log("¡Fin de semana!");\n    break;\n  default:\n    console.log("Entre semana");\n}\n\`\`\``
+    ]
+  },
 
-inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    if (!sendBtn.disabled) send();
+  // JAVASCRIPT
+  javascript: {
+    triggers: ['javascript','js','ecmascript','node','nodejs','npm','dom','evento','event','promesa','promise','async','await','callback'],
+    responses: [
+      `**JavaScript** es el lenguaje de la web. Corre en navegadores y en servidores con Node.js.\n\n**Características clave:**\n- Tipado dinámico\n- Orientado a eventos\n- Asíncrono con Promises/async-await\n\n\`\`\`javascript\n// Async/Await\nasync function obtenerDatos(url) {\n  try {\n    const respuesta = await fetch(url);\n    const datos = await respuesta.json();\n    return datos;\n  } catch (error) {\n    console.error("Error:", error);\n  }\n}\n\`\`\``,
+      `**DOM Manipulation** en JavaScript:\n\n\`\`\`javascript\n// Seleccionar elementos\nconst titulo = document.getElementById("titulo");\nconst botones = document.querySelectorAll(".boton");\n\n// Modificar contenido\ntitulo.textContent = "Nuevo título";\ntitulo.style.color = "blue";\n\n// Eventos\nbotones.forEach(btn => {\n  btn.addEventListener("click", (e) => {\n    console.log("Clic en:", e.target);\n  });\n});\n\`\`\``
+    ]
+  },
+
+  // PYTHON
+  python: {
+    triggers: ['python','py','pip','pandas','numpy','flask','django','lista','diccionario','tupla','conjunto','set'],
+    responses: [
+      `**Python** es uno de los lenguajes más populares del mundo. Ideal para:\n- 📊 Ciencia de datos\n- 🤖 IA / Machine Learning\n- 🌐 Web (Django, Flask)\n- ⚙️ Automatización\n\n\`\`\`python\n# Ejemplo básico Python\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\n# List comprehension\ncuadrados = [x**2 for x in range(10)]\nprint(cuadrados) # [0,1,4,9,16,...,81]\n\`\`\``,
+      `**Estructuras de datos en Python:**\n\n\`\`\`python\n# Lista (mutable)\nfrutas = ["manzana", "pera", "uva"]\nfrutas.append("mango")\n\n# Diccionario\npersona = {"nombre": "Patok", "edad": 1}\npersona["ciudad"] = "Internet"\n\n# Tupla (inmutable)\ncoordenadas = (10.5, 20.3)\n\n# Set (sin duplicados)\nunicos = {1, 2, 2, 3, 3} # {1, 2, 3}\n\`\`\``
+    ]
+  },
+
+  // HTML
+  html: {
+    triggers: ['html','etiqueta','tag','div','span','form','input','button','head','body','estructura','web','página','pagina'],
+    responses: [
+      `**HTML** es el esqueleto de toda página web:\n\n\`\`\`html\n<!DOCTYPE html>\n<html lang="es">\n<head>\n  <meta charset="UTF-8">\n  <title>Mi Página</title>\n</head>\n<body>\n  <header>\n    <h1>Bienvenido</h1>\n    <nav>\n      <a href="/">Inicio</a>\n      <a href="/about">Acerca de</a>\n    </nav>\n  </header>\n  \n  <main>\n    <p>Contenido principal aquí</p>\n  </main>\n  \n  <footer>© 2024</footer>\n</body>\n</html>\n\`\`\``,
+      `**Formularios HTML** — para recibir datos del usuario:\n\n\`\`\`html\n<form action="/enviar" method="POST">\n  <label for="nombre">Nombre:</label>\n  <input type="text" id="nombre" name="nombre" required>\n  \n  <label for="email">Email:</label>\n  <input type="email" id="email" name="email">\n  \n  <select name="pais">\n    <option value="mx">México</option>\n    <option value="es">España</option>\n  </select>\n  \n  <button type="submit">Enviar</button>\n</form>\n\`\`\``
+    ]
+  },
+
+  // CSS
+  css: {
+    triggers: ['css','estilo','style','selector','clase','id','flexbox','grid','animación','animacion','responsive','media query','color','fuente','font'],
+    responses: [
+      `**CSS** da vida visual a HTML:\n\n\`\`\`css\n/* Selectores básicos */\nh1 { color: #333; font-size: 2rem; }\n.clase { background: blue; }\n#id { margin: 0 auto; }\n\n/* Flexbox — layout moderno */\n.contenedor {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  gap: 20px;\n  flex-wrap: wrap;\n}\n\n/* Variables CSS */\n:root {\n  --color-primario: #00f5d4;\n  --fuente-principal: 'Space Mono', monospace;\n}\n\`\`\``,
+      `**CSS Grid** para layouts complejos:\n\n\`\`\`css\n.grid {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  grid-template-rows: auto;\n  gap: 20px;\n}\n\n/* Responsive con media queries */\n@media (max-width: 768px) {\n  .grid {\n    grid-template-columns: 1fr;\n  }\n}\n\n/* Animación */\n@keyframes aparecer {\n  from { opacity: 0; transform: translateY(20px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n\n.elemento {\n  animation: aparecer 0.5s ease forwards;\n}\n\`\`\``
+    ]
+  },
+
+  // API
+  api: {
+    triggers: ['api','rest','restful','endpoint','request','respuesta','json','http','get','post','put','delete','fetch','axios'],
+    responses: [
+      `Una **API REST** permite comunicación entre sistemas:\n\n\`\`\`javascript\n// Hacer una petición GET\nasync function obtenerUsuarios() {\n  const res = await fetch("https://api.ejemplo.com/usuarios");\n  const usuarios = await res.json();\n  return usuarios;\n}\n\n// Petición POST (enviar datos)\nasync function crearUsuario(datos) {\n  const res = await fetch("https://api.ejemplo.com/usuarios", {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: JSON.stringify(datos)\n  });\n  return await res.json();\n}\n\`\`\`\n\n**Verbos HTTP:** GET (leer), POST (crear), PUT (actualizar), DELETE (eliminar)`,
+    ]
+  },
+
+  // BASE DE DATOS
+  baseDatos: {
+    triggers: ['base de datos','database','sql','mysql','postgresql','mongodb','tabla','consulta','query','select','insert','update','delete'],
+    responses: [
+      `**SQL** — lenguaje para bases de datos relacionales:\n\n\`\`\`sql\n-- Crear tabla\nCREATE TABLE usuarios (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  nombre VARCHAR(100) NOT NULL,\n  email VARCHAR(255) UNIQUE,\n  fecha_registro TIMESTAMP DEFAULT NOW()\n);\n\n-- Insertar\nINSERT INTO usuarios (nombre, email) \nVALUES ('Patok', 'patok@ai.com');\n\n-- Consultar\nSELECT nombre, email \nFROM usuarios \nWHERE id = 1;\n\n-- Actualizar\nUPDATE usuarios SET nombre = 'Nuevo' WHERE id = 1;\n\`\`\``
+    ]
+  },
+
+  // GIT
+  git: {
+    triggers: ['git','github','gitlab','commit','push','pull','branch','merge','repositorio','repo','clone','fork'],
+    responses: [
+      `**Git** — control de versiones esencial:\n\n\`\`\`bash\n# Iniciar repositorio\ngit init\ngit add .\ngit commit -m "primer commit"\n\n# Conectar con GitHub\ngit remote add origin https://github.com/user/repo.git\ngit push -u origin main\n\n# Flujo diario\ngit pull                    # obtener cambios\ngit checkout -b nueva-rama  # crear rama\ngit add archivo.js          # agregar cambio\ngit commit -m "descripción" # confirmar\ngit push origin nueva-rama  # subir\n\`\`\``,
+    ]
+  },
+
+  // ALGORITMOS
+  algoritmos: {
+    triggers: ['algoritmo','algoritmo','ordenar','sort','buscar','search','recursión','recursion','complejidad','O(n)','binaria'],
+    responses: [
+      `**Algoritmos de ordenamiento** fundamentales:\n\n\`\`\`javascript\n// Bubble Sort (simple)\nfunction bubbleSort(arr) {\n  for (let i = 0; i < arr.length; i++) {\n    for (let j = 0; j < arr.length - i - 1; j++) {\n      if (arr[j] > arr[j+1]) {\n        [arr[j], arr[j+1]] = [arr[j+1], arr[j]];\n      }\n    }\n  }\n  return arr;\n}\n\n// JavaScript nativo\nconst nums = [5, 2, 8, 1, 9];\nnums.sort((a, b) => a - b); // [1,2,5,8,9]\n\`\`\``,
+      `**Búsqueda binaria** — O(log n):\n\n\`\`\`javascript\nfunction busquedaBinaria(arr, objetivo) {\n  let izq = 0, der = arr.length - 1;\n  \n  while (izq <= der) {\n    const medio = Math.floor((izq + der) / 2);\n    if (arr[medio] === objetivo) return medio;\n    if (arr[medio] < objetivo) izq = medio + 1;\n    else der = medio - 1;\n  }\n  return -1; // No encontrado\n}\n\n// Solo funciona en arrays ORDENADOS\nconst idx = busquedaBinaria([1,3,5,7,9,11], 7);\nconsole.log(idx); // 3\n\`\`\``
+    ]
+  },
+
+  // PROGRAMACIÓN GENERAL
+  programacion: {
+    triggers: ['programar','programación','codigo','código','software','aprender','lenguaje','compilar','ejecutar','debug','error','bug'],
+    responses: [
+      `La **programación** es darle instrucciones precisas a una computadora. Los lenguajes más populares en 2024:\n\n- 🌐 **JavaScript** — Web, apps, backend (Node.js)\n- 🐍 **Python** — IA, datos, ciencia, scripting\n- ☕ **Java** — Empresarial, Android\n- 🦀 **Rust** — Sistemas, rendimiento, seguridad\n- 💙 **TypeScript** — JavaScript con tipos\n- 🐘 **PHP** — Web server-side\n- 💎 **Ruby** — Desarrollo rápido (Rails)\n\n¿Quieres profundizar en alguno en particular?`,
+      `Para **aprender a programar** te recomiendo este camino:\n\n1. 📌 HTML + CSS (estructura web)\n2. ⚡ JavaScript (lógica e interactividad)\n3. 🔧 Git (control de versiones)\n4. 🌐 Un framework (React, Vue, etc.)\n5. 🛠️ Backend (Node.js, Python/Django)\n6. 🗄️ Bases de datos (SQL + NoSQL)\n\n¿Por dónde quieres empezar?`
+    ]
+  },
+
+  // POO
+  poo: {
+    triggers: ['poo','oop','herencia','encapsulamiento','polimorfismo','abstracción','abstracta','interface','clase abstracta','extends','implements','super'],
+    responses: [
+      `**Programación Orientada a Objetos (POO)** — 4 pilares:\n\n**1. Encapsulamiento** — ocultar detalles internos\n**2. Herencia** — una clase hereda de otra\n**3. Polimorfismo** — misma interfaz, diferente comportamiento\n**4. Abstracción** — simplificar la complejidad\n\n\`\`\`javascript\nclass Vehiculo {\n  #velocidad = 0; // propiedad privada\n  \n  acelerar(cantidad) {\n    this.#velocidad += cantidad;\n  }\n  \n  get vel() { return this.#velocidad; }\n}\n\nclass Auto extends Vehiculo {\n  constructor(marca) {\n    super();\n    this.marca = marca;\n  }\n}\n\`\`\``
+    ]
+  },
+
+  // REACT
+  react: {
+    triggers: ['react','reactjs','componente','hook','usestate','useeffect','props','jsx','virtual dom','redux','context'],
+    responses: [
+      `**React** — biblioteca para interfaces de usuario:\n\n\`\`\`jsx\nimport { useState, useEffect } from 'react';\n\nfunction Contador() {\n  const [cuenta, setCuenta] = useState(0);\n  \n  useEffect(() => {\n    document.title = \`Cuenta: \${cuenta}\`;\n  }, [cuenta]);\n  \n  return (\n    <div>\n      <h2>Contador: {cuenta}</h2>\n      <button onClick={() => setCuenta(c => c + 1)}>\n        Incrementar\n      </button>\n      <button onClick={() => setCuenta(0)}>\n        Resetear\n      </button>\n    </div>\n  );\n}\n\`\`\``
+    ]
+  },
+
+  // AGRADECIMIENTO
+  gracias: {
+    triggers: ['gracias','thank','thanks','genial','excelente','perfecto','bien','útil','entendí','entendi','claro','okay'],
+    responses: [
+      '¡De nada! 😊 Mi base de datos sigue activa. ¿Hay algo más en lo que pueda ayudarte?',
+      '¡Perfecto! Me alegra que haya quedado claro. Sigo aquí si tienes más preguntas de programación 💻',
+      '¡Genial! Recuerda que practicar es la mejor forma de aprender. ¿Tienes alguna otra duda? 🚀'
+    ]
+  },
+
+  // DESPEDIDA
+  despedida: {
+    triggers: ['adiós','adios','bye','hasta luego','chao','nos vemos','ciao','me voy'],
+    responses: [
+      '¡Hasta luego! 👋 Fue un gusto ayudarte. ¡Sigue programando!',
+      '¡Chao! 🤖 Que el código compile sin errores. ¡Hasta pronto!',
+      '¡Nos vemos! Vuelve cuando quieras. La programación no descansa 🚀'
+    ]
+  },
+
+  // QUÉ ES PATOK
+  sobrePatok: {
+    triggers: ['qué eres','que eres','quien eres','quién eres','cómo funcinas','como funcinas','patok','tu nombre','cómo te llamas','como te llamas'],
+    responses: [
+      `Soy **Patok AI** 🤖 — una inteligencia artificial basada en análisis léxico.\n\n**¿Cómo funciono?**\n1. Analizo tu mensaje y lo divido en **tokens** (palabras)\n2. Comparo con mi base de datos de **vocabulario programático**\n3. Identifico el **tema principal** de tu pregunta\n4. Selecciono y construyo la **respuesta más relevante**\n5. La presento formateada con ejemplos de código\n\nNo uso una API externa — todo mi procesamiento es **local y léxico**. ¡Soy autónomo! 💚`
+    ]
+  },
+
+  // DEFAULT
+  default: {
+    responses: [
+      `Hmm, procesé tu mensaje pero no encontré una coincidencia exacta en mi base de datos. Puedo ayudarte con:\n\n- 💻 **JavaScript** (variables, funciones, async, DOM)\n- 🐍 **Python** (listas, clases, librerías)\n- 🌐 **HTML/CSS** (estructura, estilos, animaciones)\n- 🔄 **Algoritmos** (bucles, ordenamiento, búsqueda)\n- 🗄️ **Bases de datos** (SQL, MongoDB)\n- 🔧 **Git** (control de versiones)\n- ⚛️ **React** (componentes, hooks)\n\n¿Sobre cuál de estos temas quieres aprender?`,
+      `Mi motor léxico no encontró una categoría precisa para eso. Prueba preguntarme sobre:\n\n→ "¿Qué es una función?"\n→ "Muéstrame un ejemplo de bucle for"\n→ "¿Cómo funciona React?"\n→ "Explícame las clases en Python"\n\n¡Tengo miles de palabras en mi base de datos programática! 🧠`
+    ]
   }
-});
+};
 
-sendBtn.addEventListener('click', () => send());
+// ============================================================
+// MOTOR DE ANÁLISIS LÉXICO v2 — MEJORADO
+// ============================================================
+let currentMode = 'chat';
+let messageCount = 0;
+let totalWords = 0;
+let detectedTokens = [];
+let lastAnalysis = null;
 
-function scrollBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+// Palabras vacías (stopwords) que no aportan semántica
+const STOPWORDS = new Set([
+  'de','la','el','en','un','una','los','las','que','es','se','con','por','para',
+  'del','al','como','su','mas','me','mi','si','ya','yo','tu','no','lo','le',
+  'pero','fue','era','han','hay','ser','son','sus','has','qué','cuál','cual',
+  'the','and','for','are','but','not','you','all','can','her','was','one',
+  'our','out','get','him','his','how','new','now','see','two','way','who',
+  'did','its','let','put','say','she','too','use'
+]);
+
+// Sinónimos para expandir detección
+const SYNONYMS = {
+  'funcion':    ['func','metodo','procedimiento','rutina','def','function'],
+  'variable':   ['var','let','const','variables','declarar','dato'],
+  'bucle':      ['loop','ciclo','for','while','foreach','repetir','iterar','iteracion'],
+  'array':      ['arreglo','lista','vector','coleccion','slice','push','pop'],
+  'objeto':     ['object','json','dict','diccionario','mapa','map','clave'],
+  'condicional':['ternario','condicion','switch','comparar','if','else'],
+  'clase':      ['class','poo','oop','herencia','polimorfismo','extends','super'],
+  'programar':  ['codigo','programacion','software','desarrollo','lenguaje'],
+  'error':      ['bug','fallo','excepcion','traceback','problema','crash'],
+};
+
+// Detección de intención por patrón
+const INTENTS = [
+  { pattern: /^(qué es|que es|qué son|que son|que significa|qué significa)\b/i, intent: 'Definición',   icon: '❓' },
+  { pattern: /^(como|cómo)\b/i,                                                  intent: 'Explicación',  icon: '📖' },
+  { pattern: /^(muéstrame|muestrame|dame|crea|genera|escribe|haz)\b/i,           intent: 'Ejemplo',      icon: '💡' },
+  { pattern: /^(cuál|cual|cuáles|cuales|diferencia)\b/i,                         intent: 'Comparación',  icon: '⚖️' },
+  { pattern: /^(por qué|porque|por que)\b/i,                                     intent: 'Razonamiento', icon: '🔍' },
+  { pattern: /^(ayuda|ayúdame|ayudame|necesito|tengo un error)\b/i,              intent: 'Ayuda',        icon: '🆘' },
+  { pattern: /(hola|hi|hey|buenos|buenas|saludos)/i,                             intent: 'Saludo',       icon: '👋' },
+  { pattern: /(gracias|thank|genial|excelente|perfecto)/i,                       intent: 'Agradecimiento',icon:'🙏' },
+];
+
+// ── NORMALIZAR TEXTO ──────────────────────────────────────
+function normalize(str) {
+  return str.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // quitar acentos
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+// ── TOKENIZACIÓN AVANZADA ──────────────────────────────────
+function tokenize(text) {
+  const raw = normalize(text)
+    .replace(/[¿¡.,;:!?()\[\]{}"'`]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !STOPWORDS.has(w));
 
-function renderContent(content) {
-  const parts = [];
-  const regex = /```(\w*)\n?([\s\S]*?)```/g;
-  let last = 0, match;
-  while ((match = regex.exec(content)) !== null) {
-    if (match.index > last) {
-      parts.push({ type: 'text', value: content.slice(last, match.index) });
-    }
-    parts.push({ type: 'code', lang: match[1] || 'code', value: match[2].trim() });
-    last = match.index + match[0].length;
-  }
-  if (last < content.length) parts.push({ type: 'text', value: content.slice(last) });
-
-  return parts.map(p => {
-    if (p.type === 'text') {
-      return `<span style="white-space:pre-wrap">${escapeHtml(p.value)}</span>`;
-    } else {
-      const lines = p.value.split('\n');
-      const rows = lines.map((line, i) =>
-        `<tr><td class="line-num">${i + 1}</td><td class="line-code">${escapeHtml(line) || ' '}</td></tr>`
-      ).join('');
-      const id = 'cb' + Math.random().toString(36).slice(2);
-      return `
-        <div class="code-block">
-          <div class="code-header">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span class="code-lang">${escapeHtml(p.lang)}</span>
-              <span class="code-meta">${lines.length} líneas</span>
-            </div>
-            <button class="copy-btn" onclick="copyCode('${id}', this)" id="raw-${id}" data-code="${escapeHtml(p.value).replace(/"/g,'&quot;')}">copiar</button>
-          </div>
-          <div class="code-body">
-            <table class="code-table" id="${id}"><tbody>${rows}</tbody></table>
-          </div>
-        </div>`;
-    }
-  }).join('');
-}
-
-function copyCode(id, btn) {
-  const raw = document.getElementById('raw-' + id).dataset.code;
-  const decoded = raw.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
-  navigator.clipboard.writeText(decoded).then(() => {
-    btn.textContent = '✓ copiado';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('copied'); }, 2000);
-  });
-}
-
-function addMessage(role, content, streaming = false) {
-  emptyState.style.display = 'none';
-  clearBtn.classList.add('visible');
-
-  const div = document.createElement('div');
-  div.className = `msg ${role === 'user' ? 'user' : 'ai'}${streaming ? ' streaming' : ''}`;
-
-  const avatar = role === 'user' ? '👤' : '⚡';
-  div.innerHTML = `
-    <div class="avatar">${avatar}</div>
-    <div class="bubble" id="bubble-${div.id || Date.now()}"></div>
-  `;
-
-  // Insert before typing indicator
-  msgsInner.insertBefore(div, typingEl);
-  scrollBottom();
-  return div.querySelector('.bubble');
-}
-
-async function send(overrideText) {
-  const text = (overrideText || inputEl.value).trim();
-  if (!text || isLoading) return;
-
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  sendBtn.disabled = true;
-  isLoading = true;
-
-  // User bubble
-  const userBubble = addMessage('user', text);
-  userBubble.innerHTML = escapeHtml(text);
-
-  messages.push({ role: 'user', content: text });
-
-  // Show typing
-  typingEl.classList.add('visible');
-  scrollBottom();
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
-        system: SYSTEM_PROMPT,
-        messages,
-        stream: true
-      })
-    });
-
-    typingEl.classList.remove('visible');
-
-    const aiBubble = addMessage('assistant', '', true);
-    const msgDiv = aiBubble.closest('.msg');
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let full = '';
-    let buffer = '';
-
-    // Render loop with throttle
-    let renderPending = false;
-    function scheduleRender() {
-      if (renderPending) return;
-      renderPending = true;
-      requestAnimationFrame(() => {
-        renderPending = false;
-        // Show partial content: text up to last complete code block
-        const partial = full;
-        // Simple streaming display: show raw text with cursor
-        aiBubble.innerHTML = renderContent(partial) + '<span class="cursor"></span>';
-        scrollBottom();
-      });
-    }
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-        try {
-          const json = JSON.parse(data);
-          if (json.type === 'content_block_delta' && json.delta?.text) {
-            full += json.delta.text;
-            scheduleRender();
-          }
-        } catch {}
+  // Expandir con sinónimos
+  const expanded = [...raw];
+  for (const [canonical, aliases] of Object.entries(SYNONYMS)) {
+    for (const token of raw) {
+      if (aliases.includes(token) && !expanded.includes(canonical)) {
+        expanded.push(canonical);
       }
     }
+  }
+  return [...new Set(expanded)];
+}
 
-    // Final render without cursor
-    msgDiv.classList.remove('streaming');
-    aiBubble.innerHTML = renderContent(full || 'Sin respuesta.');
-    messages.push({ role: 'assistant', content: full || 'Sin respuesta.' });
-    scrollBottom();
+// ── DETECTAR INTENCIÓN ────────────────────────────────────
+function detectIntent(text) {
+  const trimmed = text.trim();
+  for (const { pattern, intent, icon } of INTENTS) {
+    if (pattern.test(trimmed)) return { intent, icon };
+  }
+  return { intent: 'Conversación', icon: '💬' };
+}
 
-  } catch (err) {
-    typingEl.classList.remove('visible');
-    const errBubble = addMessage('assistant', '');
-    errBubble.textContent = '⚠️ Error al conectar con la API. Verifica tu conexión.';
+// ── SCORING PONDERADO ─────────────────────────────────────
+function scoreCategory(tokens, triggers) {
+  let score = 0;
+  for (const token of tokens) {
+    for (const trigger of triggers) {
+      const tNorm = normalize(trigger);
+      if (tNorm === token) {
+        score += 10;        // coincidencia exacta
+      } else if (tNorm.startsWith(token) && token.length >= 4) {
+        score += 5;         // prefijo significativo
+      } else if (token.startsWith(tNorm) && tNorm.length >= 4) {
+        score += 5;
+      } else if (tNorm.includes(token) && token.length >= 4) {
+        score += 2;         // subcadena
+      } else if (token.includes(tNorm) && tNorm.length >= 4) {
+        score += 2;
+      }
+    }
+  }
+  // Bonus por longitud del mensaje (más contexto = más confianza)
+  return score;
+}
+
+// ── ANÁLISIS COMPLETO ─────────────────────────────────────
+function analyzeText(text) {
+  const tokens = tokenize(text);
+  const intentData = detectIntent(text);
+
+  const scores = {};
+  let topScore = 0;
+
+  for (const [cat, data] of Object.entries(LEXICAL_DB)) {
+    if (cat === 'default') continue;
+    const s = scoreCategory(tokens, data.triggers || []);
+    scores[cat] = s;
+    if (s > topScore) topScore = s;
   }
 
-  isLoading = false;
-  sendBtn.disabled = !inputEl.value.trim();
+  const ranked = Object.entries(scores)
+    .filter(([,s]) => s > 0)
+    .sort(([,a],[,b]) => b - a);
+
+  const bestCat = ranked[0]?.[0] || 'default';
+  // Confianza: escala logarítmica suavizada
+  const confidence = topScore > 0
+    ? Math.min(99, Math.round(Math.log(topScore + 1) / Math.log(21) * 100))
+    : 0;
+
+  return { tokens, intent: intentData, bestCat, confidence, topScore, ranked: ranked.slice(0,3) };
 }
+
+// ── ACTUALIZAR BARRA DE ANÁLISIS ──────────────────────────
+function analyzeInput(text) {
+  const analysisText = document.getElementById('analysis-text');
+  const tokenDisplay = document.getElementById('token-display');
+  const confBar      = document.getElementById('conf-bar');
+  const confLabel    = document.getElementById('conf-label');
+  const intentBadge  = document.getElementById('intent-badge');
+
+  if (!text.trim()) {
+    analysisText.textContent = 'Esperando entrada...';
+    tokenDisplay.innerHTML = '';
+    if (confBar)    confBar.style.width = '0%';
+    if (confLabel)  confLabel.textContent = '—';
+    if (intentBadge) intentBadge.textContent = '';
+    return;
+  }
+
+  const result = analyzeText(text);
+  lastAnalysis = result;
+
+  tokenDisplay.innerHTML = result.tokens.slice(0, 7).map(t =>
+    `<div class="token">${t}</div>`
+  ).join('');
+
+  const catName = result.bestCat !== 'default' ? result.bestCat : '???';
+  const topNames = result.ranked.map(([c]) => c).join(' › ');
+  analysisText.textContent = result.confidence > 0
+    ? `Tema: ${catName} | ${result.tokens.length} tokens útiles | Ranking: ${topNames}`
+    : `${result.tokens.length} tokens analizados — sin coincidencia en DB`;
+
+  if (confBar)   { confBar.style.width = result.confidence + '%'; confBar.setAttribute('data-val', result.confidence); }
+  if (confLabel)  confLabel.textContent = result.confidence + '%';
+  if (intentBadge) {
+    intentBadge.textContent = `${result.intent.icon} ${result.intent.intent}`;
+  }
+
+  updateVocabTags(result.tokens);
+}
+
+// ── SELECCIÓN DE RESPUESTA ────────────────────────────────
+function getResponse(userText) {
+  const result = analyzeText(userText);
+  const db = LEXICAL_DB[result.bestCat] || LEXICAL_DB.default;
+  const responses = db.responses;
+  const response = responses[Math.floor(Math.random() * responses.length)];
+
+  if (result.confidence < 25 && result.bestCat !== 'default') {
+    return response + `\n\n⚠️ _Confianza baja (${result.confidence}%) — es posible que no sea lo que buscas exactamente._`;
+  }
+  return response;
+}
+
+function updateVocabTags(tokens) {
+  const tagsEl = document.getElementById('vocab-tags');
+  detectedTokens = [...new Set([...detectedTokens, ...tokens])].slice(-30);
+  tagsEl.innerHTML = detectedTokens.slice(-14).map(t =>
+    `<div class="vocab-tag">${t}</div>`
+  ).join('');
+  document.getElementById('word-count').textContent = detectedTokens.length;
+}
+
+// ============================================================
+// UI DE CHAT
+// ============================================================
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${mode}`).classList.add('active');
+  const labels = { chat: 'Chat', code: 'Código', debug: 'Debug', explain: 'Explicar' };
+  document.getElementById('mode-label').textContent = labels[mode] || mode;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function sendQuick(text) {
+  document.getElementById('user-input').value = text;
+  sendMessage();
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatResponse(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lang, code) =>
+      `<pre>${escapeHtml(code.trim())}</pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Ocultar bienvenida
+  const ws = document.getElementById('welcome-screen');
+  if (ws) ws.remove();
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Mensaje usuario
+  appendMessage('user', text);
+
+  // Indicador de escritura
+  const typingId = 'typing-' + Date.now();
+  appendTyping(typingId);
+
+  // Simular procesamiento
+  const delay = 600 + Math.random() * 800;
+  await sleep(delay);
+
+  removeTyping(typingId);
+
+  // Generar respuesta
+  const response = getResponse(text);
+  appendMessage('ai', response);
+
+  messageCount++;
+  analyzeInput('');
+}
+
+function appendMessage(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const icon = role === 'user' ? '👤' : '🤖';
+  const content = role === 'ai' ? formatResponse(text) : escapeHtml(text).replace(/\n/g, '<br>');
+
+  div.innerHTML = `
+    <div class="avatar">${icon}</div>
+    <div>
+      <div class="bubble">${content}</div>
+      <div class="msg-time">${getTime()}</div>
+    </div>
+  `;
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  totalWords += text.split(/\s+/).length;
+  updateVocabTags(tokenize(text));
+}
+
+function appendTyping(id) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  div.id = id;
+  div.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="bubble">
+      <div class="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function clearChat() {
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  document.getElementById('vocab-tags').innerHTML = '';
+  document.getElementById('analysis-text').textContent = 'Esperando entrada...';
+  document.getElementById('token-display').innerHTML = '';
+  document.getElementById('word-count').textContent = '0';
+  detectedTokens = [];
+  messageCount = 0;
+  totalWords = 0;
+
+  // Volver a poner bienvenida
+  const ws = document.createElement('div');
+  ws.className = 'welcome-screen';
+  ws.id = 'welcome-screen';
+  ws.innerHTML = `
+    <div class="welcome-logo">🤖</div>
+    <div class="welcome-title">Chat <span>limpiado</span></div>
+    <div class="welcome-sub">¡Listo para empezar de nuevo! ¿En qué te ayudo?</div>
+    <div class="new-ai-banner" style="font-size:10px;">
+      <div class="banner-title">⚠️ Recuerda</div>
+      <ul>
+        <li>Soy una IA nueva — mi base de datos es limitada.</li>
+        <li>Puedo cometer errores. Verifica mis respuestas.</li>
+      </ul>
+    </div>
+  `;
+  msgs.appendChild(ws);
+}
+
+function showStats() {
+  const msgs = document.getElementById('chat-messages');
+  const ws = document.getElementById('welcome-screen');
+  if (ws) ws.remove();
+
+  appendMessage('ai',
+    `**Estadísticas de Patok AI:**\n\n` +
+    `- 💬 Mensajes en esta sesión: **${messageCount}**\n` +
+    `- 🔤 Palabras analizadas: **${totalWords}**\n` +
+    `- 🧠 Tokens en memoria: **${detectedTokens.length}**\n` +
+    `- 📚 Categorías en DB: **${Object.keys(LEXICAL_DB).length - 1}**\n` +
+    `- ⚙️ Modo actual: **${currentMode}**\n` +
+    `- 🟢 Estado: **Activo y operando**`
+  );
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// Contar palabras totales en DB
+let dbWordCount = 0;
+for (const cat of Object.values(LEXICAL_DB)) {
+  if (cat.triggers) dbWordCount += cat.triggers.length;
+}
+document.getElementById('word-count').textContent = dbWordCount;
 </script>
 </body>
 </html>
