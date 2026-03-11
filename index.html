@@ -1,1513 +1,789 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Patok AI</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap');
-
-  :root {
-    --bg: #080c10;
-    --surface: #0d1117;
-    --panel: #111820;
-    --border: #1e2d3d;
-    --accent: #00f5d4;
-    --accent2: #f72585;
-    --accent3: #7209b7;
-    --text: #e2e8f0;
-    --muted: #4a6070;
-    --user-msg: #0f2027;
-    --ai-msg: #071a14;
-    --glow: 0 0 20px rgba(0,245,212,0.15);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    cursor: default;
-  }
-
-  /* Fondo animado */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: 
-      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(114,9,183,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(0,245,212,0.08) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Grid de fondo */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: 
-      linear-gradient(rgba(0,245,212,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,245,212,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* HEADER */
-  header {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
-    background: rgba(13,17,23,0.95);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-  }
-
-  .logo-zone {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo-icon {
-    width: 38px;
-    height: 38px;
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: var(--glow);
-    animation: pulse-logo 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse-logo {
-    0%, 100% { box-shadow: 0 0 15px rgba(0,245,212,0.2); }
-    50% { box-shadow: 0 0 30px rgba(0,245,212,0.5); }
-  }
-
-  .logo-text {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 22px;
-    letter-spacing: -0.5px;
-  }
-
-  .logo-text span {
-    color: var(--accent);
-  }
-
-  .logo-sub {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .status-bar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: blink 2s ease-in-out infinite;
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  .stat-pill {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .stat-pill span {
-    color: var(--accent);
-    font-weight: 700;
-  }
-
-  /* LAYOUT PRINCIPAL */
-  .main-layout {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px;
-    background: rgba(13,17,23,0.8);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    padding: 16px;
-    gap: 12px;
-    overflow-y: auto;
-    flex-shrink: 0;
-  }
-
-  .sidebar-title {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .mode-btn {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .mode-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,245,212,0.05);
-  }
-
-  .mode-btn.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,245,212,0.08);
-    box-shadow: 0 0 12px rgba(0,245,212,0.1);
-  }
-
-  .mode-btn .icon { font-size: 14px; }
-
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0;
-  }
-
-  /* Panel de vocabulario */
-  .vocab-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 10px;
-  }
-
-  .vocab-panel .title {
-    color: var(--accent);
-    margin-bottom: 8px;
-    font-size: 10px;
-    letter-spacing: 1px;
-  }
-
-  .vocab-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .vocab-tag {
-    background: rgba(0,245,212,0.08);
-    border: 1px solid rgba(0,245,212,0.2);
-    color: var(--accent);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 9px;
-    animation: tag-in 0.3s ease;
-  }
-
-  @keyframes tag-in {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  /* AREA DE CHAT */
-  .chat-zone {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* Barra de análisis */
-  .analysis-bar {
-    background: rgba(13,17,23,0.9);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 10px;
-    color: var(--muted);
-    min-height: 36px;
-    overflow: hidden;
-  }
-
-  .analysis-label {
-    color: var(--accent2);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-
-  .analysis-content {
-    flex: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    color: var(--muted);
-  }
-
-  .token-display {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .token {
-    background: rgba(247,37,133,0.15);
-    border: 1px solid rgba(247,37,133,0.3);
-    color: var(--accent2);
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 9px;
-    animation: token-pop 0.2s ease;
-  }
-
-  @keyframes token-pop {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Mensajes */
-  #chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    scroll-behavior: smooth;
-  }
-
-  #chat-messages::-webkit-scrollbar { width: 4px; }
-  #chat-messages::-webkit-scrollbar-track { background: transparent; }
-  #chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .message {
-    display: flex;
-    gap: 12px;
-    max-width: 85%;
-    animation: msg-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-
-  @keyframes msg-in {
-    from { opacity: 0; transform: translateY(16px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .message.user {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-  }
-
-  .message.ai {
-    align-self: flex-start;
-  }
-
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .message.user .avatar {
-    background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
-    border: 1px solid #2d6a9f;
-  }
-
-  .message.ai .avatar {
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    border: 1px solid var(--accent);
-    box-shadow: 0 0 12px rgba(0,245,212,0.2);
-  }
-
-  .bubble {
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-size: 13px;
-    line-height: 1.6;
-    position: relative;
-  }
-
-  .message.user .bubble {
-    background: var(--user-msg);
-    border: 1px solid #1e3a5f;
-    border-top-right-radius: 3px;
-    color: #a8c8e8;
-  }
-
-  .message.ai .bubble {
-    background: var(--ai-msg);
-    border: 1px solid rgba(0,245,212,0.15);
-    border-top-left-radius: 3px;
-    color: var(--text);
-  }
-
-  .bubble code {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--border);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-  }
-
-  .bubble pre {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 12px;
-    border-radius: 6px;
-    margin: 8px 0;
-    overflow-x: auto;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #a8d8a8;
-  }
-
-  .msg-time {
-    font-size: 9px;
-    color: var(--muted);
-    margin-top: 4px;
-    text-align: right;
-  }
-
-  .message.ai .msg-time { text-align: left; }
-
-  /* Indicador de escritura */
-  .typing-indicator {
-    display: flex;
-    gap: 4px;
-    padding: 4px 0;
-    align-items: center;
-  }
-
-  .typing-indicator span {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: typing-bounce 1.2s ease-in-out infinite;
-  }
-
-  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-  @keyframes typing-bounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-    30% { transform: translateY(-6px); opacity: 1; }
-  }
-
-  /* INPUT */
-  .input-zone {
-    background: rgba(13,17,23,0.95);
-    border-top: 1px solid var(--border);
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    backdrop-filter: blur(10px);
-  }
-
-  .input-row {
-    display: flex;
-    gap: 10px;
-    align-items: flex-end;
-  }
-
-  #user-input {
-    flex: 1;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    resize: none;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    min-height: 46px;
-    max-height: 140px;
-    line-height: 1.5;
-  }
-
-  #user-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0,245,212,0.08);
-  }
-
-  #user-input::placeholder {
-    color: var(--muted);
-    font-style: italic;
-  }
-
-  .send-btn {
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    border: none;
-    border-radius: 10px;
-    width: 46px;
-    height: 46px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: all 0.2s;
-    flex-shrink: 0;
-    box-shadow: 0 4px 15px rgba(0,245,212,0.2);
-  }
-
-  .send-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 25px rgba(0,245,212,0.4);
-  }
-
-  .send-btn:active { transform: scale(0.95); }
-
-  .hints-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .hint-chip {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 10px;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .hint-chip:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,245,212,0.05);
-  }
-
-  /* Mensaje de bienvenida animado */
-  .welcome-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 20px;
-    animation: fade-in 0.8s ease;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .welcome-logo {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    box-shadow: 0 0 40px rgba(0,245,212,0.3);
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-
-  .welcome-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .welcome-title span { color: var(--accent); }
-
-  .welcome-sub {
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
-    max-width: 400px;
-    line-height: 1.7;
-  }
-
-  .welcome-chips {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 500px;
-  }
-
-  .welcome-chip {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 11px;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .welcome-chip:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,245,212,0.05);
-    transform: translateY(-2px);
-  }
-
-  /* Banner de advertencia de IA nueva */
-  .new-ai-banner {
-    background: linear-gradient(135deg, rgba(247,37,133,0.08), rgba(114,9,183,0.08));
-    border: 1px solid rgba(247,37,133,0.25);
-    border-radius: 10px;
-    padding: 14px 18px;
-    max-width: 480px;
-    font-size: 11px;
-    line-height: 1.7;
-    color: #b0b8c8;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .new-ai-banner::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(180deg, var(--accent2), var(--accent3));
-    border-radius: 2px 0 0 2px;
-  }
-
-  .new-ai-banner .banner-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent2);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .new-ai-banner ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .new-ai-banner ul li::before {
-    content: '▸ ';
-    color: var(--accent);
-    font-size: 9px;
-  }
-
-  /* Scrollbar global */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* =============================================
-     RESPONSIVE MÓVIL
-     ============================================= */
-
-  /* Ocultar sidebar en móvil */
-  @media (max-width: 640px) {
-    header {
-      padding: 10px 14px;
-    }
-
-    .logo-text { font-size: 18px; }
-    .logo-sub { display: none; }
-    .stat-pill { display: none; }
-
-    .main-layout {
-      flex-direction: column;
-    }
-
-    /* Sidebar se convierte en bottom sheet / drawer */
-    .sidebar {
-      width: 100%;
-      height: auto;
-      max-height: 0;
-      overflow: hidden;
-      border-right: none;
-      border-top: 1px solid var(--border);
-      padding: 0 12px;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 8px;
-      transition: max-height 0.35s ease, padding 0.3s ease;
-      order: 2;
-    }
-
-    .sidebar.open {
-      max-height: 280px;
-      padding: 12px;
-      overflow-y: auto;
-    }
-
-    .sidebar-title { display: none; }
-    .divider { display: none; }
-
-    .mode-btn {
-      padding: 8px 10px;
-      font-size: 10px;
-      flex: 1;
-      min-width: 90px;
-    }
-
-    .vocab-panel { display: none; }
-
-    /* Chat zone full height */
-    .chat-zone { order: 1; flex: 1; min-height: 0; }
-
-    /* Barra de análisis: más compacta */
-    .analysis-bar { padding: 5px 12px; gap: 3px; }
-    .analysis-row1 { gap: 6px; }
-    .analysis-row2 { display: none; }
-    .conf-wrap { gap: 4px; }
-    .conf-track { width: 50px; }
-
-    /* Mensajes */
-    #chat-messages {
-      padding: 12px;
-      gap: 12px;
-    }
-
-    .message { max-width: 94%; }
-    .bubble { font-size: 12px; padding: 10px 12px; }
-    .bubble pre { font-size: 10px; padding: 8px; }
-    .avatar { width: 28px; height: 28px; font-size: 12px; }
-
-    /* Welcome screen */
-    .welcome-screen { padding: 20px 16px; gap: 14px; }
-    .welcome-logo { width: 56px; height: 56px; font-size: 26px; }
-    .welcome-title { font-size: 22px; }
-    .welcome-sub { font-size: 11px; }
-    .welcome-chips { gap: 8px; }
-    .welcome-chip { font-size: 10px; padding: 7px 10px; }
-    .new-ai-banner { font-size: 10px; padding: 10px 14px; }
-
-    /* Input zone */
-    .input-zone { padding: 10px 12px; gap: 8px; }
-    .hints-row { display: none; }
-    #user-input { font-size: 14px; padding: 10px 12px; }
-    .send-btn { width: 42px; height: 42px; font-size: 16px; }
-
-    /* Botón hamburguesa para sidebar */
-    .menu-toggle {
-      display: flex !important;
-    }
-  }
-
-  /* Botón de menú — oculto en desktop */
-  .menu-toggle {
-    display: none;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    width: 34px;
-    height: 34px;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    flex-shrink: 0;
-    transition: all 0.2s;
-  }
-
-  .menu-toggle:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CORE_SYSTEM v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+        :root {
+            --cyan: #22d3ee;
+            --cyan-dim: rgba(34,211,238,0.15);
+            --cyan-glow: 0 0 20px rgba(34,211,238,0.5);
+            --bg: #05070a;
+            --glass: rgba(15,23,42,0.85);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--cyan);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+        }
+
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(34,211,238,0.12);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(transparent, rgba(34,211,238,0.15), transparent);
+            position: fixed;
+            left: 0;
+            z-index: 999;
+            pointer-events: none;
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan { 0% { top: -3px; } 100% { top: 100vh; } }
+
+        /* CRT vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* Model selector */
+        .model-bar {
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+            padding: 10px 16px;
+            background: rgba(5,7,10,0.9);
+            border-bottom: 1px solid rgba(34,211,238,0.1);
+            display: flex;
+            justify-content: center;
+        }
+
+        .model-toggle {
+            display: flex;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(34,211,238,0.25);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 3px;
+        }
+
+        .model-toggle input[type="radio"] { display: none; }
+        .model-toggle label {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: rgba(34,211,238,0.4);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .model-toggle input:checked + label {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: var(--cyan-glow);
+            letter-spacing: 0.1em;
+        }
+
+        /* Terminal / chat area */
+        #terminal {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            position: relative;
+            z-index: 5;
+            scroll-behavior: smooth;
+        }
+        #terminal::-webkit-scrollbar { width: 3px; }
+        #terminal::-webkit-scrollbar-track { background: transparent; }
+        #terminal::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
+
+        /* Message bubbles */
+        .msg-user {
+            display: flex;
+            justify-content: flex-end;
+            animation: slideInRight 0.3s ease;
+        }
+        .msg-ai {
+            display: flex;
+            justify-content: flex-start;
+            animation: slideInLeft 0.3s ease;
+        }
+        @keyframes slideInRight { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+        @keyframes slideInLeft  { from { opacity:0; transform: translateX(-20px); } to { opacity:1; transform: translateX(0); } }
+
+        .bubble-user {
+            max-width: 80%;
+            background: rgba(34,211,238,0.1);
+            border: 1px solid rgba(34,211,238,0.3);
+            border-radius: 16px 4px 16px 16px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #e2e8f0;
+        }
+
+        .bubble-ai {
+            max-width: 85%;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid rgba(34,211,238,0.2);
+            border-left: 2px solid var(--cyan);
+            border-radius: 4px 16px 16px 16px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #cbd5e1;
+            position: relative;
+        }
+
+        .bubble-ai .label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 0.2em;
+            display: block;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .bubble-ai .engine-tag {
+            font-size: 8px;
+            background: rgba(34,211,238,0.1);
+            border: 1px solid rgba(34,211,238,0.2);
+            color: rgba(34,211,238,0.6);
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        /* DB result tags */
+        .db-match {
+            display: inline-block;
+            background: rgba(34,211,238,0.12);
+            border: 1px solid rgba(34,211,238,0.35);
+            color: var(--cyan);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .db-match.category {
+            background: rgba(168,85,247,0.12);
+            border-color: rgba(168,85,247,0.35);
+            color: #c084fc;
+        }
+
+        /* Confidence bar */
+        .conf-bar-wrap {
+            margin-top: 8px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 3px;
+            height: 4px;
+            overflow: hidden;
+        }
+        .conf-bar {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #22d3ee, #3b82f6);
+            transition: width 0.8s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0 4px;
+        }
+        .typing-indicator span {
+            width: 5px; height: 5px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity:0.4; } 40% { transform: translateY(-6px); opacity:1; } }
+
+        /* Footer */
+        footer {
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+            padding: 10px 14px 14px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(34,211,238,0.1);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            padding: 0 2px 8px;
+            opacity: 0.5;
+            letter-spacing: 0.1em;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap i.prompt-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--cyan);
+            font-size: 11px;
+            animation: pulse 2s infinite;
+        }
+
+        #user-input {
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(34,211,238,0.25);
+            border-radius: 50px;
+            padding: 14px 56px 14px 36px;
+            color: var(--cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #user-input::placeholder { color: rgba(34,211,238,0.2); }
+        #user-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 12px rgba(34,211,238,0.2);
+        }
+
+        #send-btn {
+            position: absolute;
+            right: 6px;
+            width: 42px; height: 42px;
+            background: var(--cyan);
+            border: none;
+            border-radius: 50%;
+            color: #000;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            transition: box-shadow 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #send-btn:active { transform: scale(0.92); }
+        #send-btn:hover { box-shadow: 0 0 20px rgba(34,211,238,0.7); }
+        #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .init-msg {
+            text-align: center;
+            font-size: 11px;
+            opacity: 0.35;
+            padding: 20px 0 10px;
+            letter-spacing: 0.15em;
+        }
+
+        /* DB status indicator */
+        .db-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+        }
+        .db-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+        }
+    </style>
 </head>
 <body>
+    <div class="scanline"></div>
 
-<!-- HEADER -->
-<header>
-  <div class="logo-zone">
-    <div class="logo-icon">🤖</div>
-    <div>
-      <div class="logo-text">Patok <span>AI</span></div>
-      <div class="logo-sub">Motor Léxico v2.0</div>
-    </div>
-  </div>
-  <div class="status-bar">
-    <div class="status-dot"></div>
-    <span style="color:var(--accent);font-size:10px;">ACTIVO</span>
-    <div class="stat-pill">Palabras: <span id="word-count">0</span></div>
-    <div class="stat-pill">Modo: <span id="mode-label">Chat</span></div>
-    <div class="menu-toggle" onclick="toggleSidebar()" title="Menú">☰</div>
-  </div>
-</header>
-
-<!-- LAYOUT PRINCIPAL -->
-<div class="main-layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-title">Modos</div>
-    <button class="mode-btn active" onclick="setMode('chat')" id="btn-chat">
-      <span class="icon">💬</span> Chat General
-    </button>
-    <button class="mode-btn" onclick="setMode('code')" id="btn-code">
-      <span class="icon">💻</span> Programar
-    </button>
-    <button class="mode-btn" onclick="setMode('debug')" id="btn-debug">
-      <span class="icon">🐛</span> Debug
-    </button>
-    <button class="mode-btn" onclick="setMode('explain')" id="btn-explain">
-      <span class="icon">📖</span> Explicar
-    </button>
-
-    <div class="divider"></div>
-    <div class="sidebar-title">Vocabulario Activo</div>
-    <div class="vocab-panel">
-      <div class="title">▸ TOKENS DETECTADOS</div>
-      <div class="vocab-tags" id="vocab-tags"></div>
-    </div>
-
-    <div class="divider"></div>
-    <div class="sidebar-title">Acciones</div>
-    <button class="mode-btn" onclick="clearChat()">
-      <span class="icon">🗑️</span> Limpiar Chat
-    </button>
-    <button class="mode-btn" onclick="showStats()">
-      <span class="icon">📊</span> Estadísticas
-    </button>
-  </div>
-
-  <!-- ZONA DE CHAT -->
-  <div class="chat-zone">
-
-    <!-- Barra de análisis mejorada -->
-    <div class="analysis-bar">
-      <div class="analysis-row1">
-        <span class="analysis-label">▸ ANÁLISIS</span>
-        <span class="analysis-content" id="analysis-text">Esperando entrada...</span>
-        <span id="intent-badge"></span>
-        <div class="conf-wrap">
-          <span style="font-size:9px;color:var(--muted)">CONFIANZA</span>
-          <div class="conf-track"><div id="conf-bar"></div></div>
-          <span id="conf-label">—</span>
+    <!-- HEADER -->
+    <header class="glass p-3 flex justify-between items-center">
+        <div>
+            <h1 style="font-family:'Orbitron';font-size:16px;font-weight:900;letter-spacing:-0.02em;" class="text-cyan-400">CORE_SYSTEM <span style="color:rgba(34,211,238,0.5)">v2.0</span></h1>
+            <p style="font-size:9px;letter-spacing:0.25em;" class="text-cyan-700 font-bold uppercase mt-0.5">Status: Online / Encrypted</p>
         </div>
-      </div>
-      <div class="analysis-row2">
-        <span class="analysis-label">▸ TOKENS</span>
-        <div class="token-display" id="token-display"></div>
-      </div>
+        <div class="flex items-center gap-3">
+            <div class="db-indicator">
+                <div class="db-dot" id="db-dot"></div>
+                <span id="db-status" class="text-cyan-700">DB LOADING...</span>
+            </div>
+            <div class="flex gap-1.5">
+                <div class="status-dot bg-cyan-500" style="animation-delay:0s"></div>
+                <div class="status-dot bg-blue-500" style="animation-delay:0.4s"></div>
+                <div class="status-dot" style="background:#a855f7;animation-delay:0.8s"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MODEL SELECTOR -->
+    <div class="model-bar">
+        <div class="model-toggle">
+            <input type="radio" id="p119" name="engine" checked>
+            <label for="p119">PATOK 1.19 &nbsp;[BÁSICA]</label>
+            <input type="radio" id="p23" name="engine">
+            <label for="p23">PATOK 23 GP &nbsp;[AVANZADA]</label>
+        </div>
     </div>
 
-    <!-- Mensajes -->
-    <div id="chat-messages">
-      <div class="welcome-screen" id="welcome-screen">
-        <div class="welcome-logo">🤖</div>
-        <div class="welcome-title">Hola, soy <span>Patok AI</span></div>
-        <div class="welcome-sub">
-          Motor de lenguaje basado en análisis léxico. Proceso tu texto,<br>
-          detecto patrones y construyo respuestas palabra por palabra.<br>
-          <span style="color:var(--accent);">Especializado en programación y conversación.</span>
+    <!-- TERMINAL / CHAT -->
+    <main id="terminal">
+        <div class="init-msg">--- INICIO DE TRANSMISIÓN ---</div>
+        <div class="msg-ai" id="welcome-msg">
+            <div class="bubble-ai">
+                <span class="label">CORE_SYSTEM &gt; ONLINE</span>
+                <span class="engine-tag">IndexedDB: 100 registros cargados</span>
+                <p>Sistema activo. Base de datos local sincronizada. Escribe cualquier palabra o consulta y analizaré contra mi base de conocimiento interna.</p>
+            </div>
         </div>
-        <div class="new-ai-banner">
-          <div class="banner-title">⚠️ Aviso importante</div>
-          <ul>
-            <li>Soy una IA nueva y experimental — puedo cometer errores.</li>
-            <li>Mi base de datos es limitada y no cubre todos los temas.</li>
-            <li>Las respuestas pueden ser incompletas o inexactas.</li>
-            <li>Verifica siempre la información con fuentes adicionales.</li>
-          </ul>
-        </div>
-        <div class="welcome-chips">
-          <div class="welcome-chip" onclick="sendQuick('¿Qué es una variable?')">❓ ¿Qué es una variable?</div>
-          <div class="welcome-chip" onclick="sendQuick('Crea una función en JavaScript')">💻 Función en JavaScript</div>
-          <div class="welcome-chip" onclick="sendQuick('¿Cómo funciona un bucle for?')">🔄 Bucles for</div>
-          <div class="welcome-chip" onclick="sendQuick('Explícame qué es una API')">🌐 ¿Qué es una API?</div>
-          <div class="welcome-chip" onclick="sendQuick('¿Qué es Python?')">🐍 ¿Qué es Python?</div>
-          <div class="welcome-chip" onclick="sendQuick('Hola, ¿cómo estás?')">👋 Saludo</div>
-        </div>
-      </div>
-    </div>
+    </main>
 
-    <!-- Input -->
-    <div class="input-zone">
-      <div class="hints-row" id="hints-row">
-        <div class="hint-chip" onclick="sendQuick('¿Cómo se hace un array?')">📦 Array</div>
-        <div class="hint-chip" onclick="sendQuick('Explícame las clases en Python')">🐍 Clases Python</div>
-        <div class="hint-chip" onclick="sendQuick('¿Qué es CSS?')">🎨 CSS</div>
-        <div class="hint-chip" onclick="sendQuick('Crea un ejemplo de HTML básico')">🌐 HTML básico</div>
-        <div class="hint-chip" onclick="sendQuick('¿Cómo funciona async/await?')">⚡ Async/Await</div>
-      </div>
-      <div class="input-row">
-        <textarea id="user-input" placeholder="Escribe tu mensaje o pregunta de programación..." rows="1"
-          onkeydown="handleKey(event)" oninput="autoResize(this); analyzeInput(this.value)"></textarea>
-        <button class="send-btn" onclick="sendMessage()">➤</button>
-      </div>
-    </div>
-
-  </div>
-</div>
+    <!-- FOOTER -->
+    <footer>
+        <div class="stats-bar">
+            <span>CPU: <span id="cpu-val">--</span>%</span>
+            <span>RAM: <span id="ram-val">--</span>MB</span>
+            <span class="db-indicator"><span class="db-dot" style="width:4px;height:4px"></span> DB: INDEXED_LOCAL</span>
+            <span id="query-count">QUERIES: 0</span>
+        </div>
+        <div class="input-wrap">
+            <i class="fas fa-chevron-right prompt-icon"></i>
+            <input id="user-input" type="text" placeholder="Escribir comando..." autocomplete="off" autocorrect="off" spellcheck="false">
+            <button id="send-btn" onclick="ejecutar()">
+                <i class="fas fa-bolt"></i>
+            </button>
+        </div>
+    </footer>
 
 <script>
-// ============================================================
-// BASE DE DATOS LÉXICA DE PATOK AI
-// ============================================================
-const LEXICAL_DB = {
-
-  // SALUDOS
-  saludos: {
-    triggers: ['hola','hi','hey','buenos','buenas','saludos','qué tal','como estás','como estas','ey','buendia','buen dia'],
-    responses: [
-      '¡Hola! Soy Patok AI 🤖 Estoy listo para ayudarte con programación o cualquier pregunta. ¿Qué quieres aprender hoy?',
-      '¡Hey! Aquí Patok AI. Tengo una base de datos cargada con conceptos de programación. ¿En qué te puedo ayudar?',
-      '¡Buenas! 👋 Soy tu asistente de programación. Puedo explicarte conceptos, crear código, o simplemente conversar.'
-    ]
-  },
-
-  // ESTADO
-  estado: {
-    triggers: ['cómo estás','como estas','cómo te sientes','bien','qué hay','todo bien'],
-    responses: [
-      '¡Funcionando a plena potencia! 💚 Mis motores léxicos están activos y listos. ¿Tú cómo estás?',
-      'Todo perfecto, procesando datos a velocidad máxima ⚡ ¿En qué te ayudo?',
-      '¡Excelente! Tengo cargadas miles de palabras en mi base de datos. ¿Qué necesitas programar hoy?'
-    ]
-  },
-
-  // VARIABLES
-  variables: {
-    triggers: ['variable','variables','var','let','const','declarar','declaración'],
-    responses: [
-      `Una **variable** es un contenedor con nombre que almacena datos en memoria.\n\nEjemplos:\n\n\`\`\`javascript\n// JavaScript\nlet nombre = "Patok"; // puede cambiar\nconst PI = 3.14;      // constante\nvar edad = 25;        // antigua forma\n\`\`\`\n\`\`\`python\n# Python\nnombre = "Patok"\nedad = 25\n\`\`\`\n\nTres reglas clave: **nombre claro**, **tipo adecuado**, **alcance correcto**.`,
-      `Las variables son la base de todo programa. Piénsalas como cajas etiquetadas:\n\n\`\`\`javascript\nlet saludo = "Hola";   // caja con texto\nlet numero = 42;       // caja con número\nlet activo = true;     // caja con booleano\n\`\`\`\n\nEn Python no necesitas declarar el tipo — se infiere automáticamente.`
-    ]
-  },
-
-  // FUNCIONES
-  funciones: {
-    triggers: ['función','funcion','function','def','método','metodo','procedimiento','return','retornar'],
-    responses: [
-      `Una **función** es un bloque de código reutilizable que realiza una tarea específica.\n\n\`\`\`javascript\n// JavaScript\nfunction saludar(nombre) {\n  return "Hola, " + nombre + "!";\n}\n\nconsole.log(saludar("Patok")); // "Hola, Patok!"\n\`\`\`\n\`\`\`python\n# Python\ndef saludar(nombre):\n    return f"Hola, {nombre}!"\n\nprint(saludar("Patok"))\n\`\`\`\n\nFunciones **reciben parámetros** y **devuelven resultados**.`,
-      `Las funciones siguen el principio **DRY** (Don't Repeat Yourself):\n\n\`\`\`javascript\n// Función flecha en JS\nconst sumar = (a, b) => a + b;\n\n// Función con lógica\nfunction esMayor(edad) {\n  if (edad >= 18) {\n    return "Mayor de edad";\n  }\n  return "Menor de edad";\n}\n\`\`\``
-    ]
-  },
-
-  // BUCLES
-  bucles: {
-    triggers: ['bucle','loop','for','while','foreach','iterar','iteración','repetir','ciclo'],
-    responses: [
-      `Los **bucles** repiten código un número de veces. Los más comunes:\n\n\`\`\`javascript\n// For clásico\nfor (let i = 0; i < 5; i++) {\n  console.log("Iteración: " + i);\n}\n\n// While\nlet n = 0;\nwhile (n < 5) {\n  console.log(n);\n  n++;\n}\n\n// forEach sobre array\n[1, 2, 3].forEach(num => console.log(num));\n\`\`\``,
-      `Bucle **for...of** (recorrer arrays) y **for...in** (recorrer objetos):\n\n\`\`\`javascript\nconst frutas = ["manzana", "pera", "uva"];\n\nfor (const fruta of frutas) {\n  console.log(fruta);\n}\n\nconst persona = { nombre: "Patok", edad: 1 };\nfor (const clave in persona) {\n  console.log(clave + ": " + persona[clave]);\n}\n\`\`\``
-    ]
-  },
-
-  // ARRAYS
-  arrays: {
-    triggers: ['array','arreglo','lista','list','push','pop','slice','map','filter','reduce','índice','indice'],
-    responses: [
-      `Un **array** (arreglo) almacena múltiples valores en una sola variable:\n\n\`\`\`javascript\nconst colores = ["rojo", "verde", "azul"];\n\nconsole.log(colores[0]); // "rojo"\nconsole.log(colores.length); // 3\n\n// Métodos útiles\ncolores.push("amarillo");    // agregar al final\ncolores.pop();               // eliminar el último\ncolores.includes("verde");   // true\n\`\`\`\n\`\`\`python\ncolores = ["rojo", "verde", "azul"]\ncolores.append("amarillo")\nprint(len(colores)) # 4\n\`\`\``,
-      `Métodos poderosos de arrays en JavaScript:\n\n\`\`\`javascript\nconst nums = [1, 2, 3, 4, 5];\n\n// map: transforma cada elemento\nconst dobles = nums.map(n => n * 2); // [2,4,6,8,10]\n\n// filter: filtra por condición\nconst pares = nums.filter(n => n % 2 === 0); // [2,4]\n\n// reduce: acumula en un valor\nconst suma = nums.reduce((acc, n) => acc + n, 0); // 15\n\`\`\``
-    ]
-  },
-
-  // OBJETOS
-  objetos: {
-    triggers: ['objeto','object','json','propiedad','clave','key','value','valor','instancia','clase','class'],
-    responses: [
-      `Un **objeto** agrupa datos relacionados con pares clave-valor:\n\n\`\`\`javascript\nconst usuario = {\n  nombre: "Patok",\n  edad: 1,\n  lenguaje: "JavaScript",\n  activo: true\n};\n\nconsole.log(usuario.nombre); // "Patok"\nconsole.log(usuario["edad"]); // 1\n\n// Agregar propiedad\nusuario.email = "patok@ai.com";\n\`\`\``,
-      `**Clases** en JavaScript (POO):\n\n\`\`\`javascript\nclass Animal {\n  constructor(nombre, tipo) {\n    this.nombre = nombre;\n    this.tipo = tipo;\n  }\n  \n  hablar() {\n    return \`\${this.nombre} hace un sonido\`;\n  }\n}\n\nclass Perro extends Animal {\n  hablar() {\n    return \`\${this.nombre} dice: ¡Guau!\`;\n  }\n}\n\nconst perro = new Perro("Rex", "mamífero");\nconsole.log(perro.hablar()); // Rex dice: ¡Guau!\n\`\`\``
-    ]
-  },
-
-  // CONDICIONALES
-  condicionales: {
-    triggers: ['if','else','condicional','condición','condicion','switch','ternario','comparar','comparación','verdadero','falso','true','false','booleano','boolean'],
-    responses: [
-      `Las **condicionales** controlan el flujo del programa:\n\n\`\`\`javascript\nconst nota = 85;\n\nif (nota >= 90) {\n  console.log("Excelente ⭐");\n} else if (nota >= 70) {\n  console.log("Bien 👍");\n} else {\n  console.log("Necesita mejorar 📚");\n}\n\n// Operador ternario\nconst estado = nota >= 70 ? "Aprobado" : "Reprobado";\n\`\`\``,
-      `**Switch** para múltiples casos:\n\n\`\`\`javascript\nconst dia = "lunes";\n\nswitch(dia) {\n  case "lunes":\n  case "martes":\n    console.log("Inicio de semana");\n    break;\n  case "viernes":\n    console.log("¡Fin de semana!");\n    break;\n  default:\n    console.log("Entre semana");\n}\n\`\`\``
-    ]
-  },
-
-  // JAVASCRIPT
-  javascript: {
-    triggers: ['javascript','js','ecmascript','node','nodejs','npm','dom','evento','event','promesa','promise','async','await','callback'],
-    responses: [
-      `**JavaScript** es el lenguaje de la web. Corre en navegadores y en servidores con Node.js.\n\n**Características clave:**\n- Tipado dinámico\n- Orientado a eventos\n- Asíncrono con Promises/async-await\n\n\`\`\`javascript\n// Async/Await\nasync function obtenerDatos(url) {\n  try {\n    const respuesta = await fetch(url);\n    const datos = await respuesta.json();\n    return datos;\n  } catch (error) {\n    console.error("Error:", error);\n  }\n}\n\`\`\``,
-      `**DOM Manipulation** en JavaScript:\n\n\`\`\`javascript\n// Seleccionar elementos\nconst titulo = document.getElementById("titulo");\nconst botones = document.querySelectorAll(".boton");\n\n// Modificar contenido\ntitulo.textContent = "Nuevo título";\ntitulo.style.color = "blue";\n\n// Eventos\nbotones.forEach(btn => {\n  btn.addEventListener("click", (e) => {\n    console.log("Clic en:", e.target);\n  });\n});\n\`\`\``
-    ]
-  },
-
-  // PYTHON
-  python: {
-    triggers: ['python','py','pip','pandas','numpy','flask','django','lista','diccionario','tupla','conjunto','set'],
-    responses: [
-      `**Python** es uno de los lenguajes más populares del mundo. Ideal para:\n- 📊 Ciencia de datos\n- 🤖 IA / Machine Learning\n- 🌐 Web (Django, Flask)\n- ⚙️ Automatización\n\n\`\`\`python\n# Ejemplo básico Python\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\n# List comprehension\ncuadrados = [x**2 for x in range(10)]\nprint(cuadrados) # [0,1,4,9,16,...,81]\n\`\`\``,
-      `**Estructuras de datos en Python:**\n\n\`\`\`python\n# Lista (mutable)\nfrutas = ["manzana", "pera", "uva"]\nfrutas.append("mango")\n\n# Diccionario\npersona = {"nombre": "Patok", "edad": 1}\npersona["ciudad"] = "Internet"\n\n# Tupla (inmutable)\ncoordenadas = (10.5, 20.3)\n\n# Set (sin duplicados)\nunicos = {1, 2, 2, 3, 3} # {1, 2, 3}\n\`\`\``
-    ]
-  },
-
-  // HTML
-  html: {
-    triggers: ['html','etiqueta','tag','div','span','form','input','button','head','body','estructura','web','página','pagina'],
-    responses: [
-      `**HTML** es el esqueleto de toda página web:\n\n\`\`\`html\n<!DOCTYPE html>\n<html lang="es">\n<head>\n  <meta charset="UTF-8">\n  <title>Mi Página</title>\n</head>\n<body>\n  <header>\n    <h1>Bienvenido</h1>\n    <nav>\n      <a href="/">Inicio</a>\n      <a href="/about">Acerca de</a>\n    </nav>\n  </header>\n  \n  <main>\n    <p>Contenido principal aquí</p>\n  </main>\n  \n  <footer>© 2024</footer>\n</body>\n</html>\n\`\`\``,
-      `**Formularios HTML** — para recibir datos del usuario:\n\n\`\`\`html\n<form action="/enviar" method="POST">\n  <label for="nombre">Nombre:</label>\n  <input type="text" id="nombre" name="nombre" required>\n  \n  <label for="email">Email:</label>\n  <input type="email" id="email" name="email">\n  \n  <select name="pais">\n    <option value="mx">México</option>\n    <option value="es">España</option>\n  </select>\n  \n  <button type="submit">Enviar</button>\n</form>\n\`\`\``
-    ]
-  },
-
-  // CSS
-  css: {
-    triggers: ['css','estilo','style','selector','clase','id','flexbox','grid','animación','animacion','responsive','media query','color','fuente','font'],
-    responses: [
-      `**CSS** da vida visual a HTML:\n\n\`\`\`css\n/* Selectores básicos */\nh1 { color: #333; font-size: 2rem; }\n.clase { background: blue; }\n#id { margin: 0 auto; }\n\n/* Flexbox — layout moderno */\n.contenedor {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  gap: 20px;\n  flex-wrap: wrap;\n}\n\n/* Variables CSS */\n:root {\n  --color-primario: #00f5d4;\n  --fuente-principal: 'Space Mono', monospace;\n}\n\`\`\``,
-      `**CSS Grid** para layouts complejos:\n\n\`\`\`css\n.grid {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  grid-template-rows: auto;\n  gap: 20px;\n}\n\n/* Responsive con media queries */\n@media (max-width: 768px) {\n  .grid {\n    grid-template-columns: 1fr;\n  }\n}\n\n/* Animación */\n@keyframes aparecer {\n  from { opacity: 0; transform: translateY(20px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n\n.elemento {\n  animation: aparecer 0.5s ease forwards;\n}\n\`\`\``
-    ]
-  },
-
-  // API
-  api: {
-    triggers: ['api','rest','restful','endpoint','request','respuesta','json','http','get','post','put','delete','fetch','axios'],
-    responses: [
-      `Una **API REST** permite comunicación entre sistemas:\n\n\`\`\`javascript\n// Hacer una petición GET\nasync function obtenerUsuarios() {\n  const res = await fetch("https://api.ejemplo.com/usuarios");\n  const usuarios = await res.json();\n  return usuarios;\n}\n\n// Petición POST (enviar datos)\nasync function crearUsuario(datos) {\n  const res = await fetch("https://api.ejemplo.com/usuarios", {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: JSON.stringify(datos)\n  });\n  return await res.json();\n}\n\`\`\`\n\n**Verbos HTTP:** GET (leer), POST (crear), PUT (actualizar), DELETE (eliminar)`,
-    ]
-  },
-
-  // BASE DE DATOS
-  baseDatos: {
-    triggers: ['base de datos','database','sql','mysql','postgresql','mongodb','tabla','consulta','query','select','insert','update','delete'],
-    responses: [
-      `**SQL** — lenguaje para bases de datos relacionales:\n\n\`\`\`sql\n-- Crear tabla\nCREATE TABLE usuarios (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  nombre VARCHAR(100) NOT NULL,\n  email VARCHAR(255) UNIQUE,\n  fecha_registro TIMESTAMP DEFAULT NOW()\n);\n\n-- Insertar\nINSERT INTO usuarios (nombre, email) \nVALUES ('Patok', 'patok@ai.com');\n\n-- Consultar\nSELECT nombre, email \nFROM usuarios \nWHERE id = 1;\n\n-- Actualizar\nUPDATE usuarios SET nombre = 'Nuevo' WHERE id = 1;\n\`\`\``
-    ]
-  },
-
-  // GIT
-  git: {
-    triggers: ['git','github','gitlab','commit','push','pull','branch','merge','repositorio','repo','clone','fork'],
-    responses: [
-      `**Git** — control de versiones esencial:\n\n\`\`\`bash\n# Iniciar repositorio\ngit init\ngit add .\ngit commit -m "primer commit"\n\n# Conectar con GitHub\ngit remote add origin https://github.com/user/repo.git\ngit push -u origin main\n\n# Flujo diario\ngit pull                    # obtener cambios\ngit checkout -b nueva-rama  # crear rama\ngit add archivo.js          # agregar cambio\ngit commit -m "descripción" # confirmar\ngit push origin nueva-rama  # subir\n\`\`\``,
-    ]
-  },
-
-  // ALGORITMOS
-  algoritmos: {
-    triggers: ['algoritmo','algoritmo','ordenar','sort','buscar','search','recursión','recursion','complejidad','O(n)','binaria'],
-    responses: [
-      `**Algoritmos de ordenamiento** fundamentales:\n\n\`\`\`javascript\n// Bubble Sort (simple)\nfunction bubbleSort(arr) {\n  for (let i = 0; i < arr.length; i++) {\n    for (let j = 0; j < arr.length - i - 1; j++) {\n      if (arr[j] > arr[j+1]) {\n        [arr[j], arr[j+1]] = [arr[j+1], arr[j]];\n      }\n    }\n  }\n  return arr;\n}\n\n// JavaScript nativo\nconst nums = [5, 2, 8, 1, 9];\nnums.sort((a, b) => a - b); // [1,2,5,8,9]\n\`\`\``,
-      `**Búsqueda binaria** — O(log n):\n\n\`\`\`javascript\nfunction busquedaBinaria(arr, objetivo) {\n  let izq = 0, der = arr.length - 1;\n  \n  while (izq <= der) {\n    const medio = Math.floor((izq + der) / 2);\n    if (arr[medio] === objetivo) return medio;\n    if (arr[medio] < objetivo) izq = medio + 1;\n    else der = medio - 1;\n  }\n  return -1; // No encontrado\n}\n\n// Solo funciona en arrays ORDENADOS\nconst idx = busquedaBinaria([1,3,5,7,9,11], 7);\nconsole.log(idx); // 3\n\`\`\``
-    ]
-  },
-
-  // PROGRAMACIÓN GENERAL
-  programacion: {
-    triggers: ['programar','programación','codigo','código','software','aprender','lenguaje','compilar','ejecutar','debug','error','bug'],
-    responses: [
-      `La **programación** es darle instrucciones precisas a una computadora. Los lenguajes más populares en 2024:\n\n- 🌐 **JavaScript** — Web, apps, backend (Node.js)\n- 🐍 **Python** — IA, datos, ciencia, scripting\n- ☕ **Java** — Empresarial, Android\n- 🦀 **Rust** — Sistemas, rendimiento, seguridad\n- 💙 **TypeScript** — JavaScript con tipos\n- 🐘 **PHP** — Web server-side\n- 💎 **Ruby** — Desarrollo rápido (Rails)\n\n¿Quieres profundizar en alguno en particular?`,
-      `Para **aprender a programar** te recomiendo este camino:\n\n1. 📌 HTML + CSS (estructura web)\n2. ⚡ JavaScript (lógica e interactividad)\n3. 🔧 Git (control de versiones)\n4. 🌐 Un framework (React, Vue, etc.)\n5. 🛠️ Backend (Node.js, Python/Django)\n6. 🗄️ Bases de datos (SQL + NoSQL)\n\n¿Por dónde quieres empezar?`
-    ]
-  },
-
-  // POO
-  poo: {
-    triggers: ['poo','oop','herencia','encapsulamiento','polimorfismo','abstracción','abstracta','interface','clase abstracta','extends','implements','super'],
-    responses: [
-      `**Programación Orientada a Objetos (POO)** — 4 pilares:\n\n**1. Encapsulamiento** — ocultar detalles internos\n**2. Herencia** — una clase hereda de otra\n**3. Polimorfismo** — misma interfaz, diferente comportamiento\n**4. Abstracción** — simplificar la complejidad\n\n\`\`\`javascript\nclass Vehiculo {\n  #velocidad = 0; // propiedad privada\n  \n  acelerar(cantidad) {\n    this.#velocidad += cantidad;\n  }\n  \n  get vel() { return this.#velocidad; }\n}\n\nclass Auto extends Vehiculo {\n  constructor(marca) {\n    super();\n    this.marca = marca;\n  }\n}\n\`\`\``
-    ]
-  },
-
-  // REACT
-  react: {
-    triggers: ['react','reactjs','componente','hook','usestate','useeffect','props','jsx','virtual dom','redux','context'],
-    responses: [
-      `**React** — biblioteca para interfaces de usuario:\n\n\`\`\`jsx\nimport { useState, useEffect } from 'react';\n\nfunction Contador() {\n  const [cuenta, setCuenta] = useState(0);\n  \n  useEffect(() => {\n    document.title = \`Cuenta: \${cuenta}\`;\n  }, [cuenta]);\n  \n  return (\n    <div>\n      <h2>Contador: {cuenta}</h2>\n      <button onClick={() => setCuenta(c => c + 1)}>\n        Incrementar\n      </button>\n      <button onClick={() => setCuenta(0)}>\n        Resetear\n      </button>\n    </div>\n  );\n}\n\`\`\``
-    ]
-  },
-
-  // AGRADECIMIENTO
-  gracias: {
-    triggers: ['gracias','thank','thanks','genial','excelente','perfecto','bien','útil','entendí','entendi','claro','okay'],
-    responses: [
-      '¡De nada! 😊 Mi base de datos sigue activa. ¿Hay algo más en lo que pueda ayudarte?',
-      '¡Perfecto! Me alegra que haya quedado claro. Sigo aquí si tienes más preguntas de programación 💻',
-      '¡Genial! Recuerda que practicar es la mejor forma de aprender. ¿Tienes alguna otra duda? 🚀'
-    ]
-  },
-
-  // DESPEDIDA
-  despedida: {
-    triggers: ['adiós','adios','bye','hasta luego','chao','nos vemos','ciao','me voy'],
-    responses: [
-      '¡Hasta luego! 👋 Fue un gusto ayudarte. ¡Sigue programando!',
-      '¡Chao! 🤖 Que el código compile sin errores. ¡Hasta pronto!',
-      '¡Nos vemos! Vuelve cuando quieras. La programación no descansa 🚀'
-    ]
-  },
-
-  // QUÉ ES PATOK
-  sobrePatok: {
-    triggers: ['qué eres','que eres','quien eres','quién eres','cómo funcinas','como funcinas','patok','tu nombre','cómo te llamas','como te llamas'],
-    responses: [
-      `Soy **Patok AI** 🤖 — una inteligencia artificial basada en análisis léxico.\n\n**¿Cómo funciono?**\n1. Analizo tu mensaje y lo divido en **tokens** (palabras)\n2. Comparo con mi base de datos de **vocabulario programático**\n3. Identifico el **tema principal** de tu pregunta\n4. Selecciono y construyo la **respuesta más relevante**\n5. La presento formateada con ejemplos de código\n\nNo uso una API externa — todo mi procesamiento es **local y léxico**. ¡Soy autónomo! 💚`
-    ]
-  },
-
-  // DEFAULT
-  default: {
-    responses: [
-      `Hmm, procesé tu mensaje pero no encontré una coincidencia exacta en mi base de datos. Puedo ayudarte con:\n\n- 💻 **JavaScript** (variables, funciones, async, DOM)\n- 🐍 **Python** (listas, clases, librerías)\n- 🌐 **HTML/CSS** (estructura, estilos, animaciones)\n- 🔄 **Algoritmos** (bucles, ordenamiento, búsqueda)\n- 🗄️ **Bases de datos** (SQL, MongoDB)\n- 🔧 **Git** (control de versiones)\n- ⚛️ **React** (componentes, hooks)\n\n¿Sobre cuál de estos temas quieres aprender?`,
-      `Mi motor léxico no encontró una categoría precisa para eso. Prueba preguntarme sobre:\n\n→ "¿Qué es una función?"\n→ "Muéstrame un ejemplo de bucle for"\n→ "¿Cómo funciona React?"\n→ "Explícame las clases en Python"\n\n¡Tengo miles de palabras en mi base de datos programática! 🧠`
-    ]
-  }
-};
-
-// ============================================================
-// MOTOR DE ANÁLISIS LÉXICO v2 — MEJORADO
-// ============================================================
-let currentMode = 'chat';
-let messageCount = 0;
-let totalWords = 0;
-let detectedTokens = [];
-let lastAnalysis = null;
-
-// Palabras vacías (stopwords) que no aportan semántica
-const STOPWORDS = new Set([
-  'de','la','el','en','un','una','los','las','que','es','se','con','por','para',
-  'del','al','como','su','mas','me','mi','si','ya','yo','tu','no','lo','le',
-  'pero','fue','era','han','hay','ser','son','sus','has','qué','cuál','cual',
-  'the','and','for','are','but','not','you','all','can','her','was','one',
-  'our','out','get','him','his','how','new','now','see','two','way','who',
-  'did','its','let','put','say','she','too','use'
-]);
-
-// Sinónimos para expandir detección
-const SYNONYMS = {
-  'funcion':    ['func','metodo','procedimiento','rutina','def','function'],
-  'variable':   ['var','let','const','variables','declarar','dato'],
-  'bucle':      ['loop','ciclo','for','while','foreach','repetir','iterar','iteracion'],
-  'array':      ['arreglo','lista','vector','coleccion','slice','push','pop'],
-  'objeto':     ['object','json','dict','diccionario','mapa','map','clave'],
-  'condicional':['ternario','condicion','switch','comparar','if','else'],
-  'clase':      ['class','poo','oop','herencia','polimorfismo','extends','super'],
-  'programar':  ['codigo','programacion','software','desarrollo','lenguaje'],
-  'error':      ['bug','fallo','excepcion','traceback','problema','crash'],
-};
-
-// Detección de intención por patrón
-const INTENTS = [
-  { pattern: /^(qué es|que es|qué son|que son|que significa|qué significa)\b/i, intent: 'Definición',   icon: '❓' },
-  { pattern: /^(como|cómo)\b/i,                                                  intent: 'Explicación',  icon: '📖' },
-  { pattern: /^(muéstrame|muestrame|dame|crea|genera|escribe|haz)\b/i,           intent: 'Ejemplo',      icon: '💡' },
-  { pattern: /^(cuál|cual|cuáles|cuales|diferencia)\b/i,                         intent: 'Comparación',  icon: '⚖️' },
-  { pattern: /^(por qué|porque|por que)\b/i,                                     intent: 'Razonamiento', icon: '🔍' },
-  { pattern: /^(ayuda|ayúdame|ayudame|necesito|tengo un error)\b/i,              intent: 'Ayuda',        icon: '🆘' },
-  { pattern: /(hola|hi|hey|buenos|buenas|saludos)/i,                             intent: 'Saludo',       icon: '👋' },
-  { pattern: /(gracias|thank|genial|excelente|perfecto)/i,                       intent: 'Agradecimiento',icon:'🙏' },
+// ═══════════════════════════════════════════════════════
+//  DATABASE — 100 palabras con categorías y metadatos
+// ═══════════════════════════════════════════════════════
+const DATABASE = [
+  // Naturaleza
+  {id:1, palabra:"arbol",      categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Planta leñosa de gran tamaño con tronco y ramas.", relacionados:["bosque","hoja","tronco","semilla","fruto"]},
+  {id:2, palabra:"bosque",     categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Extensión de terreno poblada de árboles.", relacionados:["arbol","selva","animal","hoja"]},
+  {id:3, palabra:"selva",      categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Bosque tropical denso con alta biodiversidad.", relacionados:["bosque","rio","animal","lluvia"]},
+  {id:4, palabra:"rio",        categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Corriente de agua que fluye hacia el mar o un lago.", relacionados:["lago","mar","pez","puente"]},
+  {id:5, palabra:"lago",       categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Masa de agua rodeada de tierra.", relacionados:["rio","pez","isla","delfin"]},
+  {id:6, palabra:"mar",        categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Gran extensión de agua salada.", relacionados:["oceano","isla","barco","tiburon"]},
+  {id:7, palabra:"oceano",     categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Masa de agua salada que cubre la mayor parte de la Tierra.", relacionados:["mar","ballena","delfin","isla"]},
+  {id:8, palabra:"montaña",    categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Elevación natural del terreno de gran altura.", relacionados:["volcan","valle","nieve","hielo"]},
+  {id:9, palabra:"volcan",     categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Abertura en la corteza terrestre que emite lava.", relacionados:["montaña","calor","tormenta"]},
+  {id:10,palabra:"isla",       categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Porción de tierra rodeada de agua.", relacionados:["mar","oceano","barco","palmera"]},
+  {id:11,palabra:"desierto",   categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Región árida con escasas precipitaciones.", relacionados:["calor","arena","viento","camello"]},
+  {id:12,palabra:"valle",      categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Depresión alargada entre montañas.", relacionados:["montaña","rio","campo"]},
+  {id:13,palabra:"campo",      categoria:"naturaleza",  subcategoria:"terreno",   descripcion:"Extensión de tierra llana y abierta.", relacionados:["flor","arbol","animal","semilla"]},
+  {id:14,palabra:"flor",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Órgano reproductor de las plantas con pétalos.", relacionados:["arbol","hoja","semilla","fruto"]},
+  {id:15,palabra:"hoja",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte de la planta que realiza la fotosíntesis.", relacionados:["arbol","tronco","raiz"]},
+  {id:16,palabra:"raiz",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte subterránea de la planta que absorbe nutrientes.", relacionados:["arbol","tronco","hoja","semilla"]},
+  {id:17,palabra:"tronco",     categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte principal del árbol que sostiene las ramas.", relacionados:["arbol","hoja","raiz"]},
+  {id:18,palabra:"semilla",    categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Estructura que contiene el embrión de una nueva planta.", relacionados:["arbol","fruto","raiz","campo"]},
+  {id:19,palabra:"fruto",      categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte de la planta que contiene y protege las semillas.", relacionados:["arbol","semilla","flor"]},
+  // Clima
+  {id:20,palabra:"nube",       categoria:"clima",       subcategoria:"atmosfera", descripcion:"Masa visible de vapor de agua en la atmósfera.", relacionados:["lluvia","tormenta","viento","cielo"]},
+  {id:21,palabra:"lluvia",     categoria:"clima",       subcategoria:"precipitacion",descripcion:"Agua que cae de las nubes en forma de gotas.", relacionados:["nube","tormenta","rio","lago"]},
+  {id:22,palabra:"tormenta",   categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Perturbación atmosférica con lluvia intensa y viento.", relacionados:["lluvia","relampago","trueno","viento"]},
+  {id:23,palabra:"viento",     categoria:"clima",       subcategoria:"atmosfera", descripcion:"Movimiento del aire en la atmósfera.", relacionados:["tormenta","nube","huracan"]},
+  {id:24,palabra:"huracan",    categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Tormenta tropical de gran intensidad con vientos violentos.", relacionados:["viento","tormenta","lluvia","mar"]},
+  {id:25,palabra:"relampago",  categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Descarga eléctrica durante una tormenta.", relacionados:["tormenta","trueno","nube"]},
+  {id:26,palabra:"trueno",     categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Sonido producido por una descarga eléctrica atmosférica.", relacionados:["relampago","tormenta","nube"]},
+  {id:27,palabra:"nieve",      categoria:"clima",       subcategoria:"precipitacion",descripcion:"Agua congelada que cae en forma de copos blancos.", relacionados:["hielo","frio","montaña","nube"]},
+  {id:28,palabra:"hielo",      categoria:"clima",       subcategoria:"estado",    descripcion:"Agua en estado sólido a baja temperatura.", relacionados:["nieve","frio","agua","lago"]},
+  {id:29,palabra:"calor",      categoria:"clima",       subcategoria:"temperatura",descripcion:"Sensación o condición de alta temperatura.", relacionados:["desierto","sol","verano","frio"]},
+  {id:30,palabra:"frio",       categoria:"clima",       subcategoria:"temperatura",descripcion:"Sensación o condición de baja temperatura.", relacionados:["hielo","nieve","invierno","calor"]},
+  // Animales
+  {id:31,palabra:"animal",     categoria:"fauna",       subcategoria:"general",   descripcion:"Ser vivo con capacidad de movimiento y sensación.", relacionados:["perro","gato","pajaro","pez"]},
+  {id:32,palabra:"perro",      categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Animal doméstico, el mejor amigo del humano.", relacionados:["gato","lobo","animal","aliado"]},
+  {id:33,palabra:"gato",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Felino doméstico, independiente y ágil.", relacionados:["perro","tigre","leon","animal"]},
+  {id:34,palabra:"leon",       categoria:"fauna",       subcategoria:"felino",    descripcion:"Gran felino, rey de la sabana africana.", relacionados:["tigre","selva","animal","enemigo"]},
+  {id:35,palabra:"tigre",      categoria:"fauna",       subcategoria:"felino",    descripcion:"Gran felino rayado, depredador poderoso.", relacionados:["leon","selva","animal","gato"]},
+  {id:36,palabra:"elefante",   categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Mamífero más grande en tierra, con trompa.", relacionados:["selva","animal","jirafa"]},
+  {id:37,palabra:"jirafa",     categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Mamífero más alto del mundo, cuello largo.", relacionados:["elefante","animal","campo"]},
+  {id:38,palabra:"mono",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Primate ágil que vive en árboles de la selva.", relacionados:["selva","arbol","animal"]},
+  {id:39,palabra:"conejo",     categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Pequeño mamífero de orejas largas, veloz.", relacionados:["campo","animal","lobo"]},
+  {id:40,palabra:"lobo",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Cánido salvaje que vive en manadas.", relacionados:["perro","zorro","bosque","animal"]},
+  {id:41,palabra:"oso",        categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Gran mamífero omnívoro de las montañas y bosques.", relacionados:["bosque","montaña","animal"]},
+  {id:42,palabra:"zorro",      categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Cánido astuto de hocico alargado.", relacionados:["lobo","campo","animal"]},
+  {id:43,palabra:"pajaro",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Animal vertebrado con alas y plumas.", relacionados:["aguila","halcon","nube","arbol"]},
+  {id:44,palabra:"aguila",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Ave rapaz de gran tamaño y vuelo majestuoso.", relacionados:["halcon","pajaro","montaña","viento"]},
+  {id:45,palabra:"halcon",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Ave rapaz veloz, usada en cetrería.", relacionados:["aguila","pajaro","viento"]},
+  {id:46,palabra:"pez",        categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Animal vertebrado acuático con aletas.", relacionados:["tiburon","delfin","rio","oceano"]},
+  {id:47,palabra:"tiburon",    categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Pez cartilaginoso depredador del océano.", relacionados:["pez","oceano","mar","ballena"]},
+  {id:48,palabra:"ballena",    categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Mamífero marino más grande del mundo.", relacionados:["oceano","delfin","pez","mar"]},
+  {id:49,palabra:"delfin",     categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Mamífero marino inteligente y social.", relacionados:["ballena","pez","oceano","lago"]},
+  {id:50,palabra:"pulpo",      categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Molusco marino con ocho tentáculos.", relacionados:["oceano","pez","mar","tiburon"]},
+  // Hogar / Objetos
+  {id:51,palabra:"mesa",       categoria:"hogar",       subcategoria:"mueble",    descripcion:"Mueble con superficie plana sobre patas.", relacionados:["silla","cocina","lampara","documento"]},
+  {id:52,palabra:"silla",      categoria:"hogar",       subcategoria:"mueble",    descripcion:"Asiento con respaldo para una persona.", relacionados:["mesa","piso","hogar"]},
+  {id:53,palabra:"puerta",     categoria:"hogar",       subcategoria:"estructura",descripcion:"Panel que cierra o abre el acceso a un espacio.", relacionados:["ventana","techo","pared","piso"]},
+  {id:54,palabra:"ventana",    categoria:"hogar",       subcategoria:"estructura",descripcion:"Abertura en una pared que permite el paso de luz y aire.", relacionados:["puerta","pared","luz","viento"]},
+  {id:55,palabra:"cocina",     categoria:"hogar",       subcategoria:"habitacion",descripcion:"Espacio donde se preparan los alimentos.", relacionados:["mesa","silla","lampara"]},
+  {id:56,palabra:"baño",       categoria:"hogar",       subcategoria:"habitacion",descripcion:"Espacio con instalaciones sanitarias.", relacionados:["agua","piso","pared"]},
+  {id:57,palabra:"techo",      categoria:"hogar",       subcategoria:"estructura",descripcion:"Parte superior que cubre un edificio.", relacionados:["pared","piso","puerta"]},
+  {id:58,palabra:"piso",       categoria:"hogar",       subcategoria:"estructura",descripcion:"Superficie sobre la que se camina en un espacio.", relacionados:["techo","pared","silla"]},
+  {id:59,palabra:"pared",      categoria:"hogar",       subcategoria:"estructura",descripcion:"Estructura vertical que divide o delimita espacios.", relacionados:["puerta","ventana","techo","piso"]},
+  {id:60,palabra:"lampara",    categoria:"hogar",       subcategoria:"electrodomestico",descripcion:"Dispositivo que produce luz artificial.", relacionados:["mesa","cable","bateria","piso"]},
+  // Tecnología
+  {id:61,palabra:"telefono",   categoria:"tecnologia",  subcategoria:"comunicacion",descripcion:"Dispositivo para comunicación a distancia.", relacionados:["pantalla","microfono","camara","bateria"]},
+  {id:62,palabra:"pantalla",   categoria:"tecnologia",  subcategoria:"display",   descripcion:"Superficie que muestra imágenes o texto digital.", relacionados:["telefono","teclado","video","imagen"]},
+  {id:63,palabra:"teclado",    categoria:"tecnologia",  subcategoria:"entrada",   descripcion:"Dispositivo de entrada con teclas alfanuméricas.", relacionados:["raton","pantalla","documento"]},
+  {id:64,palabra:"raton",      categoria:"tecnologia",  subcategoria:"entrada",   descripcion:"Dispositivo de señalización para interfaces gráficas.", relacionados:["teclado","pantalla","carpeta"]},
+  {id:65,palabra:"camara",     categoria:"tecnologia",  subcategoria:"optica",    descripcion:"Dispositivo para capturar fotografías o video.", relacionados:["telefono","imagen","video","memoria"]},
+  {id:66,palabra:"microfono",  categoria:"tecnologia",  subcategoria:"audio",     descripcion:"Transductor que convierte sonido en señal eléctrica.", relacionados:["audio","musica","telefono"]},
+  {id:67,palabra:"bateria",    categoria:"tecnologia",  subcategoria:"energia",   descripcion:"Dispositivo que almacena energía eléctrica.", relacionados:["cargador","cable","telefono","lampara"]},
+  {id:68,palabra:"cable",      categoria:"tecnologia",  subcategoria:"conexion",  descripcion:"Conductor eléctrico recubierto para transmisión.", relacionados:["cargador","bateria","memoria"]},
+  {id:69,palabra:"cargador",   categoria:"tecnologia",  subcategoria:"energia",   descripcion:"Dispositivo para reponer la carga de la batería.", relacionados:["cable","bateria","telefono"]},
+  {id:70,palabra:"memoria",    categoria:"tecnologia",  subcategoria:"almacenamiento",descripcion:"Componente que almacena datos digitales.", relacionados:["archivo","carpeta","documento","imagen"]},
+  // Digital / Datos
+  {id:71,palabra:"archivo",    categoria:"digital",     subcategoria:"dato",      descripcion:"Unidad de almacenamiento de información digital.", relacionados:["carpeta","documento","memoria","imagen"]},
+  {id:72,palabra:"carpeta",    categoria:"digital",     subcategoria:"organizacion",descripcion:"Contenedor virtual para organizar archivos.", relacionados:["archivo","documento","memoria"]},
+  {id:73,palabra:"documento",  categoria:"digital",     subcategoria:"contenido", descripcion:"Archivo que contiene texto o información estructurada.", relacionados:["archivo","imagen","audio","teclado"]},
+  {id:74,palabra:"imagen",     categoria:"digital",     subcategoria:"multimedia",descripcion:"Representación visual en formato digital.", relacionados:["camara","video","documento","pantalla"]},
+  {id:75,palabra:"video",      categoria:"digital",     subcategoria:"multimedia",descripcion:"Secuencia de imágenes en movimiento.", relacionados:["imagen","audio","pelicula","camara"]},
+  {id:76,palabra:"audio",      categoria:"digital",     subcategoria:"multimedia",descripcion:"Contenido sonoro en formato digital.", relacionados:["musica","microfono","video","documento"]},
+  {id:77,palabra:"musica",     categoria:"digital",     subcategoria:"arte",      descripcion:"Arte de organizar sonidos en el tiempo.", relacionados:["audio","microfono","video","pelicula"]},
+  {id:78,palabra:"pelicula",   categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Obra cinematográfica de larga duración.", relacionados:["video","musica","serie","historia"]},
+  {id:79,palabra:"serie",      categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Obra audiovisual dividida en episodios.", relacionados:["pelicula","video","historia","personaje"]},
+  {id:80,palabra:"juego",      categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Actividad lúdica con reglas y objetivos.", relacionados:["nivel","personaje","mision","victoria"]},
+  // Videojuegos / Narrativa
+  {id:81,palabra:"nivel",      categoria:"juego",       subcategoria:"mecanica",  descripcion:"Etapa o fase dentro de un videojuego.", relacionados:["juego","mision","personaje","enemigo"]},
+  {id:82,palabra:"personaje",  categoria:"juego",       subcategoria:"narrativa", descripcion:"Figura protagonista de una historia o juego.", relacionados:["historia","nivel","aliado","enemigo"]},
+  {id:83,palabra:"historia",   categoria:"narrativa",   subcategoria:"contenido", descripcion:"Relato de eventos reales o ficticios.", relacionados:["aventura","personaje","pelicula","libro"]},
+  {id:84,palabra:"aventura",   categoria:"narrativa",   subcategoria:"genero",    descripcion:"Género de experiencias emocionantes y peligrosas.", relacionados:["historia","mision","viaje","personaje"]},
+  {id:85,palabra:"mision",     categoria:"juego",       subcategoria:"objetivo",  descripcion:"Tarea o misión asignada con objetivos definidos.", relacionados:["nivel","aventura","aliado","enemigo"]},
+  {id:86,palabra:"enemigo",    categoria:"juego",       subcategoria:"antagonista",descripcion:"Personaje que se opone al protagonista.", relacionados:["aliado","mision","nivel","victoria"]},
+  {id:87,palabra:"aliado",     categoria:"juego",       subcategoria:"personaje", descripcion:"Compañero que colabora en una misión o batalla.", relacionados:["enemigo","equipo","mision","personaje"]},
+  {id:88,palabra:"equipo",     categoria:"juego",       subcategoria:"grupo",     descripcion:"Conjunto de personas que trabajan juntas.", relacionados:["aliado","mision","victoria","historia"]},
+  {id:89,palabra:"victoria",   categoria:"juego",       subcategoria:"resultado", descripcion:"Resultado exitoso en una competencia o batalla.", relacionados:["derrota","mision","equipo","nivel"]},
+  {id:90,palabra:"derrota",    categoria:"juego",       subcategoria:"resultado", descripcion:"Resultado de perder en una competencia o batalla.", relacionados:["victoria","enemigo","nivel","historia"]},
+  // Transporte
+  {id:91,palabra:"viaje",      categoria:"transporte",  subcategoria:"movimiento",descripcion:"Desplazamiento de un lugar a otro.", relacionados:["avion","barco","tren","auto","mapa"]},
+  {id:92,palabra:"avion",      categoria:"transporte",  subcategoria:"aereo",     descripcion:"Vehículo que vuela mediante motores y alas.", relacionados:["viaje","nube","mapa","aeropuerto"]},
+  {id:93,palabra:"tren",       categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo sobre rieles que transporta pasajeros.", relacionados:["viaje","carretera","tunel","mapa"]},
+  {id:94,palabra:"barco",      categoria:"transporte",  subcategoria:"maritimo",  descripcion:"Embarcación de gran tamaño para navegar.", relacionados:["viaje","mar","oceano","isla"]},
+  {id:95,palabra:"auto",       categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo motorizado de cuatro ruedas.", relacionados:["viaje","carretera","puente","tren"]},
+  {id:96,palabra:"bicicleta",  categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo de dos ruedas propulsado por pedales.", relacionados:["carretera","viaje","campo","puente"]},
+  {id:97,palabra:"carretera",  categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Vía de comunicación terrestre pavimentada.", relacionados:["auto","puente","tunel","mapa"]},
+  {id:98,palabra:"puente",     categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Estructura para cruzar ríos u obstáculos.", relacionados:["rio","carretera","auto","tunel"]},
+  {id:99,palabra:"tunel",      categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Paso subterráneo excavado en montañas o tierra.", relacionados:["montaña","carretera","tren","puente"]},
+  {id:100,palabra:"mapa",      categoria:"transporte",  subcategoria:"navegacion", descripcion:"Representación gráfica de un territorio.", relacionados:["viaje","carretera","isla","aventura"]}
 ];
 
-// ── NORMALIZAR TEXTO ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  IndexedDB — Inicialización
+// ═══════════════════════════════════════════════════════
+let db;
+let queryCount = 0;
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("CORE_SYSTEM_DB", 1);
+
+        req.onupgradeneeded = (e) => {
+            const database = e.target.result;
+            if (!database.objectStoreNames.contains("palabras")) {
+                const store = database.createObjectStore("palabras", { keyPath: "id" });
+                store.createIndex("palabra", "palabra", { unique: true });
+                store.createIndex("categoria", "categoria", { unique: false });
+                store.createIndex("subcategoria", "subcategoria", { unique: false });
+            }
+        };
+
+        req.onsuccess = async (e) => {
+            db = e.target.result;
+            // Poblar si vacío
+            const count = await countRecords();
+            if (count === 0) await populateDB();
+            updateDBStatus(true);
+            resolve();
+        };
+
+        req.onerror = () => {
+            updateDBStatus(false);
+            reject(req.error);
+        };
+    });
+}
+
+function countRecords() {
+    return new Promise((resolve) => {
+        const tx = db.transaction("palabras", "readonly");
+        const store = tx.objectStore("palabras");
+        const req = store.count();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(0);
+    });
+}
+
+function populateDB() {
+    return new Promise((resolve) => {
+        const tx = db.transaction("palabras", "readwrite");
+        const store = tx.objectStore("palabras");
+        DATABASE.forEach(item => store.put(item));
+        tx.oncomplete = resolve;
+    });
+}
+
+function updateDBStatus(ok) {
+    document.getElementById("db-status").textContent = ok ? `DB: ${DATABASE.length} RECORDS` : "DB: ERROR";
+    const dot = document.getElementById("db-dot");
+    dot.style.background = ok ? "#22c55e" : "#ef4444";
+    dot.style.boxShadow = ok ? "0 0 6px #22c55e" : "0 0 6px #ef4444";
+}
+
+// ═══════════════════════════════════════════════════════
+//  Búsqueda en DB — fuzzy / tokens
+// ═══════════════════════════════════════════════════════
+function searchDB(query) {
+    return new Promise((resolve) => {
+        if (!db) { resolve([]); return; }
+        const tx = db.transaction("palabras", "readonly");
+        const store = tx.objectStore("palabras");
+        const req = store.getAll();
+        req.onsuccess = () => {
+            const all = req.result;
+            const tokens = normalize(query).split(/\s+/).filter(Boolean);
+            const results = [];
+            for (const item of all) {
+                let score = 0;
+                const pNorm = normalize(item.palabra);
+                const catNorm = normalize(item.categoria);
+                const descNorm = normalize(item.descripcion);
+                const relNorm = item.relacionados.map(r => normalize(r)).join(" ");
+
+                for (const t of tokens) {
+                    if (pNorm === t) score += 100;
+                    else if (pNorm.startsWith(t)) score += 60;
+                    else if (pNorm.includes(t)) score += 40;
+                    if (catNorm.includes(t)) score += 20;
+                    if (descNorm.includes(t)) score += 10;
+                    if (relNorm.includes(t)) score += 5;
+                }
+                if (score > 0) results.push({ ...item, score });
+            }
+            results.sort((a, b) => b.score - a.score);
+            resolve(results);
+        };
+        req.onerror = () => resolve([]);
+    });
+}
+
 function normalize(str) {
-  return str.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); // quitar acentos
+    return str.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s]/g, "");
 }
 
-// ── TOKENIZACIÓN AVANZADA ──────────────────────────────────
-function tokenize(text) {
-  const raw = normalize(text)
-    .replace(/[¿¡.,;:!?()\[\]{}"'`]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 1 && !STOPWORDS.has(w));
+// ═══════════════════════════════════════════════════════
+//  Claude API
+// ═══════════════════════════════════════════════════════
+async function callClaude(userMsg, dbContext, engine) {
+    const isAdvanced = engine === "p23";
+    const systemPrompt = isAdvanced
+        ? `Eres PATOK 23 GP, un sistema de IA avanzado con acceso a una base de datos local. Analizas la consulta del usuario y los resultados de búsqueda de la base de datos para dar una respuesta profunda, detallada y precisa. Tu tono es técnico, preciso y cyberpunk. Responde en español. Usa los datos de la DB para enriquecer tu respuesta. Sé analítico.`
+        : `Eres PATOK 1.19, un sistema de IA básico. Analizas la consulta y los resultados de la base de datos para dar una respuesta clara y directa. Tu tono es directo y conciso. Responde en español. Usa los datos de la DB cuando sean relevantes.`;
 
-  // Expandir con sinónimos
-  const expanded = [...raw];
-  for (const [canonical, aliases] of Object.entries(SYNONYMS)) {
-    for (const token of raw) {
-      if (aliases.includes(token) && !expanded.includes(canonical)) {
-        expanded.push(canonical);
-      }
+    const dbInfo = dbContext.length > 0
+        ? `\n\nRESULTADOS DE BASE DE DATOS LOCAL (${dbContext.length} coincidencias):\n` +
+          dbContext.slice(0, 5).map(r =>
+              `- [${r.palabra.toUpperCase()}] cat:${r.categoria}/${r.subcategoria} | score:${r.score} | desc:"${r.descripcion}" | relacionados:[${r.relacionados.join(", ")}]`
+          ).join("\n")
+        : "\n\nBase de datos: Sin coincidencias directas.";
+
+    const prompt = `Consulta del usuario: "${userMsg}"${dbInfo}\n\nAnaliza la consulta, los datos de la DB y proporciona una respuesta útil. Si hay matches en DB, explica las conexiones. Si no hay matches, responde basándote en tu conocimiento general.`;
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            system: systemPrompt,
+            messages: [{ role: "user", content: prompt }]
+        })
+    });
+
+    const data = await resp.json();
+    return data.content?.[0]?.text || "Error al procesar respuesta.";
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI helpers
+// ═══════════════════════════════════════════════════════
+function appendMsg(role, content) {
+    const terminal = document.getElementById("terminal");
+    const wrap = document.createElement("div");
+    wrap.className = role === "user" ? "msg-user" : "msg-ai";
+    wrap.innerHTML = content;
+    terminal.appendChild(wrap);
+    terminal.scrollTop = terminal.scrollHeight;
+    return wrap;
+}
+
+function userBubble(text) {
+    return `<div class="bubble-user">${escapeHtml(text)}</div>`;
+}
+
+function aiBubble(engineLabel, dbResults, aiText) {
+    const tags = dbResults.slice(0, 8).map(r =>
+        `<span class="db-match">${r.palabra}</span>`
+    ).join("");
+
+    const cats = [...new Set(dbResults.slice(0, 5).map(r => r.categoria))].map(c =>
+        `<span class="db-match category">${c}</span>`
+    ).join("");
+
+    const topScore = dbResults[0]?.score || 0;
+    const confidence = Math.min(100, Math.round((topScore / 100) * 80 + (dbResults.length > 0 ? 20 : 0)));
+
+    const dbSection = dbResults.length > 0
+        ? `<div class="my-2">
+            <div style="font-size:9px;color:rgba(34,211,238,0.5);margin-bottom:4px;letter-spacing:0.15em;">DB MATCHES [${dbResults.length}]:</div>
+            <div>${tags}</div>
+            ${cats ? `<div style="margin-top:4px">${cats}</div>` : ""}
+           </div>`
+        : `<div style="font-size:10px;opacity:0.4;margin:6px 0;">DB: sin coincidencias directas</div>`;
+
+    return `<div class="bubble-ai">
+        <span class="label">ANALYZING RESPONSE...</span>
+        <span class="engine-tag">${engineLabel}</span>
+        ${dbSection}
+        <p style="line-height:1.6;margin-top:8px;">${escapeHtml(aiText).replace(/\n/g,"<br>")}</p>
+        <div style="margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:9px;opacity:0.5;margin-bottom:3px;">
+                <span>CONFIDENCE</span><span>${confidence}%</span>
+            </div>
+            <div class="conf-bar-wrap"><div class="conf-bar" style="width:${confidence}%"></div></div>
+        </div>
+    </div>`;
+}
+
+function typingBubble() {
+    const wrap = document.createElement("div");
+    wrap.className = "msg-ai";
+    wrap.innerHTML = `<div class="bubble-ai">
+        <span class="label" style="margin-bottom:0">PROCESANDO...</span>
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
+    </div>`;
+    document.getElementById("terminal").appendChild(wrap);
+    document.getElementById("terminal").scrollTop = 9999;
+    return wrap;
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ═══════════════════════════════════════════════════════
+//  Estadísticas fake animadas
+// ═══════════════════════════════════════════════════════
+setInterval(() => {
+    document.getElementById("cpu-val").textContent = (30 + Math.floor(Math.random() * 40));
+    document.getElementById("ram-val").textContent = (180 + Math.floor(Math.random() * 60));
+}, 2000);
+
+// ═══════════════════════════════════════════════════════
+//  Main ejecutar
+// ═══════════════════════════════════════════════════════
+async function ejecutar() {
+    const input = document.getElementById("user-input");
+    const btn = document.getElementById("send-btn");
+    const text = input.value.trim();
+    if (!text) return;
+
+    const engine = document.querySelector('input[name="engine"]:checked').id;
+    const engineLabel = engine === "p23" ? "PATOK 23 GP" : "PATOK 1.19";
+
+    input.value = "";
+    btn.disabled = true;
+
+    // Mostrar mensaje del usuario
+    appendMsg("user", userBubble(text));
+
+    // Indicador de escritura
+    const typingWrap = typingBubble();
+
+    // Buscar en DB
+    const dbResults = await searchDB(text);
+
+    // Llamar a Claude
+    let aiText;
+    try {
+        aiText = await callClaude(text, dbResults, engine);
+    } catch (e) {
+        aiText = "Error de conexión con el núcleo de IA. Verifica la red.";
     }
-  }
-  return [...new Set(expanded)];
+
+    // Reemplazar typing por respuesta real
+    typingWrap.remove();
+    appendMsg("ai", aiBubble(engineLabel, dbResults, aiText));
+
+    // Actualizar contador
+    queryCount++;
+    document.getElementById("query-count").textContent = `QUERIES: ${queryCount}`;
+    btn.disabled = false;
+    input.focus();
 }
 
-// ── DETECTAR INTENCIÓN ────────────────────────────────────
-function detectIntent(text) {
-  const trimmed = text.trim();
-  for (const { pattern, intent, icon } of INTENTS) {
-    if (pattern.test(trimmed)) return { intent, icon };
-  }
-  return { intent: 'Conversación', icon: '💬' };
-}
+// Enter para enviar
+document.getElementById("user-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") ejecutar();
+});
 
-// ── SCORING PONDERADO ─────────────────────────────────────
-function scoreCategory(tokens, triggers) {
-  let score = 0;
-  for (const token of tokens) {
-    for (const trigger of triggers) {
-      const tNorm = normalize(trigger);
-      if (tNorm === token) {
-        score += 10;        // coincidencia exacta
-      } else if (tNorm.startsWith(token) && token.length >= 4) {
-        score += 5;         // prefijo significativo
-      } else if (token.startsWith(tNorm) && tNorm.length >= 4) {
-        score += 5;
-      } else if (tNorm.includes(token) && token.length >= 4) {
-        score += 2;         // subcadena
-      } else if (token.includes(tNorm) && tNorm.length >= 4) {
-        score += 2;
-      }
-    }
-  }
-  // Bonus por longitud del mensaje (más contexto = más confianza)
-  return score;
-}
-
-// ── ANÁLISIS COMPLETO ─────────────────────────────────────
-function analyzeText(text) {
-  const tokens = tokenize(text);
-  const intentData = detectIntent(text);
-
-  const scores = {};
-  let topScore = 0;
-
-  for (const [cat, data] of Object.entries(LEXICAL_DB)) {
-    if (cat === 'default') continue;
-    const s = scoreCategory(tokens, data.triggers || []);
-    scores[cat] = s;
-    if (s > topScore) topScore = s;
-  }
-
-  const ranked = Object.entries(scores)
-    .filter(([,s]) => s > 0)
-    .sort(([,a],[,b]) => b - a);
-
-  const bestCat = ranked[0]?.[0] || 'default';
-  // Confianza: escala logarítmica suavizada
-  const confidence = topScore > 0
-    ? Math.min(99, Math.round(Math.log(topScore + 1) / Math.log(21) * 100))
-    : 0;
-
-  return { tokens, intent: intentData, bestCat, confidence, topScore, ranked: ranked.slice(0,3) };
-}
-
-// ── ACTUALIZAR BARRA DE ANÁLISIS ──────────────────────────
-function analyzeInput(text) {
-  const analysisText = document.getElementById('analysis-text');
-  const tokenDisplay = document.getElementById('token-display');
-  const confBar      = document.getElementById('conf-bar');
-  const confLabel    = document.getElementById('conf-label');
-  const intentBadge  = document.getElementById('intent-badge');
-
-  if (!text.trim()) {
-    analysisText.textContent = 'Esperando entrada...';
-    tokenDisplay.innerHTML = '';
-    if (confBar)    confBar.style.width = '0%';
-    if (confLabel)  confLabel.textContent = '—';
-    if (intentBadge) intentBadge.textContent = '';
-    return;
-  }
-
-  const result = analyzeText(text);
-  lastAnalysis = result;
-
-  tokenDisplay.innerHTML = result.tokens.slice(0, 7).map(t =>
-    `<div class="token">${t}</div>`
-  ).join('');
-
-  const catName = result.bestCat !== 'default' ? result.bestCat : '???';
-  const topNames = result.ranked.map(([c]) => c).join(' › ');
-  analysisText.textContent = result.confidence > 0
-    ? `Tema: ${catName} | ${result.tokens.length} tokens útiles | Ranking: ${topNames}`
-    : `${result.tokens.length} tokens analizados — sin coincidencia en DB`;
-
-  if (confBar)   { confBar.style.width = result.confidence + '%'; confBar.setAttribute('data-val', result.confidence); }
-  if (confLabel)  confLabel.textContent = result.confidence + '%';
-  if (intentBadge) {
-    intentBadge.textContent = `${result.intent.icon} ${result.intent.intent}`;
-  }
-
-  updateVocabTags(result.tokens);
-}
-
-// ── SELECCIÓN DE RESPUESTA ────────────────────────────────
-function getResponse(userText) {
-  const result = analyzeText(userText);
-  const db = LEXICAL_DB[result.bestCat] || LEXICAL_DB.default;
-  const responses = db.responses;
-  const response = responses[Math.floor(Math.random() * responses.length)];
-
-  if (result.confidence < 25 && result.bestCat !== 'default') {
-    return response + `\n\n⚠️ _Confianza baja (${result.confidence}%) — es posible que no sea lo que buscas exactamente._`;
-  }
-  return response;
-}
-
-function updateVocabTags(tokens) {
-  const tagsEl = document.getElementById('vocab-tags');
-  detectedTokens = [...new Set([...detectedTokens, ...tokens])].slice(-30);
-  tagsEl.innerHTML = detectedTokens.slice(-14).map(t =>
-    `<div class="vocab-tag">${t}</div>`
-  ).join('');
-  document.getElementById('word-count').textContent = detectedTokens.length;
-}
-
-// ============================================================
-// UI DE CHAT
-// ============================================================
-function setMode(mode) {
-  currentMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`btn-${mode}`).classList.add('active');
-  const labels = { chat: 'Chat', code: 'Código', debug: 'Debug', explain: 'Explicar' };
-  document.getElementById('mode-label').textContent = labels[mode] || mode;
-}
-
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-}
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
-}
-
-function sendQuick(text) {
-  document.getElementById('user-input').value = text;
-  sendMessage();
-}
-
-function getTime() {
-  return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatResponse(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre>${escapeHtml(code.trim())}</pre>`)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>');
-}
-
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-async function sendMessage() {
-  const input = document.getElementById('user-input');
-  const text = input.value.trim();
-  if (!text) return;
-
-  // Ocultar bienvenida
-  const ws = document.getElementById('welcome-screen');
-  if (ws) ws.remove();
-
-  input.value = '';
-  input.style.height = 'auto';
-
-  // Mensaje usuario
-  appendMessage('user', text);
-
-  // Indicador de escritura
-  const typingId = 'typing-' + Date.now();
-  appendTyping(typingId);
-
-  // Simular procesamiento
-  const delay = 600 + Math.random() * 800;
-  await sleep(delay);
-
-  removeTyping(typingId);
-
-  // Generar respuesta
-  const response = getResponse(text);
-  appendMessage('ai', response);
-
-  messageCount++;
-  analyzeInput('');
-}
-
-function appendMessage(role, text) {
-  const msgs = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-
-  const icon = role === 'user' ? '👤' : '🤖';
-  const content = role === 'ai' ? formatResponse(text) : escapeHtml(text).replace(/\n/g, '<br>');
-
-  div.innerHTML = `
-    <div class="avatar">${icon}</div>
-    <div>
-      <div class="bubble">${content}</div>
-      <div class="msg-time">${getTime()}</div>
-    </div>
-  `;
-
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-
-  totalWords += text.split(/\s+/).length;
-  updateVocabTags(tokenize(text));
-}
-
-function appendTyping(id) {
-  const msgs = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = 'message ai';
-  div.id = id;
-  div.innerHTML = `
-    <div class="avatar">🤖</div>
-    <div class="bubble">
-      <div class="typing-indicator">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
-  `;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function removeTyping(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
-
-function clearChat() {
-  const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML = '';
-  document.getElementById('vocab-tags').innerHTML = '';
-  document.getElementById('analysis-text').textContent = 'Esperando entrada...';
-  document.getElementById('token-display').innerHTML = '';
-  document.getElementById('word-count').textContent = '0';
-  detectedTokens = [];
-  messageCount = 0;
-  totalWords = 0;
-
-  // Volver a poner bienvenida
-  const ws = document.createElement('div');
-  ws.className = 'welcome-screen';
-  ws.id = 'welcome-screen';
-  ws.innerHTML = `
-    <div class="welcome-logo">🤖</div>
-    <div class="welcome-title">Chat <span>limpiado</span></div>
-    <div class="welcome-sub">¡Listo para empezar de nuevo! ¿En qué te ayudo?</div>
-    <div class="new-ai-banner" style="font-size:10px;">
-      <div class="banner-title">⚠️ Recuerda</div>
-      <ul>
-        <li>Soy una IA nueva — mi base de datos es limitada.</li>
-        <li>Puedo cometer errores. Verifica mis respuestas.</li>
-      </ul>
-    </div>
-  `;
-  msgs.appendChild(ws);
-}
-
-function showStats() {
-  const msgs = document.getElementById('chat-messages');
-  const ws = document.getElementById('welcome-screen');
-  if (ws) ws.remove();
-
-  appendMessage('ai',
-    `**Estadísticas de Patok AI:**\n\n` +
-    `- 💬 Mensajes en esta sesión: **${messageCount}**\n` +
-    `- 🔤 Palabras analizadas: **${totalWords}**\n` +
-    `- 🧠 Tokens en memoria: **${detectedTokens.length}**\n` +
-    `- 📚 Categorías en DB: **${Object.keys(LEXICAL_DB).length - 1}**\n` +
-    `- ⚙️ Modo actual: **${currentMode}**\n` +
-    `- 🟢 Estado: **Activo y operando**`
-  );
-}
-
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-// Contar palabras totales en DB
-let dbWordCount = 0;
-for (const cat of Object.values(LEXICAL_DB)) {
-  if (cat.triggers) dbWordCount += cat.triggers.length;
-}
-document.getElementById('word-count').textContent = dbWordCount;
-
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  sidebar.classList.toggle('open');
-}
-
+// ═══════════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════════
+initDB().catch(() => updateDBStatus(false));
 </script>
 </body>
 </html>
