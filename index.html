@@ -1,789 +1,305 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CORE_SYSTEM v2.0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
-
-        :root {
-            --cyan: #22d3ee;
-            --cyan-dim: rgba(34,211,238,0.15);
-            --cyan-glow: 0 0 20px rgba(34,211,238,0.5);
-            --bg: #05070a;
-            --glass: rgba(15,23,42,0.85);
-        }
-
-        * { box-sizing: border-box; }
-        html, body { height: 100%; margin: 0; }
-
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg);
-            color: var(--cyan);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100dvh;
-        }
-
-        /* Animated grid background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .glass {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(34,211,238,0.12);
-        }
-
-        .scanline {
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(transparent, rgba(34,211,238,0.15), transparent);
-            position: fixed;
-            left: 0;
-            z-index: 999;
-            pointer-events: none;
-            animation: scan 6s linear infinite;
-        }
-        @keyframes scan { 0% { top: -3px; } 100% { top: 100vh; } }
-
-        /* CRT vignette */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-            pointer-events: none;
-            z-index: 998;
-        }
-
-        /* Header */
-        header {
-            position: relative;
-            z-index: 10;
-            flex-shrink: 0;
-        }
-
-        .status-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.8); }
-        }
-
-        /* Model selector */
-        .model-bar {
-            position: relative;
-            z-index: 10;
-            flex-shrink: 0;
-            padding: 10px 16px;
-            background: rgba(5,7,10,0.9);
-            border-bottom: 1px solid rgba(34,211,238,0.1);
-            display: flex;
-            justify-content: center;
-        }
-
-        .model-toggle {
-            display: flex;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid rgba(34,211,238,0.25);
-            border-radius: 8px;
-            padding: 3px;
-            gap: 3px;
-        }
-
-        .model-toggle input[type="radio"] { display: none; }
-        .model-toggle label {
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.15em;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            color: rgba(34,211,238,0.4);
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .model-toggle input:checked + label {
-            background: var(--cyan);
-            color: #000;
-            box-shadow: var(--cyan-glow);
-            letter-spacing: 0.1em;
-        }
-
-        /* Terminal / chat area */
-        #terminal {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            position: relative;
-            z-index: 5;
-            scroll-behavior: smooth;
-        }
-        #terminal::-webkit-scrollbar { width: 3px; }
-        #terminal::-webkit-scrollbar-track { background: transparent; }
-        #terminal::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
-
-        /* Message bubbles */
-        .msg-user {
-            display: flex;
-            justify-content: flex-end;
-            animation: slideInRight 0.3s ease;
-        }
-        .msg-ai {
-            display: flex;
-            justify-content: flex-start;
-            animation: slideInLeft 0.3s ease;
-        }
-        @keyframes slideInRight { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
-        @keyframes slideInLeft  { from { opacity:0; transform: translateX(-20px); } to { opacity:1; transform: translateX(0); } }
-
-        .bubble-user {
-            max-width: 80%;
-            background: rgba(34,211,238,0.1);
-            border: 1px solid rgba(34,211,238,0.3);
-            border-radius: 16px 4px 16px 16px;
-            padding: 10px 14px;
-            font-size: 13px;
-            color: #e2e8f0;
-        }
-
-        .bubble-ai {
-            max-width: 85%;
-            background: rgba(15,23,42,0.9);
-            border: 1px solid rgba(34,211,238,0.2);
-            border-left: 2px solid var(--cyan);
-            border-radius: 4px 16px 16px 16px;
-            padding: 12px 14px;
-            font-size: 12px;
-            color: #cbd5e1;
-            position: relative;
-        }
-
-        .bubble-ai .label {
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--cyan);
-            letter-spacing: 0.2em;
-            display: block;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-
-        .bubble-ai .engine-tag {
-            font-size: 8px;
-            background: rgba(34,211,238,0.1);
-            border: 1px solid rgba(34,211,238,0.2);
-            color: rgba(34,211,238,0.6);
-            padding: 1px 6px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 8px;
-        }
-
-        /* DB result tags */
-        .db-match {
-            display: inline-block;
-            background: rgba(34,211,238,0.12);
-            border: 1px solid rgba(34,211,238,0.35);
-            color: var(--cyan);
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin: 2px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-        .db-match.category {
-            background: rgba(168,85,247,0.12);
-            border-color: rgba(168,85,247,0.35);
-            color: #c084fc;
-        }
-
-        /* Confidence bar */
-        .conf-bar-wrap {
-            margin-top: 8px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 3px;
-            height: 4px;
-            overflow: hidden;
-        }
-        .conf-bar {
-            height: 100%;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #22d3ee, #3b82f6);
-            transition: width 0.8s cubic-bezier(.4,0,.2,1);
-        }
-
-        /* Typing indicator */
-        .typing-indicator {
-            display: flex;
-            gap: 4px;
-            padding: 8px 0 4px;
-        }
-        .typing-indicator span {
-            width: 5px; height: 5px;
-            background: var(--cyan);
-            border-radius: 50%;
-            animation: bounce 1.2s ease-in-out infinite;
-        }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity:0.4; } 40% { transform: translateY(-6px); opacity:1; } }
-
-        /* Footer */
-        footer {
-            position: relative;
-            z-index: 10;
-            flex-shrink: 0;
-            padding: 10px 14px 14px;
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(34,211,238,0.1);
-        }
-
-        .stats-bar {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            padding: 0 2px 8px;
-            opacity: 0.5;
-            letter-spacing: 0.1em;
-        }
-
-        .input-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-wrap i.prompt-icon {
-            position: absolute;
-            left: 14px;
-            color: var(--cyan);
-            font-size: 11px;
-            animation: pulse 2s infinite;
-        }
-
-        #user-input {
-            width: 100%;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(34,211,238,0.25);
-            border-radius: 50px;
-            padding: 14px 56px 14px 36px;
-            color: var(--cyan);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        #user-input::placeholder { color: rgba(34,211,238,0.2); }
-        #user-input:focus {
-            border-color: var(--cyan);
-            box-shadow: 0 0 12px rgba(34,211,238,0.2);
-        }
-
-        #send-btn {
-            position: absolute;
-            right: 6px;
-            width: 42px; height: 42px;
-            background: var(--cyan);
-            border: none;
-            border-radius: 50%;
-            color: #000;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px;
-            transition: box-shadow 0.2s, transform 0.1s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #send-btn:active { transform: scale(0.92); }
-        #send-btn:hover { box-shadow: 0 0 20px rgba(34,211,238,0.7); }
-        #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .init-msg {
-            text-align: center;
-            font-size: 11px;
-            opacity: 0.35;
-            padding: 20px 0 10px;
-            letter-spacing: 0.15em;
-        }
-
-        /* DB status indicator */
-        .db-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 9px;
-        }
-        .db-dot {
-            width: 5px; height: 5px;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 6px #22c55e;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gemini AI Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080c10; --surface: #0d1117; --border: #1a2233;
+      --accent: #4f8ef7; --accent2: #a78bfa; --green: #34d399;
+      --text: #dde6f0; --muted: #4a5568;
+    }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 14px;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 5%, rgba(79,142,247,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 85% 95%, rgba(167,139,250,0.07) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+    .grain {
+      position: fixed; inset: 0; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px; pointer-events: none; z-index: 1;
+    }
+    .app {
+      position: relative; z-index: 2; width: 100%; max-width: 760px;
+      height: 100vh; display: flex; flex-direction: column; padding: 0 16px;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 26px 0 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 36px; height: 36px; border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      animation: pulse-border 4s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0 0 rgba(79,142,247,0); }
+      50% { box-shadow: 0 0 14px 2px rgba(79,142,247,0.2); }
+    }
+    .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.03em; }
+    .logo-text span { color: var(--accent); }
+    .model-badge {
+      font-size: 10px; letter-spacing: 0.1em; color: var(--muted);
+      border: 1px solid var(--border); padding: 4px 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: blink 2.5s ease-in-out infinite; }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+    .messages {
+      flex: 1; overflow-y: auto; padding: 28px 0 16px;
+      display: flex; flex-direction: column; scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 3px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); }
+    .message {
+      display: flex; gap: 14px; padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeUp 0.3s ease both;
+    }
+    .message:last-child { border-bottom: none; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .msg-avatar {
+      width: 28px; height: 28px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 10px;
+      letter-spacing: 0.05em; margin-top: 2px;
+    }
+    .message.user .msg-avatar { border: 1px solid var(--accent2); color: var(--accent2); }
+    .message.ai .msg-avatar { border: 1px solid var(--accent); color: var(--accent); }
+    .msg-content { flex: 1; min-width: 0; }
+    .msg-label {
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .message.user .msg-label { color: var(--accent2); }
+    .message.ai .msg-label { color: var(--accent); }
+    .msg-time { color: var(--muted); font-size: 10px; text-transform: none; letter-spacing: 0.04em; }
+    .msg-text { color: var(--text); line-height: 1.78; white-space: pre-wrap; word-break: break-word; }
+    .msg-text strong { color: #fff; font-weight: 600; }
+    .msg-text code { background: #1a2233; padding: 1px 6px; border-radius: 2px; font-size: 12.5px; color: var(--green); }
+    .msg-text pre { background: #0d1117; border: 1px solid var(--border); padding: 14px 16px; margin: 10px 0; overflow-x: auto; }
+    .msg-text pre code { background: none; padding: 0; color: #a5d6a7; }
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; text-align: center; padding: 40px 0;
+    }
+    .empty-icon { width: 54px; height: 54px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+    .empty-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: rgba(221,230,240,0.45); }
+    .empty-sub { font-size: 12px; max-width: 280px; line-height: 1.7; color: var(--muted); }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+    .sugg-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'DM Mono', monospace;
+      font-size: 11px; padding: 7px 14px; cursor: pointer; transition: all 0.2s;
+    }
+    .sugg-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.05); }
+    .input-area { padding: 14px 0 26px; flex-shrink: 0; border-top: 1px solid var(--border); }
+    .error { color: #f87171; font-size: 12px; padding: 9px 14px; border: 1px solid rgba(248,113,113,0.3); background: rgba(248,113,113,0.05); margin-bottom: 10px; }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .input-wrap { flex: 1; border: 1px solid var(--border); background: var(--surface); transition: border-color 0.2s; }
+    .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(79,142,247,0.1); }
+    textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: 'DM Mono', monospace; font-size: 13.5px;
+      line-height: 1.6; padding: 13px 16px; resize: none; min-height: 50px; max-height: 180px; display: block;
+    }
+    textarea::placeholder { color: var(--muted); }
+    .send-btn {
+      width: 50px; height: 50px; background: var(--accent); border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .send-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .send-btn svg { color: #080c10; }
+    .typing-dots { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
+    .typing-dots span { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s ease-in-out infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100% { transform:translateY(0); opacity:0.35; } 30% { transform:translateY(-5px); opacity:1; } }
+    .hint { margin-top: 9px; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-align: center; }
+    .hint kbd { border: 1px solid var(--border); padding: 1px 5px; font-family: 'DM Mono', monospace; }
+  </style>
 </head>
 <body>
-    <div class="scanline"></div>
-
-    <!-- HEADER -->
-    <header class="glass p-3 flex justify-between items-center">
-        <div>
-            <h1 style="font-family:'Orbitron';font-size:16px;font-weight:900;letter-spacing:-0.02em;" class="text-cyan-400">CORE_SYSTEM <span style="color:rgba(34,211,238,0.5)">v2.0</span></h1>
-            <p style="font-size:9px;letter-spacing:0.25em;" class="text-cyan-700 font-bold uppercase mt-0.5">Status: Online / Encrypted</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="db-indicator">
-                <div class="db-dot" id="db-dot"></div>
-                <span id="db-status" class="text-cyan-700">DB LOADING...</span>
-            </div>
-            <div class="flex gap-1.5">
-                <div class="status-dot bg-cyan-500" style="animation-delay:0s"></div>
-                <div class="status-dot bg-blue-500" style="animation-delay:0.4s"></div>
-                <div class="status-dot" style="background:#a855f7;animation-delay:0.8s"></div>
-            </div>
-        </div>
-    </header>
-
-    <!-- MODEL SELECTOR -->
-    <div class="model-bar">
-        <div class="model-toggle">
-            <input type="radio" id="p119" name="engine" checked>
-            <label for="p119">PATOK 1.19 &nbsp;[BÁSICA]</label>
-            <input type="radio" id="p23" name="engine">
-            <label for="p23">PATOK 23 GP &nbsp;[AVANZADA]</label>
-        </div>
+<div class="grain"></div>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <div class="logo-text">GEMINI<span>.</span>CHAT</div>
     </div>
+    <div class="model-badge">
+      <div class="badge-dot"></div>
+      GEMINI 2.0 FLASH
+    </div>
+  </header>
 
-    <!-- TERMINAL / CHAT -->
-    <main id="terminal">
-        <div class="init-msg">--- INICIO DE TRANSMISIÓN ---</div>
-        <div class="msg-ai" id="welcome-msg">
-            <div class="bubble-ai">
-                <span class="label">CORE_SYSTEM &gt; ONLINE</span>
-                <span class="engine-tag">IndexedDB: 100 registros cargados</span>
-                <p>Sistema activo. Base de datos local sincronizada. Escribe cualquier palabra o consulta y analizaré contra mi base de conocimiento interna.</p>
-            </div>
-        </div>
-    </main>
+  <div class="messages" id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+        </svg>
+      </div>
+      <div class="empty-title">¿En qué te ayudo hoy?</div>
+      <div class="empty-sub">Powered by Google Gemini 2.0 Flash</div>
+      <div class="suggestions">
+        <button class="sugg-btn" onclick="suggest('¿Qué puedes hacer?')">¿Qué puedes hacer?</button>
+        <button class="sugg-btn" onclick="suggest('Explícame la inteligencia artificial')">¿Qué es la IA?</button>
+        <button class="sugg-btn" onclick="suggest('Escribe un poema corto sobre tecnología')">Poema</button>
+        <button class="sugg-btn" onclick="suggest('Dame ideas para un proyecto web creativo')">Ideas web</button>
+      </div>
+    </div>
+  </div>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="stats-bar">
-            <span>CPU: <span id="cpu-val">--</span>%</span>
-            <span>RAM: <span id="ram-val">--</span>MB</span>
-            <span class="db-indicator"><span class="db-dot" style="width:4px;height:4px"></span> DB: INDEXED_LOCAL</span>
-            <span id="query-count">QUERIES: 0</span>
-        </div>
-        <div class="input-wrap">
-            <i class="fas fa-chevron-right prompt-icon"></i>
-            <input id="user-input" type="text" placeholder="Escribir comando..." autocomplete="off" autocorrect="off" spellcheck="false">
-            <button id="send-btn" onclick="ejecutar()">
-                <i class="fas fa-bolt"></i>
-            </button>
-        </div>
-    </footer>
+  <div class="input-area">
+    <div id="errorBox" class="error" style="display:none"></div>
+    <div class="input-row">
+      <div class="input-wrap">
+        <textarea id="input" placeholder="Escribe tu mensaje..." rows="1"
+          onkeydown="handleKey(event)" oninput="resize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="send()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="hint"><kbd>Enter</kbd> enviar · <kbd>Shift+Enter</kbd> nueva línea</div>
+  </div>
+</div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  DATABASE — 100 palabras con categorías y metadatos
-// ═══════════════════════════════════════════════════════
-const DATABASE = [
-  // Naturaleza
-  {id:1, palabra:"arbol",      categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Planta leñosa de gran tamaño con tronco y ramas.", relacionados:["bosque","hoja","tronco","semilla","fruto"]},
-  {id:2, palabra:"bosque",     categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Extensión de terreno poblada de árboles.", relacionados:["arbol","selva","animal","hoja"]},
-  {id:3, palabra:"selva",      categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Bosque tropical denso con alta biodiversidad.", relacionados:["bosque","rio","animal","lluvia"]},
-  {id:4, palabra:"rio",        categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Corriente de agua que fluye hacia el mar o un lago.", relacionados:["lago","mar","pez","puente"]},
-  {id:5, palabra:"lago",       categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Masa de agua rodeada de tierra.", relacionados:["rio","pez","isla","delfin"]},
-  {id:6, palabra:"mar",        categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Gran extensión de agua salada.", relacionados:["oceano","isla","barco","tiburon"]},
-  {id:7, palabra:"oceano",     categoria:"naturaleza",  subcategoria:"agua",      descripcion:"Masa de agua salada que cubre la mayor parte de la Tierra.", relacionados:["mar","ballena","delfin","isla"]},
-  {id:8, palabra:"montaña",    categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Elevación natural del terreno de gran altura.", relacionados:["volcan","valle","nieve","hielo"]},
-  {id:9, palabra:"volcan",     categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Abertura en la corteza terrestre que emite lava.", relacionados:["montaña","calor","tormenta"]},
-  {id:10,palabra:"isla",       categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Porción de tierra rodeada de agua.", relacionados:["mar","oceano","barco","palmera"]},
-  {id:11,palabra:"desierto",   categoria:"naturaleza",  subcategoria:"ecosistema",descripcion:"Región árida con escasas precipitaciones.", relacionados:["calor","arena","viento","camello"]},
-  {id:12,palabra:"valle",      categoria:"naturaleza",  subcategoria:"relieve",   descripcion:"Depresión alargada entre montañas.", relacionados:["montaña","rio","campo"]},
-  {id:13,palabra:"campo",      categoria:"naturaleza",  subcategoria:"terreno",   descripcion:"Extensión de tierra llana y abierta.", relacionados:["flor","arbol","animal","semilla"]},
-  {id:14,palabra:"flor",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Órgano reproductor de las plantas con pétalos.", relacionados:["arbol","hoja","semilla","fruto"]},
-  {id:15,palabra:"hoja",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte de la planta que realiza la fotosíntesis.", relacionados:["arbol","tronco","raiz"]},
-  {id:16,palabra:"raiz",       categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte subterránea de la planta que absorbe nutrientes.", relacionados:["arbol","tronco","hoja","semilla"]},
-  {id:17,palabra:"tronco",     categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte principal del árbol que sostiene las ramas.", relacionados:["arbol","hoja","raiz"]},
-  {id:18,palabra:"semilla",    categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Estructura que contiene el embrión de una nueva planta.", relacionados:["arbol","fruto","raiz","campo"]},
-  {id:19,palabra:"fruto",      categoria:"naturaleza",  subcategoria:"flora",     descripcion:"Parte de la planta que contiene y protege las semillas.", relacionados:["arbol","semilla","flor"]},
-  // Clima
-  {id:20,palabra:"nube",       categoria:"clima",       subcategoria:"atmosfera", descripcion:"Masa visible de vapor de agua en la atmósfera.", relacionados:["lluvia","tormenta","viento","cielo"]},
-  {id:21,palabra:"lluvia",     categoria:"clima",       subcategoria:"precipitacion",descripcion:"Agua que cae de las nubes en forma de gotas.", relacionados:["nube","tormenta","rio","lago"]},
-  {id:22,palabra:"tormenta",   categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Perturbación atmosférica con lluvia intensa y viento.", relacionados:["lluvia","relampago","trueno","viento"]},
-  {id:23,palabra:"viento",     categoria:"clima",       subcategoria:"atmosfera", descripcion:"Movimiento del aire en la atmósfera.", relacionados:["tormenta","nube","huracan"]},
-  {id:24,palabra:"huracan",    categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Tormenta tropical de gran intensidad con vientos violentos.", relacionados:["viento","tormenta","lluvia","mar"]},
-  {id:25,palabra:"relampago",  categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Descarga eléctrica durante una tormenta.", relacionados:["tormenta","trueno","nube"]},
-  {id:26,palabra:"trueno",     categoria:"clima",       subcategoria:"fenomeno",  descripcion:"Sonido producido por una descarga eléctrica atmosférica.", relacionados:["relampago","tormenta","nube"]},
-  {id:27,palabra:"nieve",      categoria:"clima",       subcategoria:"precipitacion",descripcion:"Agua congelada que cae en forma de copos blancos.", relacionados:["hielo","frio","montaña","nube"]},
-  {id:28,palabra:"hielo",      categoria:"clima",       subcategoria:"estado",    descripcion:"Agua en estado sólido a baja temperatura.", relacionados:["nieve","frio","agua","lago"]},
-  {id:29,palabra:"calor",      categoria:"clima",       subcategoria:"temperatura",descripcion:"Sensación o condición de alta temperatura.", relacionados:["desierto","sol","verano","frio"]},
-  {id:30,palabra:"frio",       categoria:"clima",       subcategoria:"temperatura",descripcion:"Sensación o condición de baja temperatura.", relacionados:["hielo","nieve","invierno","calor"]},
-  // Animales
-  {id:31,palabra:"animal",     categoria:"fauna",       subcategoria:"general",   descripcion:"Ser vivo con capacidad de movimiento y sensación.", relacionados:["perro","gato","pajaro","pez"]},
-  {id:32,palabra:"perro",      categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Animal doméstico, el mejor amigo del humano.", relacionados:["gato","lobo","animal","aliado"]},
-  {id:33,palabra:"gato",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Felino doméstico, independiente y ágil.", relacionados:["perro","tigre","leon","animal"]},
-  {id:34,palabra:"leon",       categoria:"fauna",       subcategoria:"felino",    descripcion:"Gran felino, rey de la sabana africana.", relacionados:["tigre","selva","animal","enemigo"]},
-  {id:35,palabra:"tigre",      categoria:"fauna",       subcategoria:"felino",    descripcion:"Gran felino rayado, depredador poderoso.", relacionados:["leon","selva","animal","gato"]},
-  {id:36,palabra:"elefante",   categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Mamífero más grande en tierra, con trompa.", relacionados:["selva","animal","jirafa"]},
-  {id:37,palabra:"jirafa",     categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Mamífero más alto del mundo, cuello largo.", relacionados:["elefante","animal","campo"]},
-  {id:38,palabra:"mono",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Primate ágil que vive en árboles de la selva.", relacionados:["selva","arbol","animal"]},
-  {id:39,palabra:"conejo",     categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Pequeño mamífero de orejas largas, veloz.", relacionados:["campo","animal","lobo"]},
-  {id:40,palabra:"lobo",       categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Cánido salvaje que vive en manadas.", relacionados:["perro","zorro","bosque","animal"]},
-  {id:41,palabra:"oso",        categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Gran mamífero omnívoro de las montañas y bosques.", relacionados:["bosque","montaña","animal"]},
-  {id:42,palabra:"zorro",      categoria:"fauna",       subcategoria:"mamifero",  descripcion:"Cánido astuto de hocico alargado.", relacionados:["lobo","campo","animal"]},
-  {id:43,palabra:"pajaro",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Animal vertebrado con alas y plumas.", relacionados:["aguila","halcon","nube","arbol"]},
-  {id:44,palabra:"aguila",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Ave rapaz de gran tamaño y vuelo majestuoso.", relacionados:["halcon","pajaro","montaña","viento"]},
-  {id:45,palabra:"halcon",     categoria:"fauna",       subcategoria:"ave",       descripcion:"Ave rapaz veloz, usada en cetrería.", relacionados:["aguila","pajaro","viento"]},
-  {id:46,palabra:"pez",        categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Animal vertebrado acuático con aletas.", relacionados:["tiburon","delfin","rio","oceano"]},
-  {id:47,palabra:"tiburon",    categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Pez cartilaginoso depredador del océano.", relacionados:["pez","oceano","mar","ballena"]},
-  {id:48,palabra:"ballena",    categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Mamífero marino más grande del mundo.", relacionados:["oceano","delfin","pez","mar"]},
-  {id:49,palabra:"delfin",     categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Mamífero marino inteligente y social.", relacionados:["ballena","pez","oceano","lago"]},
-  {id:50,palabra:"pulpo",      categoria:"fauna",       subcategoria:"acuatico",  descripcion:"Molusco marino con ocho tentáculos.", relacionados:["oceano","pez","mar","tiburon"]},
-  // Hogar / Objetos
-  {id:51,palabra:"mesa",       categoria:"hogar",       subcategoria:"mueble",    descripcion:"Mueble con superficie plana sobre patas.", relacionados:["silla","cocina","lampara","documento"]},
-  {id:52,palabra:"silla",      categoria:"hogar",       subcategoria:"mueble",    descripcion:"Asiento con respaldo para una persona.", relacionados:["mesa","piso","hogar"]},
-  {id:53,palabra:"puerta",     categoria:"hogar",       subcategoria:"estructura",descripcion:"Panel que cierra o abre el acceso a un espacio.", relacionados:["ventana","techo","pared","piso"]},
-  {id:54,palabra:"ventana",    categoria:"hogar",       subcategoria:"estructura",descripcion:"Abertura en una pared que permite el paso de luz y aire.", relacionados:["puerta","pared","luz","viento"]},
-  {id:55,palabra:"cocina",     categoria:"hogar",       subcategoria:"habitacion",descripcion:"Espacio donde se preparan los alimentos.", relacionados:["mesa","silla","lampara"]},
-  {id:56,palabra:"baño",       categoria:"hogar",       subcategoria:"habitacion",descripcion:"Espacio con instalaciones sanitarias.", relacionados:["agua","piso","pared"]},
-  {id:57,palabra:"techo",      categoria:"hogar",       subcategoria:"estructura",descripcion:"Parte superior que cubre un edificio.", relacionados:["pared","piso","puerta"]},
-  {id:58,palabra:"piso",       categoria:"hogar",       subcategoria:"estructura",descripcion:"Superficie sobre la que se camina en un espacio.", relacionados:["techo","pared","silla"]},
-  {id:59,palabra:"pared",      categoria:"hogar",       subcategoria:"estructura",descripcion:"Estructura vertical que divide o delimita espacios.", relacionados:["puerta","ventana","techo","piso"]},
-  {id:60,palabra:"lampara",    categoria:"hogar",       subcategoria:"electrodomestico",descripcion:"Dispositivo que produce luz artificial.", relacionados:["mesa","cable","bateria","piso"]},
-  // Tecnología
-  {id:61,palabra:"telefono",   categoria:"tecnologia",  subcategoria:"comunicacion",descripcion:"Dispositivo para comunicación a distancia.", relacionados:["pantalla","microfono","camara","bateria"]},
-  {id:62,palabra:"pantalla",   categoria:"tecnologia",  subcategoria:"display",   descripcion:"Superficie que muestra imágenes o texto digital.", relacionados:["telefono","teclado","video","imagen"]},
-  {id:63,palabra:"teclado",    categoria:"tecnologia",  subcategoria:"entrada",   descripcion:"Dispositivo de entrada con teclas alfanuméricas.", relacionados:["raton","pantalla","documento"]},
-  {id:64,palabra:"raton",      categoria:"tecnologia",  subcategoria:"entrada",   descripcion:"Dispositivo de señalización para interfaces gráficas.", relacionados:["teclado","pantalla","carpeta"]},
-  {id:65,palabra:"camara",     categoria:"tecnologia",  subcategoria:"optica",    descripcion:"Dispositivo para capturar fotografías o video.", relacionados:["telefono","imagen","video","memoria"]},
-  {id:66,palabra:"microfono",  categoria:"tecnologia",  subcategoria:"audio",     descripcion:"Transductor que convierte sonido en señal eléctrica.", relacionados:["audio","musica","telefono"]},
-  {id:67,palabra:"bateria",    categoria:"tecnologia",  subcategoria:"energia",   descripcion:"Dispositivo que almacena energía eléctrica.", relacionados:["cargador","cable","telefono","lampara"]},
-  {id:68,palabra:"cable",      categoria:"tecnologia",  subcategoria:"conexion",  descripcion:"Conductor eléctrico recubierto para transmisión.", relacionados:["cargador","bateria","memoria"]},
-  {id:69,palabra:"cargador",   categoria:"tecnologia",  subcategoria:"energia",   descripcion:"Dispositivo para reponer la carga de la batería.", relacionados:["cable","bateria","telefono"]},
-  {id:70,palabra:"memoria",    categoria:"tecnologia",  subcategoria:"almacenamiento",descripcion:"Componente que almacena datos digitales.", relacionados:["archivo","carpeta","documento","imagen"]},
-  // Digital / Datos
-  {id:71,palabra:"archivo",    categoria:"digital",     subcategoria:"dato",      descripcion:"Unidad de almacenamiento de información digital.", relacionados:["carpeta","documento","memoria","imagen"]},
-  {id:72,palabra:"carpeta",    categoria:"digital",     subcategoria:"organizacion",descripcion:"Contenedor virtual para organizar archivos.", relacionados:["archivo","documento","memoria"]},
-  {id:73,palabra:"documento",  categoria:"digital",     subcategoria:"contenido", descripcion:"Archivo que contiene texto o información estructurada.", relacionados:["archivo","imagen","audio","teclado"]},
-  {id:74,palabra:"imagen",     categoria:"digital",     subcategoria:"multimedia",descripcion:"Representación visual en formato digital.", relacionados:["camara","video","documento","pantalla"]},
-  {id:75,palabra:"video",      categoria:"digital",     subcategoria:"multimedia",descripcion:"Secuencia de imágenes en movimiento.", relacionados:["imagen","audio","pelicula","camara"]},
-  {id:76,palabra:"audio",      categoria:"digital",     subcategoria:"multimedia",descripcion:"Contenido sonoro en formato digital.", relacionados:["musica","microfono","video","documento"]},
-  {id:77,palabra:"musica",     categoria:"digital",     subcategoria:"arte",      descripcion:"Arte de organizar sonidos en el tiempo.", relacionados:["audio","microfono","video","pelicula"]},
-  {id:78,palabra:"pelicula",   categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Obra cinematográfica de larga duración.", relacionados:["video","musica","serie","historia"]},
-  {id:79,palabra:"serie",      categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Obra audiovisual dividida en episodios.", relacionados:["pelicula","video","historia","personaje"]},
-  {id:80,palabra:"juego",      categoria:"digital",     subcategoria:"entretenimiento",descripcion:"Actividad lúdica con reglas y objetivos.", relacionados:["nivel","personaje","mision","victoria"]},
-  // Videojuegos / Narrativa
-  {id:81,palabra:"nivel",      categoria:"juego",       subcategoria:"mecanica",  descripcion:"Etapa o fase dentro de un videojuego.", relacionados:["juego","mision","personaje","enemigo"]},
-  {id:82,palabra:"personaje",  categoria:"juego",       subcategoria:"narrativa", descripcion:"Figura protagonista de una historia o juego.", relacionados:["historia","nivel","aliado","enemigo"]},
-  {id:83,palabra:"historia",   categoria:"narrativa",   subcategoria:"contenido", descripcion:"Relato de eventos reales o ficticios.", relacionados:["aventura","personaje","pelicula","libro"]},
-  {id:84,palabra:"aventura",   categoria:"narrativa",   subcategoria:"genero",    descripcion:"Género de experiencias emocionantes y peligrosas.", relacionados:["historia","mision","viaje","personaje"]},
-  {id:85,palabra:"mision",     categoria:"juego",       subcategoria:"objetivo",  descripcion:"Tarea o misión asignada con objetivos definidos.", relacionados:["nivel","aventura","aliado","enemigo"]},
-  {id:86,palabra:"enemigo",    categoria:"juego",       subcategoria:"antagonista",descripcion:"Personaje que se opone al protagonista.", relacionados:["aliado","mision","nivel","victoria"]},
-  {id:87,palabra:"aliado",     categoria:"juego",       subcategoria:"personaje", descripcion:"Compañero que colabora en una misión o batalla.", relacionados:["enemigo","equipo","mision","personaje"]},
-  {id:88,palabra:"equipo",     categoria:"juego",       subcategoria:"grupo",     descripcion:"Conjunto de personas que trabajan juntas.", relacionados:["aliado","mision","victoria","historia"]},
-  {id:89,palabra:"victoria",   categoria:"juego",       subcategoria:"resultado", descripcion:"Resultado exitoso en una competencia o batalla.", relacionados:["derrota","mision","equipo","nivel"]},
-  {id:90,palabra:"derrota",    categoria:"juego",       subcategoria:"resultado", descripcion:"Resultado de perder en una competencia o batalla.", relacionados:["victoria","enemigo","nivel","historia"]},
-  // Transporte
-  {id:91,palabra:"viaje",      categoria:"transporte",  subcategoria:"movimiento",descripcion:"Desplazamiento de un lugar a otro.", relacionados:["avion","barco","tren","auto","mapa"]},
-  {id:92,palabra:"avion",      categoria:"transporte",  subcategoria:"aereo",     descripcion:"Vehículo que vuela mediante motores y alas.", relacionados:["viaje","nube","mapa","aeropuerto"]},
-  {id:93,palabra:"tren",       categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo sobre rieles que transporta pasajeros.", relacionados:["viaje","carretera","tunel","mapa"]},
-  {id:94,palabra:"barco",      categoria:"transporte",  subcategoria:"maritimo",  descripcion:"Embarcación de gran tamaño para navegar.", relacionados:["viaje","mar","oceano","isla"]},
-  {id:95,palabra:"auto",       categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo motorizado de cuatro ruedas.", relacionados:["viaje","carretera","puente","tren"]},
-  {id:96,palabra:"bicicleta",  categoria:"transporte",  subcategoria:"terrestre", descripcion:"Vehículo de dos ruedas propulsado por pedales.", relacionados:["carretera","viaje","campo","puente"]},
-  {id:97,palabra:"carretera",  categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Vía de comunicación terrestre pavimentada.", relacionados:["auto","puente","tunel","mapa"]},
-  {id:98,palabra:"puente",     categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Estructura para cruzar ríos u obstáculos.", relacionados:["rio","carretera","auto","tunel"]},
-  {id:99,palabra:"tunel",      categoria:"transporte",  subcategoria:"infraestructura",descripcion:"Paso subterráneo excavado en montañas o tierra.", relacionados:["montaña","carretera","tren","puente"]},
-  {id:100,palabra:"mapa",      categoria:"transporte",  subcategoria:"navegacion", descripcion:"Representación gráfica de un territorio.", relacionados:["viaje","carretera","isla","aventura"]}
-];
+  const API_KEY = 'AIzaSyAKowdAGu1nmgAveGsXcTCNeNETkQ6AjdY';
+  const MODEL = 'gemini-2.0-flash';
+  let history = [];
+  let busy = false;
 
-// ═══════════════════════════════════════════════════════
-//  IndexedDB — Inicialización
-// ═══════════════════════════════════════════════════════
-let db;
-let queryCount = 0;
+  function suggest(text) {
+    document.getElementById('input').value = text;
+    resize(document.getElementById('input'));
+    send();
+  }
 
-function initDB() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open("CORE_SYSTEM_DB", 1);
+  function resize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+  }
 
-        req.onupgradeneeded = (e) => {
-            const database = e.target.result;
-            if (!database.objectStoreNames.contains("palabras")) {
-                const store = database.createObjectStore("palabras", { keyPath: "id" });
-                store.createIndex("palabra", "palabra", { unique: true });
-                store.createIndex("categoria", "categoria", { unique: false });
-                store.createIndex("subcategoria", "subcategoria", { unique: false });
-            }
-        };
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  }
 
-        req.onsuccess = async (e) => {
-            db = e.target.result;
-            // Poblar si vacío
-            const count = await countRecords();
-            if (count === 0) await populateDB();
-            updateDBStatus(true);
-            resolve();
-        };
+  function showError(msg) {
+    const el = document.getElementById('errorBox');
+    el.style.display = msg ? 'block' : 'none';
+    el.textContent = msg;
+  }
 
-        req.onerror = () => {
-            updateDBStatus(false);
-            reject(req.error);
-        };
-    });
-}
+  function now() {
+    return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  }
 
-function countRecords() {
-    return new Promise((resolve) => {
-        const tx = db.transaction("palabras", "readonly");
-        const store = tx.objectStore("palabras");
-        const req = store.count();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(0);
-    });
-}
+  function renderMarkdown(text) {
+    return text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
 
-function populateDB() {
-    return new Promise((resolve) => {
-        const tx = db.transaction("palabras", "readwrite");
-        const store = tx.objectStore("palabras");
-        DATABASE.forEach(item => store.put(item));
-        tx.oncomplete = resolve;
-    });
-}
-
-function updateDBStatus(ok) {
-    document.getElementById("db-status").textContent = ok ? `DB: ${DATABASE.length} RECORDS` : "DB: ERROR";
-    const dot = document.getElementById("db-dot");
-    dot.style.background = ok ? "#22c55e" : "#ef4444";
-    dot.style.boxShadow = ok ? "0 0 6px #22c55e" : "0 0 6px #ef4444";
-}
-
-// ═══════════════════════════════════════════════════════
-//  Búsqueda en DB — fuzzy / tokens
-// ═══════════════════════════════════════════════════════
-function searchDB(query) {
-    return new Promise((resolve) => {
-        if (!db) { resolve([]); return; }
-        const tx = db.transaction("palabras", "readonly");
-        const store = tx.objectStore("palabras");
-        const req = store.getAll();
-        req.onsuccess = () => {
-            const all = req.result;
-            const tokens = normalize(query).split(/\s+/).filter(Boolean);
-            const results = [];
-            for (const item of all) {
-                let score = 0;
-                const pNorm = normalize(item.palabra);
-                const catNorm = normalize(item.categoria);
-                const descNorm = normalize(item.descripcion);
-                const relNorm = item.relacionados.map(r => normalize(r)).join(" ");
-
-                for (const t of tokens) {
-                    if (pNorm === t) score += 100;
-                    else if (pNorm.startsWith(t)) score += 60;
-                    else if (pNorm.includes(t)) score += 40;
-                    if (catNorm.includes(t)) score += 20;
-                    if (descNorm.includes(t)) score += 10;
-                    if (relNorm.includes(t)) score += 5;
-                }
-                if (score > 0) results.push({ ...item, score });
-            }
-            results.sort((a, b) => b.score - a.score);
-            resolve(results);
-        };
-        req.onerror = () => resolve([]);
-    });
-}
-
-function normalize(str) {
-    return str.toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9\s]/g, "");
-}
-
-// ═══════════════════════════════════════════════════════
-//  Claude API
-// ═══════════════════════════════════════════════════════
-async function callClaude(userMsg, dbContext, engine) {
-    const isAdvanced = engine === "p23";
-    const systemPrompt = isAdvanced
-        ? `Eres PATOK 23 GP, un sistema de IA avanzado con acceso a una base de datos local. Analizas la consulta del usuario y los resultados de búsqueda de la base de datos para dar una respuesta profunda, detallada y precisa. Tu tono es técnico, preciso y cyberpunk. Responde en español. Usa los datos de la DB para enriquecer tu respuesta. Sé analítico.`
-        : `Eres PATOK 1.19, un sistema de IA básico. Analizas la consulta y los resultados de la base de datos para dar una respuesta clara y directa. Tu tono es directo y conciso. Responde en español. Usa los datos de la DB cuando sean relevantes.`;
-
-    const dbInfo = dbContext.length > 0
-        ? `\n\nRESULTADOS DE BASE DE DATOS LOCAL (${dbContext.length} coincidencias):\n` +
-          dbContext.slice(0, 5).map(r =>
-              `- [${r.palabra.toUpperCase()}] cat:${r.categoria}/${r.subcategoria} | score:${r.score} | desc:"${r.descripcion}" | relacionados:[${r.relacionados.join(", ")}]`
-          ).join("\n")
-        : "\n\nBase de datos: Sin coincidencias directas.";
-
-    const prompt = `Consulta del usuario: "${userMsg}"${dbInfo}\n\nAnaliza la consulta, los datos de la DB y proporciona una respuesta útil. Si hay matches en DB, explica las conexiones. Si no hay matches, responde basándote en tu conocimiento general.`;
-
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            system: systemPrompt,
-            messages: [{ role: "user", content: prompt }]
-        })
-    });
-
-    const data = await resp.json();
-    return data.content?.[0]?.text || "Error al procesar respuesta.";
-}
-
-// ═══════════════════════════════════════════════════════
-//  UI helpers
-// ═══════════════════════════════════════════════════════
-function appendMsg(role, content) {
-    const terminal = document.getElementById("terminal");
-    const wrap = document.createElement("div");
-    wrap.className = role === "user" ? "msg-user" : "msg-ai";
-    wrap.innerHTML = content;
-    terminal.appendChild(wrap);
-    terminal.scrollTop = terminal.scrollHeight;
-    return wrap;
-}
-
-function userBubble(text) {
-    return `<div class="bubble-user">${escapeHtml(text)}</div>`;
-}
-
-function aiBubble(engineLabel, dbResults, aiText) {
-    const tags = dbResults.slice(0, 8).map(r =>
-        `<span class="db-match">${r.palabra}</span>`
-    ).join("");
-
-    const cats = [...new Set(dbResults.slice(0, 5).map(r => r.categoria))].map(c =>
-        `<span class="db-match category">${c}</span>`
-    ).join("");
-
-    const topScore = dbResults[0]?.score || 0;
-    const confidence = Math.min(100, Math.round((topScore / 100) * 80 + (dbResults.length > 0 ? 20 : 0)));
-
-    const dbSection = dbResults.length > 0
-        ? `<div class="my-2">
-            <div style="font-size:9px;color:rgba(34,211,238,0.5);margin-bottom:4px;letter-spacing:0.15em;">DB MATCHES [${dbResults.length}]:</div>
-            <div>${tags}</div>
-            ${cats ? `<div style="margin-top:4px">${cats}</div>` : ""}
-           </div>`
-        : `<div style="font-size:10px;opacity:0.4;margin:6px 0;">DB: sin coincidencias directas</div>`;
-
-    return `<div class="bubble-ai">
-        <span class="label">ANALYZING RESPONSE...</span>
-        <span class="engine-tag">${engineLabel}</span>
-        ${dbSection}
-        <p style="line-height:1.6;margin-top:8px;">${escapeHtml(aiText).replace(/\n/g,"<br>")}</p>
-        <div style="margin-top:10px;">
-            <div style="display:flex;justify-content:space-between;font-size:9px;opacity:0.5;margin-bottom:3px;">
-                <span>CONFIDENCE</span><span>${confidence}%</span>
-            </div>
-            <div class="conf-bar-wrap"><div class="conf-bar" style="width:${confidence}%"></div></div>
+  function addMsg(role, content, typing = false) {
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+    const wrap = document.getElementById('messages');
+    const el = document.createElement('div');
+    el.className = `message ${role}`;
+    if (typing) el.id = 'typing';
+    el.innerHTML = `
+      <div class="msg-avatar">${role === 'user' ? 'YOU' : 'AI'}</div>
+      <div class="msg-content">
+        <div class="msg-label">
+          ${role === 'user' ? 'TÚ' : 'GEMINI'}
+          <span class="msg-time">${now()}</span>
         </div>
-    </div>`;
-}
+        <div class="msg-text">${typing
+          ? '<div class="typing-dots"><span></span><span></span><span></span></div>'
+          : renderMarkdown(content)
+        }</div>
+      </div>`;
+    wrap.appendChild(el);
+    wrap.scrollTop = wrap.scrollHeight;
+    return el;
+  }
 
-function typingBubble() {
-    const wrap = document.createElement("div");
-    wrap.className = "msg-ai";
-    wrap.innerHTML = `<div class="bubble-ai">
-        <span class="label" style="margin-bottom:0">PROCESANDO...</span>
-        <div class="typing-indicator"><span></span><span></span><span></span></div>
-    </div>`;
-    document.getElementById("terminal").appendChild(wrap);
-    document.getElementById("terminal").scrollTop = 9999;
-    return wrap;
-}
-
-function escapeHtml(str) {
-    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-// ═══════════════════════════════════════════════════════
-//  Estadísticas fake animadas
-// ═══════════════════════════════════════════════════════
-setInterval(() => {
-    document.getElementById("cpu-val").textContent = (30 + Math.floor(Math.random() * 40));
-    document.getElementById("ram-val").textContent = (180 + Math.floor(Math.random() * 60));
-}, 2000);
-
-// ═══════════════════════════════════════════════════════
-//  Main ejecutar
-// ═══════════════════════════════════════════════════════
-async function ejecutar() {
-    const input = document.getElementById("user-input");
-    const btn = document.getElementById("send-btn");
+  async function send() {
+    if (busy) return;
+    const input = document.getElementById('input');
     const text = input.value.trim();
     if (!text) return;
 
-    const engine = document.querySelector('input[name="engine"]:checked').id;
-    const engineLabel = engine === "p23" ? "PATOK 23 GP" : "PATOK 1.19";
+    busy = true;
+    document.getElementById('sendBtn').disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+    showError('');
 
-    input.value = "";
-    btn.disabled = true;
+    history.push({ role: 'user', parts: [{ text }] });
+    addMsg('user', text);
+    const typingEl = addMsg('ai', '', true);
 
-    // Mostrar mensaje del usuario
-    appendMsg("user", userBubble(text));
-
-    // Indicador de escritura
-    const typingWrap = typingBubble();
-
-    // Buscar en DB
-    const dbResults = await searchDB(text);
-
-    // Llamar a Claude
-    let aiText;
     try {
-        aiText = await callClaude(text, dbResults, engine);
-    } catch (e) {
-        aiText = "Error de conexión con el núcleo de IA. Verifica la red.";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: 'Eres un asistente IA amigable y útil. Responde siempre en el idioma del usuario. Puedes usar markdown para formatear.' }] },
+          contents: history
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '(Sin respuesta)';
+      history.push({ role: 'model', parts: [{ text: reply }] });
+      typingEl.querySelector('.msg-text').innerHTML = renderMarkdown(reply);
+      typingEl.id = '';
+
+    } catch (err) {
+      typingEl.remove();
+      history.pop();
+      showError('Error: ' + err.message);
+    } finally {
+      busy = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('messages').scrollTop = 9999;
     }
-
-    // Reemplazar typing por respuesta real
-    typingWrap.remove();
-    appendMsg("ai", aiBubble(engineLabel, dbResults, aiText));
-
-    // Actualizar contador
-    queryCount++;
-    document.getElementById("query-count").textContent = `QUERIES: ${queryCount}`;
-    btn.disabled = false;
-    input.focus();
-}
-
-// Enter para enviar
-document.getElementById("user-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") ejecutar();
-});
-
-// ═══════════════════════════════════════════════════════
-//  Init
-// ═══════════════════════════════════════════════════════
-initDB().catch(() => updateDBStatus(false));
+  }
 </script>
 </body>
 </html>
