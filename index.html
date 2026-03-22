@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master-Mec Pro V9.6 | Híbrido Cloud-Local</title>
+    <title>Master-Mec Pro V9.0 | Backup & Cloud</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,417 +11,323 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
-        
         :root { --primary: #2563eb; --accent: #f59e0b; }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
         .logo-font { font-family: 'Orbitron', sans-serif; }
-        .bg-pattern {
-            background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px);
-            background-size: 24px 24px;
-        }
-
+        .bg-pattern { background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px); background-size: 24px 24px; }
         .hex-icon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
-
-        .card-neo {
-            background: white;
-            border: 1px solid rgba(255, 255, 255, 1);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .btn-main {
-            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-        }
-
+        .card-neo { background: white; border: 1px solid white; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); transition: all 0.3s ease; }
+        .btn-main { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .input-mecanic { background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 1rem; padding: 1rem; font-weight: 600; width: 100%; }
+        .input-mecanic:focus { border-color: var(--primary); outline: none; background-color: #fff; }
         
-        .spinner {
-            width: 20px; height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .input-mecanic {
-            background-color: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 1rem;
-            font-weight: 600;
-        }
-        .input-mecanic:focus {
-            border-color: var(--primary);
-            outline: none;
-            background-color: #fff;
-        }
+        /* Animación de Guardado */
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        .sync-active { animation: pulse-green 2s infinite; }
     </style>
 </head>
-<body class="bg-pattern min-h-screen pb-28">
+<body class="bg-pattern min-h-screen pb-32">
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
         import { 
-            getFirestore, collection, addDoc, updateDoc, 
-            deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp 
+            getFirestore, collection, addDoc, updateDoc, deleteDoc, 
+            doc, onSnapshot, query, orderBy, serverTimestamp, setDoc 
         } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBo2bZYaXmYAGML1YL8X3ru-mDMs4LIwU0",
             authDomain: "servidor-de-mecanic.firebaseapp.com",
             projectId: "servidor-de-mecanic",
             storageBucket: "servidor-de-mecanic.firebasestorage.app",
             messagingSenderId: "482393370095",
-            appId: "1:482393370095:web:a036033b962916c8669a1a",
-            measurementId: "G-XDEV0DP3FN"
+            appId: "1:482393370095:web:a036033b962916c8669a1a"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const colRef = collection(db, "servicios_v8");
+        const colRef = collection(db, "servicios_v9");
 
-        // Estado de la App
-        let APP_DATA = JSON.parse(localStorage.getItem('MEC_LOCAL_BACKUP')) || [];
+        let APP_DATA = JSON.parse(localStorage.getItem('MEC_MASTER_DATA')) || [];
         let CURRENT_FILTER = 'all';
 
-        const alertMsg = (title, icon = 'success') => {
+        const toast = (title, icon = 'success') => {
             Swal.fire({ title, icon, toast: true, position: 'top', showConfirmButton: false, timer: 2000 });
         };
 
-        // --- INICIO ---
+        // --- EXPORTAR TODO (BACKUP) ---
+        window.exportData = () => {
+            const dataStr = JSON.stringify(APP_DATA, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = `BACKUP_MECANIC_${new Date().toLocaleDateString()}.json`;
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            toast("Archivo de Respaldo Creado");
+        };
+
+        // --- IMPORTAR TODO (RESTAURAR) ---
+        window.importData = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.readAsText(file, 'UTF-8');
+                reader.onload = async readerEvent => {
+                    try {
+                        const content = JSON.parse(readerEvent.target.result);
+                        if(Array.isArray(content)) {
+                            Swal.fire({
+                                title: 'Restaurando...',
+                                text: 'Subiendo datos a la nube, espera un momento.',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
+
+                            // Subir cada item a Firebase
+                            for (const item of content) {
+                                const { id, ...cleanData } = item;
+                                // Re-limpiar timestamps para Firebase
+                                cleanData.updatedAt = serverTimestamp();
+                                if(id) {
+                                    await setDoc(doc(db, "servicios_v9", id), cleanData);
+                                } else {
+                                    await addDoc(colRef, cleanData);
+                                }
+                            }
+                            
+                            Swal.close();
+                            toast("¡Datos Restaurados con Éxito!");
+                        }
+                    } catch (err) {
+                        toast("Archivo inválido", "error");
+                    }
+                }
+            }
+            input.click();
+        };
+
+        // --- INICIO Y SINCRONIZACIÓN ---
         window.startApp = () => {
             document.getElementById('splash').style.display = 'none';
             document.getElementById('main-content').classList.remove('hidden');
-            // Carga inicial desde LocalStorage para velocidad inmediata
-            calculateStats();
-            renderCards();
-            // Inicia sincronización con Firebase
             syncCloud();
             lucide.createIcons();
         };
 
-        // --- SINCRONIZACIÓN NUBE -> LOCAL ---
         function syncCloud() {
             const q = query(colRef, orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
-                const cloudData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                APP_DATA = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                localStorage.setItem('MEC_MASTER_DATA', JSON.stringify(APP_DATA));
                 
-                // Actualizamos LocalStorage con lo que viene de la nube
-                APP_DATA = cloudData;
-                localStorage.setItem('MEC_LOCAL_BACKUP', JSON.stringify(APP_DATA));
+                document.getElementById('cloud-status').innerText = "Cloud Online";
+                document.getElementById('indicator').classList.add('bg-green-500', 'sync-active');
                 
-                document.getElementById('cloud-status').innerText = "Nube Sincronizada";
-                document.getElementById('cloud-indicator').classList.replace('bg-red-500', 'bg-green-500');
-                
-                calculateStats();
-                renderCards();
-            }, (error) => {
-                console.warn("Trabajando en modo Offline (LocalStorage)");
-                document.getElementById('cloud-status').innerText = "Modo Offline";
-                document.getElementById('cloud-indicator').classList.replace('bg-green-500', 'bg-red-500');
+                updateUI();
+            }, (err) => {
+                document.getElementById('cloud-status').innerText = "Modo Local";
+                document.getElementById('indicator').classList.add('bg-amber-500');
+                updateUI();
             });
         }
 
-        // --- ESTADÍSTICAS ---
-        function calculateStats() {
-            const estMoney = APP_DATA
-                .filter(i => i.status === 'pending')
-                .reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
-            
-            document.getElementById('stat-money').innerText = `$${estMoney.toLocaleString()}`;
-            document.getElementById('stat-count').innerText = APP_DATA.length;
-        }
-
-        // --- CRUD OPERACIONES ---
         window.saveRecord = async (e) => {
             e.preventDefault();
             const id = document.getElementById('f-id').value;
             const btn = e.submitter;
             btn.disabled = true;
-            btn.innerHTML = `<div class="spinner mx-auto"></div>`;
 
-            const data = {
+            const docData = {
                 client: document.getElementById('f-client').value,
                 phone: document.getElementById('f-phone').value,
                 car: document.getElementById('f-car').value,
                 plate: document.getElementById('f-plate').value.toUpperCase(),
-                km: document.getElementById('f-km').value,
                 work: document.getElementById('f-work').value,
-                past: document.getElementById('f-past').value,
                 price: parseFloat(document.getElementById('f-price').value) || 0,
                 priority: document.getElementById('f-priority').value,
                 updatedAt: serverTimestamp()
             };
 
             try {
-                if (id) {
-                    await updateDoc(doc(db, "servicios_v8", id), data);
-                    alertMsg("Actualizado en Nube y Local");
+                if(id) {
+                    await updateDoc(doc(db, "servicios_v9", id), docData);
                 } else {
-                    data.status = 'pending';
-                    data.createdAt = serverTimestamp();
-                    await addDoc(colRef, data);
-                    alertMsg("Guardado Exitosamente");
+                    docData.status = 'pending';
+                    docData.createdAt = serverTimestamp();
+                    await addDoc(colRef, docData);
                 }
                 closeModal();
-            } catch (err) {
-                // Si falla Firebase, avisamos pero el render se hará por Local eventualmente si se recarga
-                alertMsg("Error de Nube, intente luego", "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "CONFIRMAR REGISTRO";
-            }
+                toast("Guardado");
+            } catch (err) { toast("Error Nube", "error"); }
+            btn.disabled = false;
         };
 
         window.deleteRecord = async (id) => {
             const res = await Swal.fire({
-                title: '¿Eliminar Registro?',
-                text: "Se borrará de la nube y del historial local",
+                title: '¿Borrar de Nube?',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Eliminar'
+                confirmButtonText: 'Sí, borrar'
             });
-
-            if (res.isConfirmed) {
-                try {
-                    await deleteDoc(doc(db, "servicios_v8", id));
-                    alertMsg("Registro Borrado");
-                } catch(e) { alertMsg("Fallo al borrar en Nube", "error"); }
-            }
+            if(res.isConfirmed) await deleteDoc(doc(db, "servicios_v9", id));
         };
 
         window.toggleStatus = async (id, current) => {
             const next = current === 'paid' ? 'pending' : 'paid';
-            try {
-                await updateDoc(doc(db, "servicios_v8", id), { status: next });
-            } catch(e) { alertMsg("Sin conexión a Nube", "error"); }
+            await updateDoc(doc(db, "servicios_v9", id), { status: next });
         };
 
-        // --- RENDERIZADO ---
+        function updateUI() {
+            const money = APP_DATA.filter(i => i.status === 'pending').reduce((a, b) => a + (b.price || 0), 0);
+            document.getElementById('stat-money').innerText = `$${money.toLocaleString()}`;
+            document.getElementById('stat-count').innerText = APP_DATA.length;
+            renderCards();
+        }
+
         window.renderCards = () => {
-            const list = document.getElementById('card-container');
-            const search = document.getElementById('search-input').value.toLowerCase();
-            list.innerHTML = '';
+            const container = document.getElementById('cards');
+            const search = document.getElementById('search').value.toLowerCase();
+            container.innerHTML = '';
 
-            let filtered = APP_DATA.filter(i => 
-                (i.client || '').toLowerCase().includes(search) || (i.plate || '').toLowerCase().includes(search)
-            );
+            let list = APP_DATA.filter(i => (i.client||'').toLowerCase().includes(search) || (i.plate||'').toLowerCase().includes(search));
+            if(CURRENT_FILTER !== 'all') list = list.filter(i => i.status === CURRENT_FILTER);
 
-            if (CURRENT_FILTER !== 'all') filtered = filtered.filter(i => i.status === CURRENT_FILTER);
-
-            if(filtered.length === 0) {
-                list.innerHTML = `<div class="col-span-full py-10 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">No hay registros cargados</div>`;
-                return;
-            }
-
-            filtered.forEach(item => {
-                const isPaid = item.status === 'paid';
-                const el = document.createElement('div');
-                el.className = "card-neo rounded-[2.5rem] p-6 flex flex-col gap-4 relative";
-                el.innerHTML = `
-                    <div class="flex justify-between items-start">
+            list.forEach(i => {
+                const card = document.createElement('div');
+                card.className = "card-neo rounded-[2rem] p-5 border-l-4 " + (i.priority === 'Urgente' ? 'border-red-500' : 'border-blue-500');
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
                         <div>
-                            <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase mb-2 inline-block ${item.priority === 'Urgente' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}">
-                                ${item.priority}
-                            </span>
-                            <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">${item.client}</h3>
-                            <p class="text-xs font-bold text-slate-400 uppercase">${item.car} • <span class="text-blue-600 font-mono">${item.plate}</span></p>
+                            <h4 class="font-black text-slate-800 uppercase leading-none">${i.client}</h4>
+                            <p class="text-[10px] font-bold text-blue-600 mt-1">${i.car} • ${i.plate}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[8px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Presupuesto<br>Estimado</p>
-                            <p class="text-xl font-black text-slate-900">$${(item.price || 0).toLocaleString()}</p>
+                            <p class="text-[7px] font-black text-amber-500 uppercase">Presupuesto Est.</p>
+                            <p class="text-lg font-black">$${(i.price||0).toLocaleString()}</p>
                         </div>
                     </div>
-
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Trabajo Solicitado:</p>
-                        <p class="text-xs font-semibold text-slate-600 italic">"${item.work}"</p>
-                    </div>
-
-                    <div class="flex gap-2 mt-2">
-                        <button onclick="toggleStatus('${item.id}', '${item.status}')" class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-400 border border-slate-200'}">
-                            <i data-lucide="${isPaid ? 'check-circle' : 'circle'}"></i> ${isPaid ? 'Pagado' : 'Pendiente'}
+                    <div class="bg-slate-50 p-3 rounded-xl mb-4 text-[11px] font-semibold text-slate-500 italic">"${i.work}"</div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleStatus('${i.id}', '${i.status}')" class="flex-1 py-3 rounded-xl text-[9px] font-black uppercase ${i.status === 'paid' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-400'}">
+                            ${i.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
                         </button>
-                        <button onclick="editRecord('${item.id}')" class="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                        <button onclick="deleteRecord('${item.id}')" class="p-3 bg-red-50 text-red-400 rounded-xl border border-red-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="editMode('${i.id}')" class="p-3 bg-slate-100 rounded-xl"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="deleteRecord('${i.id}')" class="p-3 bg-red-50 text-red-500 rounded-xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>
                 `;
-                list.appendChild(el);
+                container.appendChild(card);
             });
             lucide.createIcons();
         };
 
-        // --- INTERFAZ AUX ---
-        window.openModal = () => {
-            document.getElementById('f-id').value = '';
-            document.getElementById('main-form').reset();
-            document.getElementById('modal-title').innerText = "Nuevo Ingreso";
-            document.getElementById('modal-overlay').classList.replace('hidden', 'flex');
-        };
-
-        window.closeModal = () => {
-            document.getElementById('modal-overlay').classList.replace('flex', 'hidden');
-        };
-
-        window.editRecord = (id) => {
+        window.editMode = (id) => {
             const i = APP_DATA.find(x => x.id === id);
-            if (!i) return;
             document.getElementById('f-id').value = i.id;
             document.getElementById('f-client').value = i.client;
             document.getElementById('f-phone').value = i.phone;
             document.getElementById('f-car').value = i.car;
             document.getElementById('f-plate').value = i.plate;
-            document.getElementById('f-km').value = i.km;
             document.getElementById('f-work').value = i.work;
-            document.getElementById('f-past').value = i.past;
             document.getElementById('f-price').value = i.price;
             document.getElementById('f-priority').value = i.priority;
-            document.getElementById('modal-title').innerText = "Editar Ficha";
-            document.getElementById('modal-overlay').classList.replace('hidden', 'flex');
+            openModal();
         };
 
-        window.setFilter = (f) => {
-            CURRENT_FILTER = f;
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                b.classList.remove('bg-blue-600', 'text-white');
-                b.classList.add('bg-white', 'text-slate-400');
-            });
-            document.getElementById('btn-' + f).classList.add('bg-blue-600', 'text-white');
-            renderCards();
-        };
+        window.openModal = () => document.getElementById('modal').classList.replace('hidden', 'flex');
+        window.closeModal = () => { document.getElementById('modal').classList.replace('flex', 'hidden'); document.getElementById('main-form').reset(); };
+        window.setFilter = (f) => { CURRENT_FILTER = f; renderCards(); };
     </script>
 
-    <div id="splash" class="fixed inset-0 z-[300] bg-slate-900 flex flex-col items-center justify-center p-8">
-        <div class="w-24 h-24 bg-blue-600 hex-icon flex items-center justify-center shadow-[0_0_60px_rgba(37,99,235,0.5)] mb-8">
-            <i data-lucide="database" class="w-12 h-12 text-white"></i>
+    <div id="splash" class="fixed inset-0 z-[300] bg-slate-900 flex flex-col items-center justify-center p-10">
+        <div class="w-20 h-20 bg-blue-600 hex-icon flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/50">
+            <i data-lucide="shield-check" class="w-10 h-10 text-white"></i>
         </div>
-        <h1 class="logo-font text-2xl text-white mb-2 uppercase tracking-tighter">MASTER-MEC</h1>
-        <p class="text-[9px] font-black text-blue-400 uppercase tracking-[0.5em] mb-12">Sincronización Híbrida v8.6</p>
-        
-        <button onclick="startApp()" class="w-full max-w-xs bg-white text-slate-900 font-black py-5 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-2xl uppercase text-xs tracking-widest">
-            ENTRAR AL SISTEMA <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
+        <h1 class="logo-font text-xl text-white tracking-widest">MASTER-MEC V9</h1>
+        <p class="text-[8px] text-blue-400 font-black uppercase mt-2 tracking-[0.4em]">Backup & Recovery System</p>
+        <button onclick="startApp()" class="mt-12 w-full max-w-xs bg-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Iniciar Sistema</button>
     </div>
 
     <div id="main-content" class="hidden">
-        <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50 p-4">
-            <div class="max-w-4xl mx-auto space-y-4">
+        <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b p-4">
+            <div class="max-w-4xl mx-auto flex flex-col gap-4">
                 <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-900 hex-icon flex items-center justify-center">
-                            <i data-lucide="wrench" class="w-5 h-5 text-blue-500"></i>
-                        </div>
-                        <div>
-                            <h2 class="logo-font text-xs leading-none">MEC-V8.6</h2>
-                            <div class="flex items-center gap-1 mt-1">
-                                <div id="cloud-indicator" class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
-                                <span id="cloud-status" class="text-[7px] font-black text-slate-400 uppercase">Conectando...</span>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <div id="indicator" class="w-2 h-2 rounded-full bg-slate-300"></div>
+                        <h2 id="cloud-status" class="text-[9px] font-black uppercase text-slate-400 tracking-widest">Conectando...</h2>
                     </div>
-                    <button onclick="openModal()" class="btn-main text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-tighter flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i> NUEVO INGRESO
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="exportData()" class="p-2 bg-slate-100 rounded-lg text-slate-600" title="Respaldar todo">
+                            <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="importData()" class="p-2 bg-slate-100 rounded-lg text-slate-600" title="Restaurar backup">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="openModal()" class="btn-main text-white px-5 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-tighter">
+                            + NUEVO
+                        </button>
+                    </div>
                 </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-900 rounded-[2rem] p-5 text-white shadow-xl">
-                        <p class="text-[8px] font-black text-amber-400 uppercase mb-1 tracking-widest">Presupuesto Estimado</p>
-                        <h3 id="stat-money" class="text-2xl font-black tracking-tight">$0</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-900 p-4 rounded-[1.5rem] text-white">
+                        <p class="text-[7px] font-black text-amber-400 uppercase tracking-widest">Est. Pendiente</p>
+                        <h3 id="stat-money" class="text-xl font-black">$0</h3>
                     </div>
-                    <div class="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm">
-                        <p class="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Total Vehículos</p>
-                        <h3 id="stat-count" class="text-2xl font-black text-slate-800 tracking-tight">0</h3>
+                    <div class="bg-white p-4 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Historial Total</p>
+                        <h3 id="stat-count" class="text-xl font-black">0</h3>
                     </div>
                 </div>
             </div>
         </header>
 
         <main class="max-w-4xl mx-auto p-4 space-y-6">
-            <div class="relative">
-                <input type="text" id="search-input" onkeyup="renderCards()" placeholder="Buscar cliente o placa..." 
-                    class="w-full p-6 pl-16 rounded-[2rem] border-2 border-transparent bg-white shadow-xl outline-none focus:border-blue-500 transition-all font-bold text-slate-700">
-                <i data-lucide="search" class="absolute left-7 top-6 text-slate-300"></i>
-            </div>
-
-            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                <button id="btn-all" onclick="setFilter('all')" class="filter-btn px-6 py-3 rounded-full bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest transition-all">Todos</button>
-                <button id="btn-pending" onclick="setFilter('pending')" class="filter-btn px-6 py-3 rounded-full bg-white text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-100 transition-all">Pendientes</button>
-                <button id="btn-paid" onclick="setFilter('paid')" class="filter-btn px-6 py-3 rounded-full bg-white text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-100 transition-all">Pagados</button>
-            </div>
-
-            <div id="card-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20"></div>
+            <input type="text" id="search" onkeyup="renderCards()" placeholder="Buscar placa o cliente..." class="w-full p-5 rounded-2xl border-none shadow-lg outline-none font-bold text-slate-600">
+            <div id="cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </main>
     </div>
 
-    <div id="modal-overlay" class="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 id="modal-title" class="font-black text-slate-800 uppercase text-xs">Ficha Técnica</h3>
-                <button onclick="closeModal()" class="p-2 bg-white rounded-full shadow-sm text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="x"></i></button>
+    <div id="modal" class="fixed inset-0 z-[200] bg-slate-900/90 hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 flex flex-col max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="font-black uppercase text-xs">Ficha de Servicio</h3>
+                <button onclick="closeModal()"><i data-lucide="x"></i></button>
             </div>
-            
-            <form id="main-form" onsubmit="saveRecord(event)" class="p-8 overflow-y-auto space-y-6 bg-white">
+            <form id="main-form" onsubmit="saveRecord(event)" class="space-y-4">
                 <input type="hidden" id="f-id">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="f-client" placeholder="Cliente" required class="input-mecanic">
-                    <input type="tel" id="f-phone" placeholder="Celular" required class="input-mecanic">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="f-client" placeholder="Cliente" required class="input-mecanic text-xs">
+                    <input type="tel" id="f-phone" placeholder="Celular" class="input-mecanic text-xs">
                 </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <input type="text" id="f-car" placeholder="Vehículo" required class="input-mecanic">
-                    <input type="text" id="f-plate" placeholder="Placa" required class="input-mecanic text-center font-mono">
-                    <input type="number" id="f-km" placeholder="KM" class="input-mecanic">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="f-car" placeholder="Vehículo" required class="input-mecanic text-xs">
+                    <input type="text" id="f-plate" placeholder="Placa" required class="input-mecanic text-xs uppercase text-center font-mono">
                 </div>
-
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-blue-600 uppercase ml-2">Trabajo a realizar</label>
-                    <textarea id="f-work" required rows="3" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-sm"></textarea>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 italic">Antecedentes</label>
-                    <textarea id="f-past" rows="2" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 outline-none font-bold text-xs"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                    <select id="f-priority" class="input-mecanic cursor-pointer">
-                        <option value="Normal">Prioridad: Normal</option>
-                        <option value="Urgente">Prioridad: Urgente 🔴</option>
+                <textarea id="f-work" placeholder="Trabajo a realizar" required rows="3" class="input-mecanic text-xs"></textarea>
+                <div class="grid grid-cols-2 gap-4 items-center">
+                    <select id="f-priority" class="input-mecanic text-xs">
+                        <option value="Normal">Normal</option>
+                        <option value="Urgente">Urgente 🔴</option>
                     </select>
-                    
-                    <div class="bg-slate-900 p-4 rounded-2xl flex items-center justify-between border-2 border-amber-500/30">
-                        <div>
-                            <p class="text-amber-500 font-black text-[9px] uppercase tracking-widest">Presupuesto</p>
-                            <p class="text-slate-400 text-[7px] font-bold">ESTIMADO INICIAL</p>
-                        </div>
-                        <input type="number" id="f-price" required class="w-28 bg-transparent text-white font-black text-2xl text-right outline-none" placeholder="0">
+                    <div class="bg-slate-900 p-3 rounded-xl flex justify-between items-center">
+                        <span class="text-amber-500 font-black text-[8px] uppercase">Presupuesto $</span>
+                        <input type="number" id="f-price" required class="bg-transparent text-white font-black text-right w-20 outline-none">
                     </div>
                 </div>
-
-                <button type="submit" class="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] shadow-xl uppercase tracking-widest text-xs hover:bg-blue-700 transition-all">
-                    CONFIRMAR REGISTRO
-                </button>
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl">Confirmar y Sincronizar</button>
             </form>
         </div>
     </div>
 
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 pointer-events-none">
-        <p class="bg-slate-900/80 backdrop-blur-md py-2 px-6 rounded-full text-[8px] font-black text-white uppercase tracking-[0.3em] shadow-2xl border border-white/10">
-            Mecanic Pro v8.6 • Cloud + Local Backup
-        </p>
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 bg-white/90 backdrop-blur-md p-2 rounded-full border shadow-2xl">
+        <button onclick="setFilter('all')" class="p-4 rounded-full hover:bg-slate-100"><i data-lucide="layout-grid" class="w-5 h-5"></i></button>
+        <button onclick="setFilter('pending')" class="p-4 rounded-full hover:bg-slate-100 text-amber-500"><i data-lucide="clock" class="w-5 h-5"></i></button>
+        <button onclick="setFilter('paid')" class="p-4 rounded-full hover:bg-slate-100 text-green-500"><i data-lucide="check-circle" class="w-5 h-5"></i></button>
     </div>
 
 </body>
