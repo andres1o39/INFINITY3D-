@@ -3,34 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master-Mec Pro V8.5</title>
+    <title>Master-Mec Pro V8.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
-        :root {
-            --brand-blue: #2563eb;
-            --brand-dark: #0f172a;
-        }
-
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
         }
 
         .logo-font { font-family: 'Orbitron', sans-serif; }
         
         .bg-pattern {
-            background-color: #f1f5f9;
-            background-image:  radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
         }
 
         .hex-icon {
@@ -38,49 +26,47 @@
         }
 
         .btn-hover:active { transform: scale(0.95); transition: 0.1s; }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        .card-active { border-left: 6px solid var(--brand-blue); }
-        .card-paid { border-left: 6px solid #10b981; }
+        .status-pill-pending { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .status-pill-paid { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
     </style>
 </head>
 <body class="bg-pattern min-h-screen pb-24">
 
     <!-- PANTALLA DE CARGA -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-6">
-        <div class="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center border-b-[12px] border-blue-600">
-            <div class="relative w-28 h-28 mx-auto mb-8 flex items-center justify-center">
-                <div class="absolute inset-0 bg-blue-100 hex-icon animate-pulse"></div>
-                <div class="absolute inset-2 bg-slate-900 hex-icon"></div>
-                <i data-lucide="settings-2" class="relative z-10 w-12 h-12 text-blue-500"></i>
+        <div class="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
+            <div class="w-24 h-24 mx-auto mb-6 bg-slate-900 hex-icon flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                <i data-lucide="gauge" class="w-10 h-10 text-blue-500"></i>
             </div>
-            <h1 class="logo-font text-2xl text-slate-900 mb-8 uppercase tracking-widest">MASTER-MEC V8.5</h1>
+            <h1 class="logo-font text-xl text-slate-900 mb-2 uppercase tracking-tighter">MASTER-MEC V8.6</h1>
+            <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-8">Kilometraje & Control</p>
             <button onclick="startApp()" class="w-full bg-blue-600 text-white font-extrabold py-5 rounded-2xl flex items-center justify-center gap-3 btn-hover shadow-xl uppercase text-xs tracking-widest">
-                ENTRAR AL TALLER <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                ABRIR SISTEMA <i data-lucide="chevron-right"></i>
             </button>
         </div>
     </div>
 
-    <!-- APP CONTENT -->
+    <!-- APP PRINCIPAL -->
     <div id="app-content" class="hidden">
-        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200 p-4">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 p-4">
             <div class="max-w-3xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-slate-900 hex-icon flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <i data-lucide="wrench" class="w-6 h-6 text-blue-500"></i>
+                    <div class="w-10 h-10 bg-slate-900 hex-icon flex items-center justify-center">
+                        <i data-lucide="wrench" class="w-5 h-5 text-blue-500"></i>
                     </div>
                     <div>
-                        <h2 class="logo-font text-lg leading-none">MEC-V8.5</h2>
-                        <span class="text-[9px] font-extrabold text-blue-600 uppercase tracking-widest">Parque 7 - Estable</span>
+                        <h2 class="logo-font text-sm leading-none">MEC-V8.6</h2>
+                        <span class="text-[8px] font-black text-blue-600 uppercase">Parque 7</span>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="toggleView('settings')" class="p-3 bg-slate-100 text-slate-600 rounded-2xl btn-hover">
-                        <i data-lucide="info" class="w-5 h-5"></i>
+                    <button onclick="toggleView('settings')" class="p-2.5 bg-slate-100 text-slate-500 rounded-xl btn-hover">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="openForm()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-extrabold text-xs flex items-center gap-2 btn-hover shadow-lg shadow-blue-600/30">
-                        <i data-lucide="plus" class="w-4 h-4"></i> NUEVA FICHA
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-extrabold text-[10px] uppercase tracking-widest flex items-center gap-2 btn-hover shadow-lg">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> ENTRADA
                     </button>
                 </div>
             </div>
@@ -88,139 +74,141 @@
 
         <main class="max-w-3xl mx-auto p-4 space-y-6">
             <!-- BUSCADOR -->
-            <div class="relative group">
-                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar nombre, placa o teléfono..." 
-                    class="w-full p-6 pl-16 rounded-[2rem] border-2 border-white bg-white shadow-xl shadow-slate-200/50 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold text-slate-700">
-                <i data-lucide="search" class="absolute left-6 top-6 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+            <div class="relative">
+                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar por Nombre, Placa o Teléfono..." 
+                    class="w-full p-5 pl-14 rounded-3xl border-2 border-transparent bg-white shadow-xl shadow-slate-200/50 outline-none focus:border-blue-500 transition-all font-bold text-slate-700">
+                <i data-lucide="search" class="absolute left-5 top-5 text-slate-300"></i>
             </div>
 
             <!-- FILTROS -->
-            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-active px-8 py-3 rounded-2xl bg-white font-extrabold text-[10px] uppercase tracking-wider shadow-md">Todos</button>
-                <button onclick="setFilter('pending')" id="filter-pending" class="px-8 py-3 rounded-2xl bg-white text-red-500 font-extrabold text-[10px] uppercase tracking-wider shadow-md">Por Pagar</button>
-                <button onclick="setFilter('paid')" id="filter-paid" class="px-8 py-3 rounded-2xl bg-white text-green-600 font-extrabold text-[10px] uppercase tracking-wider shadow-md">Pagados</button>
+            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="setFilter('all')" id="filter-all" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">Todos</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-red-500">Pendientes</button>
+                <button onclick="setFilter('paid')" id="filter-paid" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-green-600">Pagados</button>
             </div>
 
-            <div id="cards-list" class="space-y-6 pb-20"></div>
+            <div id="cards-list" class="space-y-6"></div>
         </main>
     </div>
 
-    <!-- FORMULARIO DE INGRESO / EDICIÓN -->
-    <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <i data-lucide="edit-3" class="text-blue-600 w-5 h-5"></i>
-                    <h3 id="form-title" class="font-extrabold text-slate-800 uppercase text-xs tracking-[0.2em]">Registro de Vehículo</h3>
-                </div>
-                <button onclick="closeForm()" class="p-3 bg-white rounded-2xl shadow-sm btn-hover"><i data-lucide="x"></i></button>
+    <!-- FORMULARIO REGISTRO / EDICIÓN -->
+    <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-2">
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
+                <h3 id="form-title" class="font-black text-slate-800 uppercase text-[10px] tracking-widest flex items-center gap-2"><i data-lucide="clipboard-list" class="text-blue-600"></i> Registro de Ingreso</h3>
+                <button onclick="closeForm()" class="p-2 bg-white rounded-full shadow-sm"><i data-lucide="x"></i></button>
             </div>
             
-            <form id="mechanicForm" class="p-8 overflow-y-auto space-y-8 flex-1">
+            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-5 flex-1 bg-white">
                 <input type="hidden" id="f-id">
                 
-                <!-- Sección Cliente -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-extrabold text-blue-600 uppercase ml-2 tracking-widest">Nombre del Cliente</label>
-                        <input type="text" id="f-name" required placeholder="Ej: Juan Pérez" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Dueño del Carro</label>
+                        <input type="text" id="f-name" required placeholder="Nombre del Cliente" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-extrabold text-blue-600 uppercase ml-2 tracking-widest">Teléfono / WhatsApp</label>
-                        <input type="tel" id="f-phone" required placeholder="300 123 4567" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Teléfono de Contacto</label>
+                        <input type="tel" id="f-phone" required placeholder="300 000 0000" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
                     </div>
                 </div>
 
-                <!-- Sección Vehículo -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Marca/Modelo</label>
+                        <input type="text" id="f-car" required placeholder="Ej: Spark GT" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Placa</label>
+                        <input type="text" id="f-plate" required placeholder="ABC-123" class="w-full p-4 bg-slate-100 rounded-2xl font-mono uppercase font-bold text-center">
+                    </div>
+                    <div class="space-y-1 col-span-2 md:col-span-1">
+                        <label class="text-[9px] font-black text-blue-600 ml-2 uppercase flex items-center gap-1"><i data-lucide="gauge" class="w-3 h-3"></i> Kilometraje</label>
+                        <input type="number" id="f-km" placeholder="000.000" class="w-full p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl font-bold text-blue-700 outline-none focus:border-blue-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Tipo de Servicio</label>
+                        <select id="f-service" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Particular">Particular</option>
+                            <option value="Público">Público</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Prioridad</label>
+                        <select id="f-priority" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">Urgente 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="space-y-4">
-                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] border-b pb-2">Detalles Técnicos</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="col-span-2 space-y-2">
-                            <label class="text-[9px] font-bold text-slate-500 ml-2">Marca/Modelo</label>
-                            <input type="text" id="f-car" required placeholder="Mazda 3" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[9px] font-bold text-slate-500 ml-2">Placa</label>
-                            <input type="text" id="f-plate" required placeholder="ABC-123" class="w-full p-4 bg-slate-100 rounded-2xl font-mono uppercase font-bold text-center">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[9px] font-bold text-slate-500 ml-2">Servicio</label>
-                            <select id="f-service" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
-                                <option value="Particular">Particular</option>
-                                <option value="Público">Público</option>
-                            </select>
-                        </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-amber-600 uppercase ml-2 tracking-widest">Reparaciones Pasadas (Historial)</label>
+                        <textarea id="f-past" placeholder="¿Qué se le arregló anteriormente?" rows="2" class="w-full p-4 bg-amber-50/50 rounded-2xl border border-amber-100 outline-none font-semibold text-sm"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2 tracking-widest">Trabajo a realizar hoy</label>
+                        <textarea id="f-work" required placeholder="Detalle la falla y el trabajo actual..." rows="3" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-semibold text-sm"></textarea>
                     </div>
                 </div>
 
-                <!-- Trabajo y Pasados -->
-                <div class="space-y-6">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-extrabold text-amber-600 uppercase ml-2 tracking-widest">Reparaciones Pasadas (Historial)</label>
-                        <textarea id="f-past" placeholder="¿Qué se le hizo antes? Ej: Cambio de frenos ene-24" rows="2" class="w-full p-4 bg-amber-50 rounded-2xl outline-none font-semibold text-sm border-2 border-amber-100"></textarea>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-extrabold text-blue-600 uppercase ml-2 tracking-widest">Trabajo Actual a Realizar</label>
-                        <textarea id="f-work" required placeholder="Detalle la falla actual y lo que se va a reparar..." rows="4" class="w-full p-4 bg-blue-50 rounded-2xl outline-none font-semibold text-sm border-2 border-blue-100"></textarea>
-                    </div>
-                </div>
-
-                <!-- Precio -->
-                <div class="flex items-center justify-between gap-6 bg-slate-900 p-6 rounded-[2rem]">
+                <div class="bg-slate-900 p-6 rounded-3xl flex items-center justify-between">
                     <div>
-                        <p class="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.2em]">Precio Estimado</p>
-                        <p class="text-xs text-slate-400">Puede ajustarse luego</p>
+                        <p class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Precio Estimado</p>
+                        <p class="text-xs text-slate-500 font-bold">Mano de obra + repuestos</p>
                     </div>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 font-bold">$</span>
-                        <input type="number" id="f-price" required class="w-36 p-4 pl-8 bg-slate-800 text-white font-black rounded-2xl text-xl outline-none border-2 border-transparent focus:border-blue-500">
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-500 font-black text-xl">$</span>
+                        <input type="number" id="f-price" required class="w-32 bg-transparent text-white font-black text-2xl outline-none border-b-2 border-slate-700 focus:border-blue-500">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl shadow-blue-600/40 flex items-center justify-center gap-3 text-lg uppercase btn-hover">
-                    <i data-lucide="save" class="w-6 h-6"></i> Guardar Cambios
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-hover">
+                    <i data-lucide="save"></i> Guardar Ficha
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- PANEL CONFIGURACIÓN -->
+    <!-- PANEL CONFIGURACIÓN / PARCHES -->
     <div id="settings-panel" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-md rounded-[3rem] overflow-hidden">
-            <div class="p-8 text-center space-y-4">
-                <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full mx-auto flex items-center justify-center shadow-inner">
-                    <i data-lucide="cpu" class="w-10 h-10"></i>
-                </div>
-                <h3 class="logo-font text-xl text-slate-800">SISTEMA V8.5</h3>
-                <div class="text-left space-y-4 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Novedades Parche 8.5</p>
-                    <ul class="text-xs font-bold text-slate-600 space-y-2">
-                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Botón de Edición implementado</li>
-                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Campo de Reparaciones Pasadas</li>
-                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Buscador optimizado</li>
-                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Interfaz visual mejorada</li>
-                    </ul>
-                </div>
-                <button onclick="toggleView('settings')" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest btn-hover mt-4">Cerrar</button>
+        <div class="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden p-8 text-center space-y-6">
+            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full mx-auto flex items-center justify-center">
+                <i data-lucide="cpu" class="w-10 h-10"></i>
             </div>
+            <div>
+                <h3 class="logo-font text-lg text-slate-800">MASTER-MEC V8.6</h3>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Parque 7 - Revisión Km</p>
+            </div>
+            <div class="text-left bg-slate-50 p-5 rounded-2xl space-y-2 border border-slate-100">
+                <p class="text-[9px] font-black text-blue-600 uppercase">Cambios Recientes:</p>
+                <ul class="text-[10px] font-bold text-slate-600 space-y-1">
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Nuevo campo de Kilometraje</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Función de Edición mejorada</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Historial de trabajos anteriores</li>
+                    <li class="flex items-center gap-2"><i data-lucide="minus-circle" class="w-3 h-3 text-red-400"></i> Eliminado: Importar fotos</li>
+                </ul>
+            </div>
+            <button onclick="toggleView('settings')" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest btn-hover">Cerrar</button>
         </div>
     </div>
 
     <script>
-        let DB = JSON.parse(localStorage.getItem('MEC_MASTER_V85')) || [];
+        let DB = JSON.parse(localStorage.getItem('MEC_V86_DB')) || [];
         let currentFilter = 'all';
 
         function startApp() {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
             lucide.createIcons();
-            renderData();
+            setFilter('all');
         }
 
-        function toggleView(id) { 
-            document.getElementById(id + '-panel').classList.toggle('hidden'); 
-        }
+        function toggleView(id) { document.getElementById(id + '-panel').classList.toggle('hidden'); }
         
         function openForm(editId = null) {
             const form = document.getElementById('mechanicForm');
@@ -236,21 +224,20 @@
                     document.getElementById('f-phone').value = item.phone;
                     document.getElementById('f-car').value = item.car;
                     document.getElementById('f-plate').value = item.plate;
+                    document.getElementById('f-km').value = item.km || '';
                     document.getElementById('f-service').value = item.service;
+                    document.getElementById('f-priority').value = item.priority;
                     document.getElementById('f-work').value = item.work;
                     document.getElementById('f-past').value = item.past || '';
                     document.getElementById('f-price').value = item.price;
-                    document.getElementById('form-title').innerText = "Editar Registro";
+                    document.getElementById('form-title').innerText = "Editar Ficha #" + item.plate;
                 }
             }
-            
             document.getElementById('form-overlay').classList.remove('hidden');
             lucide.createIcons();
         }
 
-        function closeForm() {
-            document.getElementById('form-overlay').classList.add('hidden');
-        }
+        function closeForm() { document.getElementById('form-overlay').classList.add('hidden'); }
 
         document.getElementById('mechanicForm').onsubmit = function(e) {
             e.preventDefault();
@@ -261,7 +248,9 @@
                 phone: document.getElementById('f-phone').value,
                 car: document.getElementById('f-car').value,
                 plate: document.getElementById('f-plate').value.toUpperCase(),
+                km: document.getElementById('f-km').value,
                 service: document.getElementById('f-service').value,
+                priority: document.getElementById('f-priority').value,
                 work: document.getElementById('f-work').value,
                 past: document.getElementById('f-past').value,
                 price: parseFloat(document.getElementById('f-price').value) || 0,
@@ -276,38 +265,36 @@
                 DB.unshift(entry);
             }
 
-            save();
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
             closeForm();
             renderData();
         };
 
-        function save() {
-            localStorage.setItem('MEC_MASTER_V85', JSON.stringify(DB));
+        function setFilter(type) {
+            currentFilter = type;
+            ['all', 'pending', 'paid'].forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                btn.className = "px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm transition-all";
+                if(f === type) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-blue-200', 'shadow-lg');
+                }
+            });
+            renderData();
         }
 
         function toggleStatus(id) {
             const idx = DB.findIndex(i => i.id === id);
             DB[idx].status = DB[idx].status === 'paid' ? 'pending' : 'paid';
-            save();
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
             renderData();
         }
 
         function deleteEntry(id) {
-            if(confirm("¿Seguro que desea eliminar esta ficha permanentemente?")) {
+            if(confirm("¿Seguro que desea eliminar esta ficha? No se podrá recuperar.")) {
                 DB = DB.filter(i => i.id !== id);
-                save();
+                localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
                 renderData();
             }
-        }
-
-        function setFilter(type) {
-            currentFilter = type;
-            ['all', 'pending', 'paid'].forEach(f => {
-                document.getElementById('filter-' + f).className = "px-8 py-3 rounded-2xl bg-white font-extrabold text-[10px] uppercase tracking-wider shadow-md text-slate-400";
-            });
-            const activeColor = type === 'pending' ? 'text-red-500' : (type === 'paid' ? 'text-green-600' : 'text-slate-900');
-            document.getElementById('filter-' + type).className = `px-8 py-3 rounded-2xl bg-white font-extrabold text-[10px] uppercase tracking-wider shadow-xl border-2 border-blue-500 ${activeColor}`;
-            renderData();
         }
 
         function renderData() {
@@ -325,60 +312,56 @@
             if(currentFilter === 'paid') filtered = filtered.filter(i => i.status === 'paid');
 
             if(filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-20">
-                        <i data-lucide="search-x" class="w-16 h-16 text-slate-200 mx-auto mb-4"></i>
-                        <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Sin resultados encontrados</p>
-                    </div>
-                `;
-                lucide.createIcons();
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-black uppercase text-[10px] tracking-[0.4em]">Sin Registros</div>`;
                 return;
             }
 
             filtered.forEach(item => {
                 const isPaid = item.status === 'paid';
+                const isUrgent = item.priority === 'Urgente';
                 const card = document.createElement('div');
-                card.className = `glass-card p-6 rounded-[2.5rem] shadow-xl shadow-slate-300/30 flex flex-col relative transition-all ${isPaid ? 'card-paid' : 'card-active'}`;
+                card.className = "bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col relative overflow-hidden";
                 card.innerHTML = `
+                    ${isUrgent ? '<div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>' : ''}
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex-1">
-                            <div class="flex gap-2 mb-3">
-                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-widest">${item.date}</span>
-                                <span class="text-[8px] font-black bg-slate-900 text-white px-3 py-1 rounded-lg uppercase tracking-widest">${item.service}</span>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-tighter">${item.date}</span>
+                                <span class="text-[8px] font-black bg-slate-900 text-white px-3 py-1 rounded-lg uppercase tracking-tighter">${item.service}</span>
+                                ${item.km ? `<span class="text-[8px] font-black bg-blue-600 text-white px-3 py-1 rounded-lg uppercase tracking-tighter flex items-center gap-1"><i data-lucide="gauge" class="w-2.5 h-2.5"></i> ${parseInt(item.km).toLocaleString()} KM</span>` : ''}
                             </div>
-                            <h4 class="text-xl font-extrabold text-slate-800 uppercase leading-none mb-1">${item.name}</h4>
-                            <div class="flex items-center gap-3">
-                                <p class="text-xs font-bold text-blue-600 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${item.phone}</p>
-                                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                <p class="text-[10px] font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded font-mono uppercase tracking-tighter">${item.plate}</p>
-                            </div>
+                            <h4 class="text-lg font-black text-slate-800 leading-tight uppercase">${item.name}</h4>
+                            <p class="text-xs font-bold text-blue-600 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${item.phone}</p>
+                            <p class="text-[10px] font-black text-slate-400 mt-1 uppercase">${item.car} • <span class="text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-mono border border-slate-200">${item.plate}</span></p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Estimado</p>
+                            <p class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Total</p>
                             <p class="text-2xl font-black ${isPaid ? 'text-green-600' : 'text-blue-600'}">$${item.price.toLocaleString()}</p>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="bg-blue-50/50 p-4 rounded-3xl border border-blue-100">
-                            <p class="text-[9px] font-black text-blue-600 uppercase mb-2 flex items-center gap-1"><i data-lucide="wrench" class="w-3 h-3"></i> Trabajo Actual</p>
-                            <p class="text-xs text-slate-700 font-semibold leading-relaxed">${item.work}</p>
-                        </div>
-                        <div class="bg-amber-50/50 p-4 rounded-3xl border border-amber-100">
-                            <p class="text-[9px] font-black text-amber-600 uppercase mb-2 flex items-center gap-1"><i data-lucide="history" class="w-3 h-3"></i> Reparaciones Pasadas</p>
-                            <p class="text-xs text-slate-600 font-semibold leading-relaxed">${item.past || 'Primer ingreso del vehículo.'}</p>
+                    <div class="grid grid-cols-1 gap-3 mb-6">
+                        ${item.past ? `
+                            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                                <p class="text-[8px] font-black text-amber-600 uppercase mb-1 flex items-center gap-1"><i data-lucide="history" class="w-2.5 h-2.5"></i> Historial Pasado</p>
+                                <p class="text-xs text-slate-600 font-semibold leading-relaxed">${item.past}</p>
+                            </div>
+                        ` : ''}
+                        <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                            <p class="text-[8px] font-black text-blue-500 uppercase mb-1 flex items-center gap-1"><i data-lucide="wrench" class="w-2.5 h-2.5"></i> Trabajo Realizado</p>
+                            <p class="text-xs text-slate-700 font-bold leading-relaxed italic">"${item.work}"</p>
                         </div>
                     </div>
 
                     <div class="flex gap-2">
-                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 transition-all shadow-md ${isPaid ? 'bg-green-600 text-white' : 'bg-red-50 text-red-600 border border-red-100'}">
+                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-red-50 text-red-600 border border-red-100'} transition-all">
                             <i data-lucide="${isPaid ? 'check-circle' : 'clock'}"></i>
-                            ${isPaid ? 'Pagado' : 'Por Pagar'}
+                            ${isPaid ? 'PAGADO' : 'POR PAGAR'}
                         </button>
                         <button onclick="openForm(${item.id})" class="p-4 bg-slate-100 text-blue-600 rounded-2xl border border-slate-200 btn-hover">
                             <i data-lucide="edit-3" class="w-5 h-5"></i>
                         </button>
-                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-50 text-slate-400 rounded-2xl border border-slate-200 btn-hover">
+                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-50 text-slate-400 rounded-2xl border border-slate-100 btn-hover">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                     </div>
