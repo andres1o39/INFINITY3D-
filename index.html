@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master-Mec Elite V7</title>
+    <title>Master-Mec Elite V8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .mobile-ui { font-size: 16px; }
-        .bg-grid { background-color: #f1f5f9; background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px); background-size: 20px 20px; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .btn-press:active { transform: scale(0.95); }
-        input:focus, textarea:focus { border-color: #2563eb !important; ring: 2px #dbeafe; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap');
+        .logo-font { font-family: 'Orbitron', sans-serif; }
+        .bg-grid { background-color: #f8fafc; background-image: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 20px 20px; }
+        .hex-bg { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+        .btn-press:active { transform: scale(0.96); }
+        .filter-active { background-color: #2563eb !important; color: white !important; }
     </style>
 </head>
-<body class="bg-grid min-h-screen pb-24 font-sans text-slate-900">
+<body class="bg-grid min-h-screen pb-28 font-sans text-slate-900">
 
-    <!-- SELECTOR DE DISPOSITIVO -->
+    <!-- PANTALLA DE CARGA -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-4">
-        <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl text-center border-t-8 border-blue-600">
-            <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600">
-                <i data-lucide="cpu" class="w-8 h-8"></i>
+        <div class="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center border-b-8 border-blue-600">
+            <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 bg-blue-100 hex-bg animate-pulse"></div>
+                <div class="absolute inset-2 bg-slate-800 hex-bg"></div>
+                <i data-lucide="wrench" class="relative z-10 w-10 h-10 text-blue-500"></i>
             </div>
-            <h1 class="text-2xl font-black text-slate-800 mb-6 uppercase italic">Sistema V7 Pro</h1>
+            <h1 class="logo-font text-2xl text-slate-800 mb-6 uppercase tracking-tighter">MASTER-MEC V8</h1>
             <div class="space-y-3">
-                <button onclick="startApp('mobile')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press">
-                    <i data-lucide="smartphone"></i> CELULAR
+                <button onclick="startApp('mobile')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press shadow-xl uppercase text-xs tracking-widest">
+                    <i data-lucide="smartphone"></i> Celular
                 </button>
-                <button onclick="startApp('desktop')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press">
-                    <i data-lucide="monitor"></i> COMPUTADORA
+                <button onclick="startApp('desktop')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press shadow-xl uppercase text-xs tracking-widest">
+                    <i data-lucide="monitor"></i> Computadora
                 </button>
             </div>
         </div>
@@ -36,145 +39,145 @@
 
     <!-- APP PRINCIPAL -->
     <div id="app-content" class="hidden">
-        <header class="glass border-b sticky top-0 z-40 p-4 shadow-sm">
+        <header class="bg-white/90 backdrop-blur-md border-b sticky top-0 z-40 p-4 shadow-sm">
             <div class="container mx-auto flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="cog" class="text-blue-600 animate-spin-slow"></i>
-                    <h2 class="text-xl font-black tracking-tighter">MEC-DATA <span class="text-blue-500 italic">V7</span></h2>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-900 hex-bg flex items-center justify-center">
+                        <i data-lucide="wrench" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <h2 class="logo-font text-lg tracking-tighter">MEC-V8</h2>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="toggleView('calc')" class="p-2 bg-amber-100 text-amber-600 rounded-xl" title="Calculadora">
-                        <i data-lucide="calculator"></i>
+                    <button onclick="toggleView('calc')" class="p-2.5 bg-amber-100 text-amber-600 rounded-xl" title="Calculadora">
+                        <i data-lucide="calculator" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="toggleView('history')" class="p-2 bg-slate-100 rounded-xl text-slate-600">
-                        <i data-lucide="archive"></i>
+                    <button onclick="toggleView('history')" class="p-2.5 bg-slate-100 rounded-xl text-slate-600">
+                        <i data-lucide="archive" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="openForm()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 btn-press">
-                        <i data-lucide="car"></i> + AUTO
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 btn-press shadow-lg">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> ENTRADA
                     </button>
                 </div>
             </div>
         </header>
 
-        <main class="container mx-auto p-4 max-w-4xl">
-            <!-- BUSCADOR -->
+        <main class="container mx-auto p-4 max-w-2xl">
+            <!-- BUSCADOR MEJORADO -->
             <div class="relative mb-6">
-                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar cliente, placa o modelo..." 
-                    class="w-full p-4 pl-12 rounded-2xl border-2 border-slate-200 bg-white shadow-sm outline-none font-bold">
-                <i data-lucide="search" class="absolute left-4 top-4 text-slate-300"></i>
+                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar por Nombre, Placa o Teléfono..." 
+                    class="w-full p-5 pl-14 rounded-3xl border-2 border-transparent bg-white shadow-xl shadow-slate-200/50 outline-none focus:border-blue-500 transition-all font-bold text-slate-700">
+                <i data-lucide="search" class="absolute left-5 top-5 text-slate-300"></i>
             </div>
 
-            <!-- LISTA DE AUTOS ACTIVOS -->
-            <div id="cards-list" class="space-y-4"></div>
+            <!-- FILTROS DE ESTADO (NUEVO) -->
+            <div class="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-active whitespace-nowrap px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm">Todos</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="whitespace-nowrap px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm text-red-500">Por Pagar</button>
+                <button onclick="setFilter('paid')" id="filter-paid" class="whitespace-nowrap px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm text-green-600">Pagados</button>
+            </div>
+
+            <!-- LISTADO -->
+            <div id="cards-list" class="space-y-5"></div>
         </main>
     </div>
 
-    <!-- MODAL CALCULADORA DE PRESUPUESTOS -->
+    <!-- MODAL COTIZADOR -->
     <div id="calc-panel" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black flex items-center gap-2"><i data-lucide="calculator" class="text-amber-500"></i> PRESUPUESTO</h3>
+                <h3 class="font-black flex items-center gap-2 uppercase text-xs tracking-widest"><i data-lucide="calculator" class="text-amber-500"></i> Calcular</h3>
                 <button onclick="toggleView('calc')" class="text-slate-400"><i data-lucide="x"></i></button>
             </div>
             <div class="space-y-4">
-                <div class="grid grid-cols-1 gap-2">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Repuestos y Piezas</label>
-                    <input type="number" id="c-parts" oninput="doCalc()" placeholder="$ 0.00" class="p-4 bg-slate-100 rounded-2xl font-bold outline-none">
-                </div>
-                <div class="grid grid-cols-1 gap-2">
-                    <label class="text-[10px] font-black uppercase text-slate-400">Mano de Obra</label>
-                    <input type="number" id="c-labor" oninput="doCalc()" placeholder="$ 0.00" class="p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500">
-                </div>
-                <div class="bg-amber-500 p-6 rounded-3xl text-white text-center shadow-lg shadow-amber-200">
-                    <p class="text-xs font-bold uppercase opacity-80">Total Estimado</p>
+                <input type="number" id="c-parts" oninput="doCalc()" placeholder="Repuestos $" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none">
+                <input type="number" id="c-labor" oninput="doCalc()" placeholder="Mano de Obra $" class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500">
+                <div class="bg-amber-500 p-8 rounded-[2rem] text-white text-center shadow-lg">
+                    <p class="text-[10px] font-bold uppercase opacity-80 mb-1 tracking-widest">Total Estimado</p>
                     <p id="c-total" class="text-4xl font-black">$ 0</p>
                 </div>
-                <button onclick="applyToForm()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black flex items-center justify-center gap-2 btn-press">
-                    <i data-lucide="file-text"></i> USAR EN REGISTRO
+                <button onclick="applyToForm()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black uppercase text-xs tracking-widest btn-press">
+                    Pasar a la Ficha
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- FORMULARIO DE REGISTRO EXPANDIDO (NUEVO CARRO) -->
+    <!-- FORMULARIO RECEPCIÓN (V8) -->
     <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center p-2">
-        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
             <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
-                <h3 class="font-black text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="text-blue-600"></i> RECEPCIÓN TÉCNICA</h3>
-                <button onclick="closeForm()" class="p-2 bg-white rounded-full"><i data-lucide="x"></i></button>
+                <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="clipboard-list" class="text-blue-600"></i> Ficha de Ingreso</h3>
+                <button onclick="closeForm()" class="p-2 bg-white rounded-full shadow-sm"><i data-lucide="x"></i></button>
             </div>
-            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-6 flex-1">
+            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-5 flex-1 bg-white">
                 
-                <!-- Sección: Datos del Cliente -->
+                <!-- Cliente -->
                 <div class="space-y-3">
-                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3 h-3"></i> Información del Dueño</p>
-                    <input type="text" id="f-name" placeholder="Nombre Completo" required class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
+                    <p class="text-[9px] font-black text-blue-500 uppercase flex items-center gap-2 tracking-[0.2em]"><i data-lucide="user" class="w-3 h-3"></i> Cliente</p>
+                    <input type="text" id="f-name" placeholder="Nombre de Cliente" required class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    <input type="tel" id="f-phone" placeholder="Número de Teléfono" required class="w-full p-4 bg-blue-50 rounded-2xl outline-none font-bold border-2 border-blue-100 focus:border-blue-500">
                 </div>
 
-                <!-- Sección: Datos del Vehículo (EXPANDIDO) -->
+                <!-- Vehículo -->
                 <div class="space-y-3">
-                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="car" class="w-3 h-3"></i> Detalles del Vehículo</p>
+                    <p class="text-[9px] font-black text-blue-500 uppercase flex items-center gap-2 tracking-[0.2em]"><i data-lucide="car" class="w-3 h-3"></i> Datos del Vehículo</p>
                     <div class="grid grid-cols-2 gap-3">
-                        <input type="text" id="f-car" placeholder="Marca / Modelo" required class="p-4 bg-slate-100 rounded-2xl outline-none">
-                        <input type="text" id="f-plate" placeholder="Placa / Patente" required class="p-4 bg-slate-100 rounded-2xl font-mono uppercase">
-                        <select id="f-fuel" class="p-4 bg-slate-100 rounded-2xl font-bold">
-                            <option value="Gasolina">Gasolina</option>
-                            <option value="Diésel">Diésel</option>
-                            <option value="Gas / GLP">Gas / GLP</option>
-                            <option value="Híbrido">Híbrido</option>
+                        <input type="text" id="f-car" placeholder="Marca / Modelo" required class="p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                        <input type="text" id="f-plate" placeholder="Placa" required class="p-4 bg-slate-100 rounded-2xl font-mono uppercase font-bold">
+                        <select id="f-service" class="p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Particular">Particular</option>
+                            <option value="Servicio Público">Servicio Público</option>
                         </select>
-                        <input type="number" id="f-km" placeholder="Kilometraje" class="p-4 bg-slate-100 rounded-2xl outline-none">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="text" id="f-color" placeholder="Color del Auto" class="p-4 bg-slate-100 rounded-2xl outline-none">
-                        <select id="f-priority" class="p-4 bg-slate-100 rounded-2xl font-bold">
-                            <option value="Normal">Prioridad Normal</option>
-                            <option value="Urgente">Prioridad URGENTE 🔴</option>
-                            <option value="Baja">Prioridad Baja 🟢</option>
+                        <select id="f-priority" class="p-4 bg-slate-100 rounded-2xl font-bold text-blue-600">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">URGENTE 🔴</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Sección: Estado Técnico -->
+                <!-- Trabajo y Precio -->
                 <div class="space-y-3">
-                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3"></i> Diagnóstico y Precios</p>
-                    <textarea id="f-notes" placeholder="¿Cuál es el problema o falla?" rows="2" class="w-full p-4 bg-slate-100 rounded-2xl outline-none"></textarea>
-                    <div class="grid grid-cols-2 gap-3">
+                    <p class="text-[9px] font-black text-blue-500 uppercase flex items-center gap-2 tracking-[0.2em]"><i data-lucide="wrench" class="w-3 h-3"></i> Información de Reparaciones</p>
+                    <textarea id="f-work" placeholder="Detallar falla y piezas a cambiar..." rows="3" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold text-sm"></textarea>
+                    
+                    <div class="grid grid-cols-2 gap-3 items-end">
                         <div class="space-y-1">
-                            <label class="text-[9px] font-bold text-slate-400 ml-2">PRECIO FINAL $</label>
-                            <input type="number" id="f-price" required class="w-full p-4 bg-blue-50 text-blue-700 font-black rounded-2xl outline-none border-2 border-blue-100">
+                            <label class="text-[8px] font-black text-slate-400 ml-2 uppercase">Precio Estimado $</label>
+                            <input type="number" id="f-price" required class="w-full p-4 bg-slate-900 text-blue-400 font-black rounded-2xl text-xl">
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-[9px] font-bold text-slate-400 ml-2">CANT. FOTOS TOMADAS</label>
-                            <input type="number" id="f-photos" value="0" class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
-                        </div>
+                        <button type="button" onclick="fakeUpload()" id="photo-btn" class="w-full py-4 bg-slate-100 border-2 border-dashed border-slate-300 rounded-2xl text-[10px] font-black text-slate-500 uppercase flex flex-col items-center justify-center">
+                            <i data-lucide="camera" class="w-4 h-4 mb-1"></i>
+                            <span>Importar Fotos</span>
+                        </button>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-press">
-                    <i data-lucide="check-circle"></i> REGISTRAR ENTRADA
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-press">
+                    <i data-lucide="save"></i> Guardar Ficha
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- PANEL DE HISTORIAL / PAPELERA -->
+    <!-- PANEL DE HISTORIAL / RESPALDO -->
     <div id="history-panel" class="fixed inset-0 z-50 bg-slate-50 hidden flex flex-col">
         <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
-            <h2 class="font-black flex items-center gap-2"><i data-lucide="archive"></i> REGISTRO HISTÓRICO</h2>
+            <h2 class="logo-font text-lg flex items-center gap-2"><i data-lucide="archive" class="text-blue-600"></i> PAPELERA</h2>
             <button onclick="toggleView('history')" class="p-2"><i data-lucide="x"></i></button>
         </header>
         <div class="p-6 overflow-y-auto flex-1 space-y-4" id="trash-list"></div>
-        <footer class="p-4 bg-white border-t">
-            <button onclick="exportData()" class="w-full p-4 bg-slate-800 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2">
-                <i data-lucide="download"></i> DESCARGAR RESPALDO
+        <footer class="p-6 bg-white border-t space-y-3">
+            <button onclick="exportData()" id="export-btn" class="w-full p-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-3 btn-press">
+                <i data-lucide="download" class="w-5 h-5"></i> Descargar Respaldo de Datos
             </button>
+            <p id="export-msg" class="hidden text-center text-[10px] font-black text-green-600 uppercase">¡Respaldo Descargado con Éxito!</p>
         </footer>
     </div>
 
     <script>
-        let DB = JSON.parse(localStorage.getItem('MEC_V7_DB')) || [];
-        let TRASH = JSON.parse(localStorage.getItem('MEC_V7_TRASH')) || [];
+        let DB = JSON.parse(localStorage.getItem('MEC_V8_DB')) || [];
+        let TRASH = JSON.parse(localStorage.getItem('MEC_V8_TRASH')) || [];
+        let currentFilter = 'all';
 
         function startApp(mode) {
             document.body.className = mode === 'mobile' ? 'mobile-ui bg-grid' : 'desktop-ui bg-grid';
@@ -192,7 +195,15 @@
         function openForm() { document.getElementById('form-overlay').classList.remove('hidden'); }
         function closeForm() { document.getElementById('form-overlay').classList.add('hidden'); document.getElementById('mechanicForm').reset(); }
 
-        // --- CALCULADORA ---
+        function setFilter(type) {
+            currentFilter = type;
+            ['all', 'pending', 'paid'].forEach(f => {
+                document.getElementById('filter-' + f).classList.remove('filter-active');
+            });
+            document.getElementById('filter-' + type).classList.add('filter-active');
+            renderData();
+        }
+
         function doCalc() {
             const p = parseFloat(document.getElementById('c-parts').value) || 0;
             const l = parseFloat(document.getElementById('c-labor').value) || 0;
@@ -202,27 +213,29 @@
         }
 
         function applyToForm() {
-            const total = doCalc();
-            document.getElementById('f-price').value = total;
+            document.getElementById('f-price').value = doCalc();
             toggleView('calc');
             openForm();
         }
 
-        // --- GESTIÓN DE DATOS ---
+        function fakeUpload() {
+            const btn = document.getElementById('photo-btn');
+            btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 mb-1 text-green-500"></i><span class="text-green-600 italic">Fotos Importadas</span>`;
+            lucide.createIcons();
+        }
+
         document.getElementById('mechanicForm').onsubmit = function(e) {
             e.preventDefault();
             const entry = {
                 id: Date.now(),
                 name: document.getElementById('f-name').value,
+                phone: document.getElementById('f-phone').value,
                 car: document.getElementById('f-car').value,
                 plate: document.getElementById('f-plate').value.toUpperCase(),
-                fuel: document.getElementById('f-fuel').value,
-                km: document.getElementById('f-km').value || 0,
-                color: document.getElementById('f-color').value || 'N/A',
+                service: document.getElementById('f-service').value,
                 priority: document.getElementById('f-priority').value,
-                notes: document.getElementById('f-notes').value,
+                work: document.getElementById('f-work').value,
                 price: parseFloat(document.getElementById('f-price').value) || 0,
-                photos: document.getElementById('f-photos').value || 0,
                 status: 'pending',
                 date: new Date().toLocaleDateString()
             };
@@ -233,8 +246,8 @@
         };
 
         function save() {
-            localStorage.setItem('MEC_V7_DB', JSON.stringify(DB));
-            localStorage.setItem('MEC_V7_TRASH', JSON.stringify(TRASH));
+            localStorage.setItem('MEC_V8_DB', JSON.stringify(DB));
+            localStorage.setItem('MEC_V8_TRASH', JSON.stringify(TRASH));
         }
 
         function toggleStatus(id) {
@@ -245,9 +258,9 @@
         }
 
         function deleteEntry(id) {
-            if(confirm("¿Enviar este auto al historial permanente?")) {
+            if(confirm("¿Enviar a la papelera permanente?")) {
                 const item = DB.find(i => i.id === id);
-                item.archivedAt = new Date().toLocaleString();
+                item.deletedAt = new Date().toLocaleString();
                 TRASH.unshift(item);
                 DB = DB.filter(i => i.id !== id);
                 save();
@@ -260,45 +273,55 @@
             const search = document.getElementById('searchBox').value.toLowerCase();
             container.innerHTML = '';
 
-            const filtered = DB.filter(i => i.name.toLowerCase().includes(search) || i.plate.toLowerCase().includes(search));
+            let filtered = DB.filter(i => 
+                i.name.toLowerCase().includes(search) || 
+                i.plate.toLowerCase().includes(search) ||
+                i.phone.toLowerCase().includes(search)
+            );
+
+            if(currentFilter === 'pending') filtered = filtered.filter(i => i.status === 'pending');
+            if(currentFilter === 'paid') filtered = filtered.filter(i => i.status === 'paid');
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-black uppercase text-[10px] tracking-[0.4em]">Sin Resultados</div>`;
+                return;
+            }
 
             filtered.forEach(item => {
                 const isPaid = item.status === 'paid';
                 const isUrgent = item.priority === 'Urgente';
                 const card = document.createElement('div');
-                card.className = `bg-white p-6 rounded-[2rem] shadow-sm border-l-8 ${isUrgent ? 'border-red-500' : 'border-blue-500'}`;
+                card.className = "bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col relative overflow-hidden transition-all active:scale-[0.98]";
                 card.innerHTML = `
+                    ${isUrgent ? '<div class="absolute top-0 left-0 w-full h-1.5 bg-red-500 animate-pulse"></div>' : ''}
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex-1">
-                            <div class="flex gap-2 mb-1">
-                                <span class="text-[8px] font-black bg-slate-800 text-white px-2 py-0.5 rounded-full uppercase">${item.date}</span>
-                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase">${item.fuel}</span>
+                            <div class="flex gap-2 mb-2">
+                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-full uppercase">${item.date}</span>
+                                <span class="text-[8px] font-black bg-slate-900 text-white px-3 py-1 rounded-full uppercase">${item.service}</span>
                             </div>
-                            <h4 class="text-xl font-black text-slate-800 leading-tight">${item.name}</h4>
-                            <p class="text-sm font-bold text-slate-400">${item.car} • <span class="text-blue-600 font-mono">${item.plate}</span></p>
+                            <h4 class="text-xl font-black text-slate-800 leading-tight uppercase">${item.name}</h4>
+                            <p class="text-xs font-bold text-blue-600 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${item.phone}</p>
+                            <p class="text-[10px] font-black text-slate-400 mt-1 uppercase">${item.car} • <span class="tracking-widest font-mono text-slate-700 font-bold bg-slate-100 px-2 py-0.5 rounded">${item.plate}</span></p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xl font-black ${isPaid ? 'text-green-600' : 'text-red-600'}">$${item.price.toLocaleString()}</p>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">${item.priority}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Estimado</p>
+                            <p class="text-2xl font-black ${isPaid ? 'text-green-600' : 'text-red-600'}">$${item.price.toLocaleString()}</p>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <div class="bg-slate-50 p-3 rounded-2xl text-[10px] flex items-center gap-2">
-                            <i data-lucide="gauge" class="w-3 h-3 text-slate-400"></i>
-                            <span>${item.km} KM</span>
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-2xl text-[10px] flex items-center gap-2">
-                            <i data-lucide="camera" class="w-3 h-3 text-slate-400"></i>
-                            <span>${item.photos} FOTOS</span>
-                        </div>
+                    
+                    <div class="bg-slate-50 p-4 rounded-2xl mb-4 border-l-4 border-blue-200">
+                        <p class="text-[9px] font-black text-blue-500 uppercase mb-1 flex items-center gap-2"><i data-lucide="info" class="w-3 h-3"></i> Información de Reparación</p>
+                        <p class="text-xs text-slate-600 font-bold leading-relaxed">"${item.work || 'Sin observaciones técnicas.'}"</p>
                     </div>
+
                     <div class="flex gap-2">
-                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}">
+                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 transition-all shadow-md ${isPaid ? 'bg-green-600 text-white' : 'bg-red-50 text-red-600 border border-red-100'}">
                             <i data-lucide="${isPaid ? 'check-circle' : 'clock'}"></i>
-                            ${isPaid ? 'Pagado' : 'Pendiente'}
+                            ${isPaid ? 'Pagado' : 'Por Pagar'}
                         </button>
-                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-100 text-slate-400 rounded-2xl btn-press">
-                            <i data-lucide="trash-2"></i>
+                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-100 text-slate-400 rounded-2xl border border-slate-200">
+                            <i data-lucide="archive"></i>
                         </button>
                     </div>
                 `;
@@ -312,14 +335,14 @@
             container.innerHTML = '';
             TRASH.forEach(item => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-2xl border flex justify-between items-center opacity-75";
+                card.className = "bg-white p-4 rounded-2xl border border-slate-200 flex justify-between items-center shadow-sm opacity-80";
                 card.innerHTML = `
-                    <div>
-                        <p class="text-[8px] font-bold text-slate-400 uppercase">Archivado: ${item.archivedAt}</p>
-                        <p class="font-black text-slate-800">${item.name} - ${item.plate}</p>
-                        <p class="text-[10px] font-bold text-blue-600">$ ${item.price.toLocaleString()}</p>
+                    <div class="flex-1">
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Eliminado: ${item.deletedAt}</p>
+                        <p class="font-black text-slate-800 text-sm uppercase">${item.name} (${item.plate})</p>
+                        <p class="text-[10px] font-bold text-blue-600">$ ${item.price.toLocaleString()} - ${item.service}</p>
                     </div>
-                    <button onclick="restore(${item.id})" class="text-blue-500 font-black text-[10px] uppercase p-2 bg-blue-50 rounded-lg">Restaurar</button>
+                    <button onclick="restore(${item.id})" class="text-blue-600 font-black text-[10px] uppercase p-3 bg-blue-50 rounded-xl">Restaurar</button>
                 `;
                 container.appendChild(card);
             });
@@ -336,11 +359,30 @@
         }
 
         function exportData() {
-            const blob = new Blob([JSON.stringify({active: DB, trash: TRASH})], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = "respaldo_taller_v7.json";
-            a.click();
+            const msg = document.getElementById('export-msg');
+            const data = { 
+                sistema: "MASTERMEC-V8", 
+                propietario: "Mecánico Profesional",
+                fecha: new Date().toLocaleString(),
+                trabajos_activos: DB, 
+                historial_papelera: TRASH 
+            };
+            
+            try {
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `RESPALDO_MEC_V8_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 5000);
+            } catch (err) {
+                alert("Error al descargar respaldo: " + err.message);
+            }
         }
     </script>
 </body>
