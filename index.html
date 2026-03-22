@@ -1,70 +1,348 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>INFINITY3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master-Mec Elite V7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background: #35424a;
-            color: #ffffff;
-            padding: 10px 0;
-            text-align: center;
-        }
-        nav {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            background: #3b5998;
-            padding: 10px 0;
-        }
-        nav div {
-            margin: 5px 0;
-            padding: 10px;
-            background: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            flex: 1;
-            text-align: center;
-        }
-        nav div i {
-            margin-right: 5px;
-        }
-        section {
-            padding: 20px;
-            max-width: 1200px;
-            margin: auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
+        .mobile-ui { font-size: 16px; }
+        .bg-grid { background-color: #f1f5f9; background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px); background-size: 20px 20px; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .btn-press:active { transform: scale(0.95); }
+        input:focus, textarea:focus { border-color: #2563eb !important; ring: 2px #dbeafe; }
     </style>
 </head>
-<body>
-    <header>
-        <h1>Welcome to INFINITY3D</h1>
-    </header>
-    <nav>
-        <div><i class="fas fa-file"></i> File Operations</div>
-        <div><i class="fas fa-edit"></i> Edit Tools</div>
-        <div><i class="fas fa-eye"></i> View Controls</div>
-        <div><i class="fas fa-cog"></i> Transform Tools</div>
-        <div><i class="fas fa-film"></i> Animation</div>
-        <div><i class="fas fa-lightbulb"></i> Lighting</div>
-        <div><i class="fas fa-paint-brush"></i> Materials</div>
-        <div><i class="fas fa-object-group"></i> Objects</div>
-    </nav>
-    <section>
-        <h2>Main Content Area</h2>
-        <p>This is where the main content would go.</p>
-    </section>
+<body class="bg-grid min-h-screen pb-24 font-sans text-slate-900">
+
+    <!-- SELECTOR DE DISPOSITIVO -->
+    <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-4">
+        <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl text-center border-t-8 border-blue-600">
+            <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600">
+                <i data-lucide="cpu" class="w-8 h-8"></i>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 mb-6 uppercase italic">Sistema V7 Pro</h1>
+            <div class="space-y-3">
+                <button onclick="startApp('mobile')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press">
+                    <i data-lucide="smartphone"></i> CELULAR
+                </button>
+                <button onclick="startApp('desktop')" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 btn-press">
+                    <i data-lucide="monitor"></i> COMPUTADORA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="app-content" class="hidden">
+        <header class="glass border-b sticky top-0 z-40 p-4 shadow-sm">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="cog" class="text-blue-600 animate-spin-slow"></i>
+                    <h2 class="text-xl font-black tracking-tighter">MEC-DATA <span class="text-blue-500 italic">V7</span></h2>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleView('calc')" class="p-2 bg-amber-100 text-amber-600 rounded-xl" title="Calculadora">
+                        <i data-lucide="calculator"></i>
+                    </button>
+                    <button onclick="toggleView('history')" class="p-2 bg-slate-100 rounded-xl text-slate-600">
+                        <i data-lucide="archive"></i>
+                    </button>
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-sm flex items-center gap-2 btn-press">
+                        <i data-lucide="car"></i> + AUTO
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 max-w-4xl">
+            <!-- BUSCADOR -->
+            <div class="relative mb-6">
+                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar cliente, placa o modelo..." 
+                    class="w-full p-4 pl-12 rounded-2xl border-2 border-slate-200 bg-white shadow-sm outline-none font-bold">
+                <i data-lucide="search" class="absolute left-4 top-4 text-slate-300"></i>
+            </div>
+
+            <!-- LISTA DE AUTOS ACTIVOS -->
+            <div id="cards-list" class="space-y-4"></div>
+        </main>
+    </div>
+
+    <!-- MODAL CALCULADORA DE PRESUPUESTOS -->
+    <div id="calc-panel" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black flex items-center gap-2"><i data-lucide="calculator" class="text-amber-500"></i> PRESUPUESTO</h3>
+                <button onclick="toggleView('calc')" class="text-slate-400"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-2">
+                    <label class="text-[10px] font-black uppercase text-slate-400">Repuestos y Piezas</label>
+                    <input type="number" id="c-parts" oninput="doCalc()" placeholder="$ 0.00" class="p-4 bg-slate-100 rounded-2xl font-bold outline-none">
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                    <label class="text-[10px] font-black uppercase text-slate-400">Mano de Obra</label>
+                    <input type="number" id="c-labor" oninput="doCalc()" placeholder="$ 0.00" class="p-4 bg-slate-100 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500">
+                </div>
+                <div class="bg-amber-500 p-6 rounded-3xl text-white text-center shadow-lg shadow-amber-200">
+                    <p class="text-xs font-bold uppercase opacity-80">Total Estimado</p>
+                    <p id="c-total" class="text-4xl font-black">$ 0</p>
+                </div>
+                <button onclick="applyToForm()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black flex items-center justify-center gap-2 btn-press">
+                    <i data-lucide="file-text"></i> USAR EN REGISTRO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO DE REGISTRO EXPANDIDO (NUEVO CARRO) -->
+    <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center p-2">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                <h3 class="font-black text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="text-blue-600"></i> RECEPCIÓN TÉCNICA</h3>
+                <button onclick="closeForm()" class="p-2 bg-white rounded-full"><i data-lucide="x"></i></button>
+            </div>
+            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-6 flex-1">
+                
+                <!-- Sección: Datos del Cliente -->
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3 h-3"></i> Información del Dueño</p>
+                    <input type="text" id="f-name" placeholder="Nombre Completo" required class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
+                </div>
+
+                <!-- Sección: Datos del Vehículo (EXPANDIDO) -->
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="car" class="w-3 h-3"></i> Detalles del Vehículo</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="f-car" placeholder="Marca / Modelo" required class="p-4 bg-slate-100 rounded-2xl outline-none">
+                        <input type="text" id="f-plate" placeholder="Placa / Patente" required class="p-4 bg-slate-100 rounded-2xl font-mono uppercase">
+                        <select id="f-fuel" class="p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Gasolina">Gasolina</option>
+                            <option value="Diésel">Diésel</option>
+                            <option value="Gas / GLP">Gas / GLP</option>
+                            <option value="Híbrido">Híbrido</option>
+                        </select>
+                        <input type="number" id="f-km" placeholder="Kilometraje" class="p-4 bg-slate-100 rounded-2xl outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="f-color" placeholder="Color del Auto" class="p-4 bg-slate-100 rounded-2xl outline-none">
+                        <select id="f-priority" class="p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Normal">Prioridad Normal</option>
+                            <option value="Urgente">Prioridad URGENTE 🔴</option>
+                            <option value="Baja">Prioridad Baja 🟢</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sección: Estado Técnico -->
+                <div class="space-y-3">
+                    <p class="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3"></i> Diagnóstico y Precios</p>
+                    <textarea id="f-notes" placeholder="¿Cuál es el problema o falla?" rows="2" class="w-full p-4 bg-slate-100 rounded-2xl outline-none"></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-slate-400 ml-2">PRECIO FINAL $</label>
+                            <input type="number" id="f-price" required class="w-full p-4 bg-blue-50 text-blue-700 font-black rounded-2xl outline-none border-2 border-blue-100">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-slate-400 ml-2">CANT. FOTOS TOMADAS</label>
+                            <input type="number" id="f-photos" value="0" class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-press">
+                    <i data-lucide="check-circle"></i> REGISTRAR ENTRADA
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANEL DE HISTORIAL / PAPELERA -->
+    <div id="history-panel" class="fixed inset-0 z-50 bg-slate-50 hidden flex flex-col">
+        <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
+            <h2 class="font-black flex items-center gap-2"><i data-lucide="archive"></i> REGISTRO HISTÓRICO</h2>
+            <button onclick="toggleView('history')" class="p-2"><i data-lucide="x"></i></button>
+        </header>
+        <div class="p-6 overflow-y-auto flex-1 space-y-4" id="trash-list"></div>
+        <footer class="p-4 bg-white border-t">
+            <button onclick="exportData()" class="w-full p-4 bg-slate-800 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2">
+                <i data-lucide="download"></i> DESCARGAR RESPALDO
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        let DB = JSON.parse(localStorage.getItem('MEC_V7_DB')) || [];
+        let TRASH = JSON.parse(localStorage.getItem('MEC_V7_TRASH')) || [];
+
+        function startApp(mode) {
+            document.body.className = mode === 'mobile' ? 'mobile-ui bg-grid' : 'desktop-ui bg-grid';
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            lucide.createIcons();
+            renderData();
+        }
+
+        function toggleView(id) { 
+            document.getElementById(id + '-panel').classList.toggle('hidden'); 
+            if(id === 'history') renderTrash();
+        }
+        
+        function openForm() { document.getElementById('form-overlay').classList.remove('hidden'); }
+        function closeForm() { document.getElementById('form-overlay').classList.add('hidden'); document.getElementById('mechanicForm').reset(); }
+
+        // --- CALCULADORA ---
+        function doCalc() {
+            const p = parseFloat(document.getElementById('c-parts').value) || 0;
+            const l = parseFloat(document.getElementById('c-labor').value) || 0;
+            const total = p + l;
+            document.getElementById('c-total').innerText = "$ " + total.toLocaleString();
+            return total;
+        }
+
+        function applyToForm() {
+            const total = doCalc();
+            document.getElementById('f-price').value = total;
+            toggleView('calc');
+            openForm();
+        }
+
+        // --- GESTIÓN DE DATOS ---
+        document.getElementById('mechanicForm').onsubmit = function(e) {
+            e.preventDefault();
+            const entry = {
+                id: Date.now(),
+                name: document.getElementById('f-name').value,
+                car: document.getElementById('f-car').value,
+                plate: document.getElementById('f-plate').value.toUpperCase(),
+                fuel: document.getElementById('f-fuel').value,
+                km: document.getElementById('f-km').value || 0,
+                color: document.getElementById('f-color').value || 'N/A',
+                priority: document.getElementById('f-priority').value,
+                notes: document.getElementById('f-notes').value,
+                price: parseFloat(document.getElementById('f-price').value) || 0,
+                photos: document.getElementById('f-photos').value || 0,
+                status: 'pending',
+                date: new Date().toLocaleDateString()
+            };
+            DB.unshift(entry);
+            save();
+            closeForm();
+            renderData();
+        };
+
+        function save() {
+            localStorage.setItem('MEC_V7_DB', JSON.stringify(DB));
+            localStorage.setItem('MEC_V7_TRASH', JSON.stringify(TRASH));
+        }
+
+        function toggleStatus(id) {
+            const idx = DB.findIndex(i => i.id === id);
+            DB[idx].status = DB[idx].status === 'paid' ? 'pending' : 'paid';
+            save();
+            renderData();
+        }
+
+        function deleteEntry(id) {
+            if(confirm("¿Enviar este auto al historial permanente?")) {
+                const item = DB.find(i => i.id === id);
+                item.archivedAt = new Date().toLocaleString();
+                TRASH.unshift(item);
+                DB = DB.filter(i => i.id !== id);
+                save();
+                renderData();
+            }
+        }
+
+        function renderData() {
+            const container = document.getElementById('cards-list');
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = DB.filter(i => i.name.toLowerCase().includes(search) || i.plate.toLowerCase().includes(search));
+
+            filtered.forEach(item => {
+                const isPaid = item.status === 'paid';
+                const isUrgent = item.priority === 'Urgente';
+                const card = document.createElement('div');
+                card.className = `bg-white p-6 rounded-[2rem] shadow-sm border-l-8 ${isUrgent ? 'border-red-500' : 'border-blue-500'}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex gap-2 mb-1">
+                                <span class="text-[8px] font-black bg-slate-800 text-white px-2 py-0.5 rounded-full uppercase">${item.date}</span>
+                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase">${item.fuel}</span>
+                            </div>
+                            <h4 class="text-xl font-black text-slate-800 leading-tight">${item.name}</h4>
+                            <p class="text-sm font-bold text-slate-400">${item.car} • <span class="text-blue-600 font-mono">${item.plate}</span></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xl font-black ${isPaid ? 'text-green-600' : 'text-red-600'}">$${item.price.toLocaleString()}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">${item.priority}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-slate-50 p-3 rounded-2xl text-[10px] flex items-center gap-2">
+                            <i data-lucide="gauge" class="w-3 h-3 text-slate-400"></i>
+                            <span>${item.km} KM</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-2xl text-[10px] flex items-center gap-2">
+                            <i data-lucide="camera" class="w-3 h-3 text-slate-400"></i>
+                            <span>${item.photos} FOTOS</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'}">
+                            <i data-lucide="${isPaid ? 'check-circle' : 'clock'}"></i>
+                            ${isPaid ? 'Pagado' : 'Pendiente'}
+                        </button>
+                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-100 text-slate-400 rounded-2xl btn-press">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function renderTrash() {
+            const container = document.getElementById('trash-list');
+            container.innerHTML = '';
+            TRASH.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border flex justify-between items-center opacity-75";
+                card.innerHTML = `
+                    <div>
+                        <p class="text-[8px] font-bold text-slate-400 uppercase">Archivado: ${item.archivedAt}</p>
+                        <p class="font-black text-slate-800">${item.name} - ${item.plate}</p>
+                        <p class="text-[10px] font-bold text-blue-600">$ ${item.price.toLocaleString()}</p>
+                    </div>
+                    <button onclick="restore(${item.id})" class="text-blue-500 font-black text-[10px] uppercase p-2 bg-blue-50 rounded-lg">Restaurar</button>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function restore(id) {
+            const item = TRASH.find(i => i.id === id);
+            DB.unshift(item);
+            TRASH = TRASH.filter(i => i.id !== id);
+            save();
+            renderTrash();
+            renderData();
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify({active: DB, trash: TRASH})], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "respaldo_taller_v7.json";
+            a.click();
+        }
+    </script>
 </body>
 </html>
+
