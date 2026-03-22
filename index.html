@@ -1,318 +1,377 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master-Mec Pro V9.1 | Cloud + KM + Backup</title>
-    
+    <title>Master-Mec Pro V8.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
-        :root { --primary: #2563eb; --accent: #f59e0b; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
-        .logo-font { font-family: 'Orbitron', sans-serif; }
-        .bg-pattern { background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px); background-size: 24px 24px; }
-        .hex-icon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
-        .card-neo { background: white; border: 1px solid white; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); transition: all 0.3s ease; }
-        .btn-main { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .input-mecanic { background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.8rem; font-weight: 600; width: 100%; font-size: 0.8rem; }
-        .input-mecanic:focus { border-color: var(--primary); outline: none; background-color: #fff; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
-        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
-        .sync-active { animation: pulse-green 2s infinite; }
-    </style>
-</head>
-<body class="bg-pattern min-h-screen pb-32 text-slate-800">
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-        import { 
-            getFirestore, collection, addDoc, updateDoc, deleteDoc, 
-            doc, onSnapshot, query, orderBy, serverTimestamp, setDoc 
-        } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBo2bZYaXmYAGML1YL8X3ru-mDMs4LIwU0",
-            authDomain: "servidor-de-mecanic.firebaseapp.com",
-            projectId: "servidor-de-mecanic",
-            storageBucket: "servidor-de-mecanic.firebasestorage.app",
-            messagingSenderId: "482393370095",
-            appId: "1:482393370095:web:a036033b962916c8669a1a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const colRef = collection(db, "servicios_v9_1");
-
-        let APP_DATA = JSON.parse(localStorage.getItem('MEC_DATA_V9')) || [];
-        let CURRENT_FILTER = 'all';
-
-        const toast = (title, icon = 'success') => {
-            Swal.fire({ title, icon, toast: true, position: 'top', showConfirmButton: false, timer: 2000 });
-        };
-
-        // --- EXPORTAR (BACKUP) ---
-        window.exportData = () => {
-            const dataStr = JSON.stringify(APP_DATA, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `RESPALDO_MEC_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            toast("Respaldo descargado");
-        };
-
-        // --- IMPORTAR (RESTORE) ---
-        window.importData = () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = async event => {
-                    try {
-                        const content = JSON.parse(event.target.result);
-                        if(Array.isArray(content)) {
-                            Swal.fire({ title: 'Restaurando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                            for (const item of content) {
-                                const { id, ...data } = item;
-                                data.updatedAt = serverTimestamp();
-                                id ? await setDoc(doc(db, "servicios_v9_1", id), data) : await addDoc(colRef, data);
-                            }
-                            Swal.close();
-                            toast("Base de datos restaurada");
-                        }
-                    } catch (err) { toast("Error en archivo", "error"); }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        };
-
-        // --- CORE LOGIC ---
-        window.startApp = () => {
-            document.getElementById('splash').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('hidden');
-            syncCloud();
-            lucide.createIcons();
-        };
-
-        function syncCloud() {
-            const q = query(colRef, orderBy("createdAt", "desc"));
-            onSnapshot(q, (snapshot) => {
-                APP_DATA = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                localStorage.setItem('MEC_DATA_V9', JSON.stringify(APP_DATA));
-                document.getElementById('cloud-status').innerText = "Cloud Online";
-                document.getElementById('indicator').className = "w-2 h-2 rounded-full bg-green-500 sync-active";
-                updateStats();
-                renderCards();
-            }, () => {
-                document.getElementById('cloud-status').innerText = "Modo Local";
-                document.getElementById('indicator').className = "w-2 h-2 rounded-full bg-amber-500";
-            });
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
         }
 
-        window.saveRecord = async (e) => {
+        .logo-font { font-family: 'Orbitron', sans-serif; }
+        
+        .bg-pattern {
+            background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+        }
+
+        .hex-icon {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+
+        .btn-hover:active { transform: scale(0.95); transition: 0.1s; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .status-pill-pending { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .status-pill-paid { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+    </style>
+</head>
+<body class="bg-pattern min-h-screen pb-24">
+
+    <!-- PANTALLA DE CARGA -->
+    <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-6">
+        <div class="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
+            <div class="w-24 h-24 mx-auto mb-6 bg-slate-900 hex-icon flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                <i data-lucide="gauge" class="w-10 h-10 text-blue-500"></i>
+            </div>
+            <h1 class="logo-font text-xl text-slate-900 mb-2 uppercase tracking-tighter">MASTER-MEC V8.6</h1>
+            <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-8">Kilometraje & Control</p>
+            <button onclick="startApp()" class="w-full bg-blue-600 text-white font-extrabold py-5 rounded-2xl flex items-center justify-center gap-3 btn-hover shadow-xl uppercase text-xs tracking-widest">
+                ABRIR SISTEMA <i data-lucide="chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="app-content" class="hidden">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 p-4">
+            <div class="max-w-3xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-900 hex-icon flex items-center justify-center">
+                        <i data-lucide="wrench" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <div>
+                        <h2 class="logo-font text-sm leading-none">MEC-V8.6</h2>
+                        <span class="text-[8px] font-black text-blue-600 uppercase">Parque 7</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleView('settings')" class="p-2.5 bg-slate-100 text-slate-500 rounded-xl btn-hover">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-extrabold text-[10px] uppercase tracking-widest flex items-center gap-2 btn-hover shadow-lg">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> ENTRADA
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto p-4 space-y-6">
+            <!-- BUSCADOR -->
+            <div class="relative">
+                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar por Nombre, Placa o Teléfono..." 
+                    class="w-full p-5 pl-14 rounded-3xl border-2 border-transparent bg-white shadow-xl shadow-slate-200/50 outline-none focus:border-blue-500 transition-all font-bold text-slate-700">
+                <i data-lucide="search" class="absolute left-5 top-5 text-slate-300"></i>
+            </div>
+
+            <!-- FILTROS -->
+            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="setFilter('all')" id="filter-all" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">Todos</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-red-500">Pendientes</button>
+                <button onclick="setFilter('paid')" id="filter-paid" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-green-600">Pagados</button>
+            </div>
+
+            <div id="cards-list" class="space-y-6"></div>
+        </main>
+    </div>
+
+    <!-- FORMULARIO REGISTRO / EDICIÓN -->
+    <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-2">
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
+                <h3 id="form-title" class="font-black text-slate-800 uppercase text-[10px] tracking-widest flex items-center gap-2"><i data-lucide="clipboard-list" class="text-blue-600"></i> Registro de Ingreso</h3>
+                <button onclick="closeForm()" class="p-2 bg-white rounded-full shadow-sm"><i data-lucide="x"></i></button>
+            </div>
+            
+            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-5 flex-1 bg-white">
+                <input type="hidden" id="f-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Dueño del Carro</label>
+                        <input type="text" id="f-name" required placeholder="Nombre del Cliente" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Teléfono de Contacto</label>
+                        <input type="tel" id="f-phone" required placeholder="300 000 0000" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Marca/Modelo</label>
+                        <input type="text" id="f-car" required placeholder="Ej: Spark GT" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Placa</label>
+                        <input type="text" id="f-plate" required placeholder="ABC-123" class="w-full p-4 bg-slate-100 rounded-2xl font-mono uppercase font-bold text-center">
+                    </div>
+                    <div class="space-y-1 col-span-2 md:col-span-1">
+                        <label class="text-[9px] font-black text-blue-600 ml-2 uppercase flex items-center gap-1"><i data-lucide="gauge" class="w-3 h-3"></i> Kilometraje</label>
+                        <input type="number" id="f-km" placeholder="000.000" class="w-full p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl font-bold text-blue-700 outline-none focus:border-blue-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Tipo de Servicio</label>
+                        <select id="f-service" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Particular">Particular</option>
+                            <option value="Público">Público</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Prioridad</label>
+                        <select id="f-priority" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">Urgente 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-amber-600 uppercase ml-2 tracking-widest">Reparaciones Pasadas (Historial)</label>
+                        <textarea id="f-past" placeholder="¿Qué se le arregló anteriormente?" rows="2" class="w-full p-4 bg-amber-50/50 rounded-2xl border border-amber-100 outline-none font-semibold text-sm"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2 tracking-widest">Trabajo a realizar hoy</label>
+                        <textarea id="f-work" required placeholder="Detalle la falla y el trabajo actual..." rows="3" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-semibold text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-3xl flex items-center justify-between">
+                    <div>
+                        <p class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Precio Estimado</p>
+                        <p class="text-xs text-slate-500 font-bold">Mano de obra + repuestos</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-500 font-black text-xl">$</span>
+                        <input type="number" id="f-price" required class="w-32 bg-transparent text-white font-black text-2xl outline-none border-b-2 border-slate-700 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-hover">
+                    <i data-lucide="save"></i> Guardar Ficha
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANEL CONFIGURACIÓN / PARCHES -->
+    <div id="settings-panel" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden p-8 text-center space-y-6">
+            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full mx-auto flex items-center justify-center">
+                <i data-lucide="cpu" class="w-10 h-10"></i>
+            </div>
+            <div>
+                <h3 class="logo-font text-lg text-slate-800">MASTER-MEC V8.6</h3>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Parque 7 - Revisión Km</p>
+            </div>
+            <div class="text-left bg-slate-50 p-5 rounded-2xl space-y-2 border border-slate-100">
+                <p class="text-[9px] font-black text-blue-600 uppercase">Cambios Recientes:</p>
+                <ul class="text-[10px] font-bold text-slate-600 space-y-1">
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Nuevo campo de Kilometraje</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Función de Edición mejorada</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Historial de trabajos anteriores</li>
+                    <li class="flex items-center gap-2"><i data-lucide="minus-circle" class="w-3 h-3 text-red-400"></i> Eliminado: Importar fotos</li>
+                </ul>
+            </div>
+            <button onclick="toggleView('settings')" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest btn-hover">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        let DB = JSON.parse(localStorage.getItem('MEC_V86_DB')) || [];
+        let currentFilter = 'all';
+
+        function startApp() {
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            lucide.createIcons();
+            setFilter('all');
+        }
+
+        function toggleView(id) { document.getElementById(id + '-panel').classList.toggle('hidden'); }
+        
+        function openForm(editId = null) {
+            const form = document.getElementById('mechanicForm');
+            form.reset();
+            document.getElementById('f-id').value = '';
+            document.getElementById('form-title').innerText = "Nueva Recepción";
+            
+            if (editId) {
+                const item = DB.find(i => i.id === editId);
+                if (item) {
+                    document.getElementById('f-id').value = item.id;
+                    document.getElementById('f-name').value = item.name;
+                    document.getElementById('f-phone').value = item.phone;
+                    document.getElementById('f-car').value = item.car;
+                    document.getElementById('f-plate').value = item.plate;
+                    document.getElementById('f-km').value = item.km || '';
+                    document.getElementById('f-service').value = item.service;
+                    document.getElementById('f-priority').value = item.priority;
+                    document.getElementById('f-work').value = item.work;
+                    document.getElementById('f-past').value = item.past || '';
+                    document.getElementById('f-price').value = item.price;
+                    document.getElementById('form-title').innerText = "Editar Ficha #" + item.plate;
+                }
+            }
+            document.getElementById('form-overlay').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeForm() { document.getElementById('form-overlay').classList.add('hidden'); }
+
+        document.getElementById('mechanicForm').onsubmit = function(e) {
             e.preventDefault();
             const id = document.getElementById('f-id').value;
-            const btn = e.submitter;
-            btn.disabled = true;
-
-            const docData = {
-                client: document.getElementById('f-client').value,
+            const entry = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('f-name').value,
                 phone: document.getElementById('f-phone').value,
                 car: document.getElementById('f-car').value,
                 plate: document.getElementById('f-plate').value.toUpperCase(),
                 km: document.getElementById('f-km').value,
-                work: document.getElementById('f-work').value,
-                price: parseFloat(document.getElementById('f-price').value) || 0,
+                service: document.getElementById('f-service').value,
                 priority: document.getElementById('f-priority').value,
-                updatedAt: serverTimestamp()
+                work: document.getElementById('f-work').value,
+                past: document.getElementById('f-past').value,
+                price: parseFloat(document.getElementById('f-price').value) || 0,
+                status: id ? DB.find(i => i.id === parseInt(id)).status : 'pending',
+                date: id ? DB.find(i => i.id === parseInt(id)).date : new Date().toLocaleDateString()
             };
 
-            try {
-                if(id) {
-                    await updateDoc(doc(db, "servicios_v9_1", id), docData);
-                } else {
-                    docData.status = 'pending';
-                    docData.createdAt = serverTimestamp();
-                    await addDoc(colRef, docData);
+            if (id) {
+                const idx = DB.findIndex(i => i.id === parseInt(id));
+                DB[idx] = entry;
+            } else {
+                DB.unshift(entry);
+            }
+
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
+            closeForm();
+            renderData();
+        };
+
+        function setFilter(type) {
+            currentFilter = type;
+            ['all', 'pending', 'paid'].forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                btn.className = "px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm transition-all";
+                if(f === type) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-blue-200', 'shadow-lg');
                 }
-                closeModal();
-                toast("Guardado en Nube");
-            } catch (err) { toast("Error de red", "error"); }
-            btn.disabled = false;
-        };
-
-        window.deleteRecord = async (id) => {
-            const res = await Swal.fire({ title: '¿Borrar registro?', icon: 'warning', showCancelButton: true });
-            if(res.isConfirmed) await deleteDoc(doc(db, "servicios_v9_1", id));
-        };
-
-        window.toggleStatus = async (id, current) => {
-            const next = current === 'paid' ? 'pending' : 'paid';
-            await updateDoc(doc(db, "servicios_v9_1", id), { status: next });
-        };
-
-        function updateStats() {
-            const money = APP_DATA.filter(i => i.status === 'pending').reduce((a, b) => a + (b.price || 0), 0);
-            document.getElementById('stat-money').innerText = `$${money.toLocaleString()}`;
-            document.getElementById('stat-count').innerText = APP_DATA.length;
+            });
+            renderData();
         }
 
-        window.renderCards = () => {
-            const container = document.getElementById('cards');
-            const search = document.getElementById('search').value.toLowerCase();
+        function toggleStatus(id) {
+            const idx = DB.findIndex(i => i.id === id);
+            DB[idx].status = DB[idx].status === 'paid' ? 'pending' : 'paid';
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
+            renderData();
+        }
+
+        function deleteEntry(id) {
+            if(confirm("¿Seguro que desea eliminar esta ficha? No se podrá recuperar.")) {
+                DB = DB.filter(i => i.id !== id);
+                localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
+                renderData();
+            }
+        }
+
+        function renderData() {
+            const container = document.getElementById('cards-list');
+            const search = document.getElementById('searchBox').value.toLowerCase();
             container.innerHTML = '';
 
-            let list = APP_DATA.filter(i => (i.client||'').toLowerCase().includes(search) || (i.plate||'').toLowerCase().includes(search));
-            if(CURRENT_FILTER !== 'all') list = list.filter(i => i.status === CURRENT_FILTER);
+            let filtered = DB.filter(i => 
+                i.name.toLowerCase().includes(search) || 
+                i.plate.toLowerCase().includes(search) ||
+                i.phone.toLowerCase().includes(search)
+            );
 
-            list.forEach(i => {
+            if(currentFilter === 'pending') filtered = filtered.filter(i => i.status === 'pending');
+            if(currentFilter === 'paid') filtered = filtered.filter(i => i.status === 'paid');
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-black uppercase text-[10px] tracking-[0.4em]">Sin Registros</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isPaid = item.status === 'paid';
+                const isUrgent = item.priority === 'Urgente';
                 const card = document.createElement('div');
-                card.className = "card-neo rounded-[2rem] p-5 border-l-4 " + (i.priority === 'Urgente' ? 'border-red-500' : 'border-blue-500');
+                card.className = "bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col relative overflow-hidden";
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <h4 class="font-black text-slate-800 uppercase leading-none text-sm">${i.client}</h4>
-                            <p class="text-[10px] font-bold text-blue-600 mt-1">${i.car} • <span class="font-mono text-slate-900">${i.plate}</span></p>
-                            <div class="flex items-center gap-1 mt-1 text-slate-400 text-[9px] font-bold">
-                                <i data-lucide="gauge" class="w-3 h-3"></i> ${i.km || 0} KM
+                    ${isUrgent ? '<div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>' : ''}
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex-1">
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-tighter">${item.date}</span>
+                                <span class="text-[8px] font-black bg-slate-900 text-white px-3 py-1 rounded-lg uppercase tracking-tighter">${item.service}</span>
+                                ${item.km ? `<span class="text-[8px] font-black bg-blue-600 text-white px-3 py-1 rounded-lg uppercase tracking-tighter flex items-center gap-1"><i data-lucide="gauge" class="w-2.5 h-2.5"></i> ${parseInt(item.km).toLocaleString()} KM</span>` : ''}
                             </div>
+                            <h4 class="text-lg font-black text-slate-800 leading-tight uppercase">${item.name}</h4>
+                            <p class="text-xs font-bold text-blue-600 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${item.phone}</p>
+                            <p class="text-[10px] font-black text-slate-400 mt-1 uppercase">${item.car} • <span class="text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-mono border border-slate-200">${item.plate}</span></p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[7px] font-black text-amber-500 uppercase">Presupuesto Est.</p>
-                            <p class="text-lg font-black text-slate-900">$${(i.price||0).toLocaleString()}</p>
+                            <p class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Total</p>
+                            <p class="text-2xl font-black ${isPaid ? 'text-green-600' : 'text-blue-600'}">$${item.price.toLocaleString()}</p>
                         </div>
                     </div>
-                    <div class="bg-slate-50 p-3 rounded-xl mb-4 text-[10px] font-semibold text-slate-500 italic">"${i.work}"</div>
+                    
+                    <div class="grid grid-cols-1 gap-3 mb-6">
+                        ${item.past ? `
+                            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                                <p class="text-[8px] font-black text-amber-600 uppercase mb-1 flex items-center gap-1"><i data-lucide="history" class="w-2.5 h-2.5"></i> Historial Pasado</p>
+                                <p class="text-xs text-slate-600 font-semibold leading-relaxed">${item.past}</p>
+                            </div>
+                        ` : ''}
+                        <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                            <p class="text-[8px] font-black text-blue-500 uppercase mb-1 flex items-center gap-1"><i data-lucide="wrench" class="w-2.5 h-2.5"></i> Trabajo Realizado</p>
+                            <p class="text-xs text-slate-700 font-bold leading-relaxed italic">"${item.work}"</p>
+                        </div>
+                    </div>
+
                     <div class="flex gap-2">
-                        <button onclick="toggleStatus('${i.id}', '${i.status}')" class="flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all ${i.status === 'paid' ? 'bg-green-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">
-                            ${i.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
+                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-red-50 text-red-600 border border-red-100'} transition-all">
+                            <i data-lucide="${isPaid ? 'check-circle' : 'clock'}"></i>
+                            ${isPaid ? 'PAGADO' : 'POR PAGAR'}
                         </button>
-                        <button onclick="editMode('${i.id}')" class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                        <button onclick="deleteRecord('${i.id}')" class="p-3 bg-red-50 text-red-500 rounded-xl"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="openForm(${item.id})" class="p-4 bg-slate-100 text-blue-600 rounded-2xl border border-slate-200 btn-hover">
+                            <i data-lucide="edit-3" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-50 text-slate-400 rounded-2xl border border-slate-100 btn-hover">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
                     </div>
                 `;
                 container.appendChild(card);
             });
             lucide.createIcons();
-        };
-
-        window.editMode = (id) => {
-            const i = APP_DATA.find(x => x.id === id);
-            document.getElementById('f-id').value = i.id;
-            document.getElementById('f-client').value = i.client;
-            document.getElementById('f-phone').value = i.phone;
-            document.getElementById('f-car').value = i.car;
-            document.getElementById('f-plate').value = i.plate;
-            document.getElementById('f-km').value = i.km || '';
-            document.getElementById('f-work').value = i.work;
-            document.getElementById('f-price').value = i.price;
-            document.getElementById('f-priority').value = i.priority;
-            openModal();
-        };
-
-        window.openModal = () => document.getElementById('modal').classList.replace('hidden', 'flex');
-        window.closeModal = () => { document.getElementById('modal').classList.replace('flex', 'hidden'); document.getElementById('main-form').reset(); };
-        window.setFilter = (f) => { CURRENT_FILTER = f; renderCards(); };
+        }
     </script>
-
-    <div id="splash" class="fixed inset-0 z-[300] bg-slate-900 flex flex-col items-center justify-center p-10">
-        <div class="w-20 h-20 bg-blue-600 hex-icon flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/50">
-            <i data-lucide="gauge" class="w-10 h-10 text-white"></i>
-        </div>
-        <h1 class="logo-font text-xl text-white tracking-widest uppercase">Master-Mec Pro</h1>
-        <p class="text-[8px] text-blue-400 font-black uppercase mt-2 tracking-[0.4em]">Cloud System V9.1</p>
-        <button onclick="startApp()" class="mt-12 w-full max-w-xs bg-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Ingresar al Taller</button>
-    </div>
-
-    <div id="main-content" class="hidden">
-        <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b p-4">
-            <div class="max-w-4xl mx-auto space-y-4">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <div id="indicator" class="w-2 h-2 rounded-full bg-slate-300"></div>
-                        <h2 id="cloud-status" class="text-[8px] font-black uppercase text-slate-400 tracking-widest">Sincronizando...</h2>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="exportData()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 active:bg-blue-100"><i data-lucide="download" class="w-4 h-4"></i></button>
-                        <button onclick="importData()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 active:bg-blue-100"><i data-lucide="upload" class="w-4 h-4"></i></button>
-                        <button onclick="openModal()" class="btn-main text-white px-5 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-tighter shadow-lg">+ ENTRADA</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-slate-900 p-4 rounded-[1.8rem] text-white shadow-xl shadow-slate-200">
-                        <p class="text-[7px] font-black text-amber-400 uppercase tracking-widest mb-1">Presupuesto Pendiente</p>
-                        <h3 id="stat-money" class="text-xl font-black">$0</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-[1.8rem] border border-slate-100 shadow-sm">
-                        <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Unidades Totales</p>
-                        <h3 id="stat-count" class="text-xl font-black">0</h3>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-4xl mx-auto p-4 space-y-6">
-            <div class="relative">
-                <input type="text" id="search" onkeyup="renderCards()" placeholder="Buscar placa o nombre..." class="w-full p-5 pl-14 rounded-2xl border-none shadow-xl shadow-slate-200 outline-none font-bold text-slate-700">
-                <i data-lucide="search" class="absolute left-6 top-5 text-slate-300"></i>
-            </div>
-            <div id="cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10"></div>
-        </main>
-    </div>
-
-    <div id="modal" class="fixed inset-0 z-[200] bg-slate-900/90 hidden items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 flex flex-col max-h-[95vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black uppercase text-xs tracking-widest text-blue-600">Registro Técnico</h3>
-                <button onclick="closeModal()" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-            <form id="main-form" onsubmit="saveRecord(event)" class="space-y-4">
-                <input type="hidden" id="f-id">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="f-client" placeholder="Nombre Cliente" required class="input-mecanic">
-                    <input type="tel" id="f-phone" placeholder="Celular" class="input-mecanic">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="f-car" placeholder="Vehículo (Ej: Hilux)" required class="input-mecanic">
-                    <input type="text" id="f-plate" placeholder="Placa" required class="input-mecanic text-center font-mono">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Kilometraje Actual</label>
-                    <input type="number" id="f-km" placeholder="Ej: 154000" class="input-mecanic">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Trabajo / Diagnóstico</label>
-                    <textarea id="f-work" required rows="3" class="input-mecanic"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-3 items-center">
-                    <select id="f-priority" class="input-mecanic">
-                        <option value="Normal">Normal</option>
-                        <option value="Urgente">Urgente 🔴</option>
-                    </select>
-                    <div class="bg-slate-900 p-3.5 rounded-2xl flex justify-between items-center border border-amber-500/30">
-                        <span class="text-amber-500 font-black text-[8px] uppercase tracking-tighter">Est. Presupuesto $</span>
-                        <input type="number" id="f-price" required class="bg-transparent text-white font-black text-right w-20 outline-none text-sm">
-                    </div>
-                </div>
-                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-xl shadow-blue-200 mt-4 active:scale-95 transition-all">Confirmar Registro</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 bg-white/90 backdrop-blur-xl p-2.5 rounded-[2rem] border shadow-2xl z-[100]">
-        <button onclick="setFilter('all')" class="p-4 rounded-full hover:bg-slate-100 transition-colors"><i data-lucide="layout-grid" class="w-5 h-5"></i></button>
-        <button onclick="setFilter('pending')" class="p-4 rounded-full hover:bg-slate-100 text-amber-500 transition-colors"><i data-lucide="clock" class="w-5 h-5"></i></button>
-        <button onclick="setFilter('paid')" class="p-4 rounded-full hover:bg-slate-100 text-green-500 transition-colors"><i data-lucide="check-circle" class="w-5 h-5"></i></button>
-    </div>
-
 </body>
 </html>
+
