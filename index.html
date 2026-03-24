@@ -66,37 +66,71 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'master-mec-v9-5';
-
+        // Global State
         window.appState = {
             services: JSON.parse(localStorage.getItem('master_mec_v9_data')) || [],
-            user: null
+            user: null,
+            isOffline: false
         };
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+        let auth, db, appId;
+
+        const hideLoading = () => {
+            const loader = document.getElementById('loading-screen');
+            if (loader) loader.style.display = 'none';
+            window.renderUI();
         };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.appState.user = user;
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('user-id-display').innerText = user.uid.substring(0,8);
-                startSync();
-            } else {
-                initAuth();
+        // Fallback para evitar bloqueo en "Iniciando sistema"
+        const safetyTimeout = setTimeout(() => {
+            if (!window.appState.user) {
+                console.warn("La conexión tardó demasiado. Activando modo offline de seguridad.");
+                window.appState.isOffline = true;
+                hideLoading();
             }
-        });
+        }, 5000);
+
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'master-mec-v9-5';
+
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("Auth Error:", e);
+                    window.appState.isOffline = true;
+                    hideLoading();
+                }
+            };
+
+            onAuthStateChanged(auth, (user) => {
+                clearTimeout(safetyTimeout);
+                if (user) {
+                    window.appState.user = user;
+                    document.getElementById('user-id-display').innerText = user.uid.substring(0,8);
+                    startSync();
+                    hideLoading();
+                } else {
+                    initAuth();
+                }
+            });
+
+        } catch (err) {
+            console.error("Firebase Config Error:", err);
+            window.appState.isOffline = true;
+            hideLoading();
+        }
 
         function startSync() {
+            if (!db || !appId) return;
             const ref = collection(db, 'artifacts', appId, 'public', 'data', 'services');
             onSnapshot(ref, (snap) => {
                 const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -104,17 +138,25 @@
                 window.appState.services = data;
                 localStorage.setItem('master_mec_v9_data', JSON.stringify(data));
                 window.renderUI();
+            }, (err) => {
+                console.warn("Firestore Sync Error (Mec):", err);
             });
         }
 
         window.dbActions = {
             save: async (data) => {
-                const ref = collection(db, 'artifacts', appId, 'public', 'data', 'services');
-                if (data.id) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'services', data.id), { ...data, updatedAt: Date.now() });
-                } else {
-                    await addDoc(ref, { ...data, createdAt: Date.now(), status: 'pending' });
+                if (window.appState.isOffline) {
+                    alert("Modo offline: Los datos se guardan solo localmente.");
+                    return;
                 }
+                const ref = collection(db, 'artifacts', appId, 'public', 'data', 'services');
+                try {
+                    if (data.id) {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'services', data.id), { ...data, updatedAt: Date.now() });
+                    } else {
+                        await addDoc(ref, { ...data, createdAt: Date.now(), status: 'pending' });
+                    }
+                } catch (e) { console.error(e); }
             },
             delete: async (id) => {
                 if(confirm("¿Eliminar registro permanentemente?")) {
@@ -127,7 +169,7 @@
             logout: async () => {
                 if(confirm("¿Cerrar sesión? Se borrará el caché local.")) {
                     localStorage.removeItem('master_mec_v9_data');
-                    await signOut(auth);
+                    if (auth) await signOut(auth);
                     location.reload();
                 }
             }
@@ -149,7 +191,6 @@
                 </div>
                 <h1 class="logo-font text-white text-base">MASTER-MEC</h1>
             </div>
-            <!-- Botón para cerrar sidebar en móvil -->
             <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
@@ -172,7 +213,7 @@
                 <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-[10px]">ID</div>
                 <div class="flex-1 min-w-0">
                     <p class="text-[9px] font-black text-white uppercase">Operador</p>
-                    <p id="user-id-display" class="text-[8px] text-slate-500 truncate">...</p>
+                    <p id="user-id-display" class="text-[8px] text-slate-500 truncate">Sincronizando...</p>
                 </div>
             </div>
             <button onclick="window.dbActions.logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">
@@ -212,8 +253,8 @@
                 </div>
                 <div class="bg-slate-900 p-8 rounded-[2rem] text-white flex justify-between items-center">
                     <div>
-                        <h3 class="text-xl font-bold mb-1">Bienvenido al Sistema V9.5</h3>
-                        <p class="text-slate-400 text-sm">Gestión de taller mecánica profesional.</p>
+                        <h3 class="text-xl font-bold mb-1">Sistema Master-Mec</h3>
+                        <p class="text-slate-400 text-sm">Versión 9.5 Pro - Estable.</p>
                     </div>
                     <i data-lucide="activity" class="text-blue-500 w-12 h-12 opacity-50"></i>
                 </div>
@@ -268,7 +309,7 @@
                     <i data-lucide="history" class="w-3 h-3"></i> Historial Pasado
                 </h4>
                 <div id="history-container" class="space-y-3">
-                    <p class="text-[10px] text-slate-300 italic text-center py-10">Ingresa una placa para ver trabajos anteriores</p>
+                    <p class="text-[10px] text-slate-300 italic text-center py-10">Ingresa una placa...</p>
                 </div>
             </div>
         </div>
@@ -296,9 +337,10 @@
                 b.classList.add('hover:bg-white/5', 'text-slate-400');
             });
             const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(tab));
-            activeBtn.classList.add('bg-blue-600', 'text-white', 'active');
-            activeBtn.classList.remove('hover:bg-white/5', 'text-slate-400');
-            
+            if (activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'text-white', 'active');
+                activeBtn.classList.remove('hover:bg-white/5', 'text-slate-400');
+            }
             if (window.innerWidth < 1024) toggleSidebar();
         }
 
@@ -315,13 +357,12 @@
                 return;
             }
 
-            const past = window.appState.services.filter(s => s.plate === p);
+            const past = (window.appState.services || []).filter(s => s.plate === p);
             if (past.length === 0) {
                 container.innerHTML = '<p class="text-[10px] text-slate-400 font-bold text-center py-10">SIN REGISTROS PREVIOS</p>';
                 return;
             }
 
-            // Autocompletar datos básicos si es primer ingreso
             if (!document.getElementById('f-id').value) {
                 document.getElementById('f-name').value = past[0].name;
                 document.getElementById('f-phone').value = past[0].phone;
@@ -341,14 +382,12 @@
         }
 
         window.renderUI = () => {
-            const s = window.appState.services;
+            const s = window.appState.services || [];
             
-            // Actualizar Estadísticas
             document.getElementById('stat-paid').innerText = currency.format(s.reduce((a, c) => a + (c.status === 'paid' ? c.price : 0), 0));
             document.getElementById('stat-pending').innerText = s.filter(i => i.status === 'pending').length;
             document.getElementById('stat-total').innerText = s.length;
 
-            // Grid de Servicios
             const grid = document.getElementById('services-grid');
             grid.innerHTML = '';
             s.forEach(item => {
@@ -375,7 +414,6 @@
                 grid.appendChild(card);
             });
 
-            // Tabla de Clientes (Únicos)
             const list = document.getElementById('customers-list');
             list.innerHTML = '';
             const unique = [];
@@ -421,6 +459,7 @@
 
         function showReceipt(id) {
             const s = window.appState.services.find(x => x.id === id);
+            if (!s) return;
             document.getElementById('receipt-body').innerHTML = `
                 <h3 class="logo-font text-xl mb-1">MASTER-MEC</h3>
                 <p class="text-[8px] font-bold text-blue-500 uppercase tracking-widest mb-6">Comprobante de Servicio</p>
@@ -442,7 +481,11 @@
             document.getElementById('modal-receipt').classList.replace('hidden', 'flex');
         }
 
-        window.onload = () => lucide.createIcons();
+        // Ejecutar inmediatamente para asegurar iconos iniciales si carga lento
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            window.renderUI(); // Renderizar datos locales de inmediato
+        });
     </script>
 </body>
 </html>
