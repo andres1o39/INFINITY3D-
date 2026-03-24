@@ -3,489 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master-Mec Pro V9.5 | Final Legacy</title>
-    
+    <title>Master-Mec Pro V8.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #f8fafc;
-            color: #1e293b;
-            overflow-x: hidden;
         }
 
         .logo-font { font-family: 'Orbitron', sans-serif; }
-
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-        .sidebar {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(15px);
+        
+        .bg-pattern {
+            background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
         }
 
-        @media (max-width: 1024px) {
-            .sidebar { position: fixed; transform: translateX(-100%); z-index: 50; height: 100vh; }
-            .sidebar.active { transform: translateX(0); }
+        .hex-icon {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
         }
 
-        .card-service {
-            background: white;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-
-        .card-service:hover {
-            transform: translateY(-4px);
-            border-color: #3b82f6;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-        }
-
-        .history-item {
-            border-left: 3px solid #3b82f6;
-            background: #f1f5f9;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            font-size: 0.75rem;
-        }
+        .btn-hover:active { transform: scale(0.95); transition: 0.1s; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .status-pill-pending { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .status-pill-paid { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="bg-pattern min-h-screen pb-24">
 
-    <!-- Lógica de Datos -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global State
-        window.appState = {
-            services: JSON.parse(localStorage.getItem('master_mec_v9_data')) || [],
-            user: null,
-            isOffline: false
-        };
-
-        let auth, db, appId;
-
-        const hideLoading = () => {
-            const loader = document.getElementById('loading-screen');
-            if (loader) loader.style.display = 'none';
-            window.renderUI();
-        };
-
-        // Fallback para evitar bloqueo en "Iniciando sistema"
-        const safetyTimeout = setTimeout(() => {
-            if (!window.appState.user) {
-                console.warn("La conexión tardó demasiado. Activando modo offline de seguridad.");
-                window.appState.isOffline = true;
-                hideLoading();
-            }
-        }, 5000);
-
-        try {
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'master-mec-v9-5';
-
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (e) {
-                    console.error("Auth Error:", e);
-                    window.appState.isOffline = true;
-                    hideLoading();
-                }
-            };
-
-            onAuthStateChanged(auth, (user) => {
-                clearTimeout(safetyTimeout);
-                if (user) {
-                    window.appState.user = user;
-                    document.getElementById('user-id-display').innerText = user.uid.substring(0,8);
-                    startSync();
-                    hideLoading();
-                } else {
-                    initAuth();
-                }
-            });
-
-        } catch (err) {
-            console.error("Firebase Config Error:", err);
-            window.appState.isOffline = true;
-            hideLoading();
-        }
-
-        function startSync() {
-            if (!db || !appId) return;
-            const ref = collection(db, 'artifacts', appId, 'public', 'data', 'services');
-            onSnapshot(ref, (snap) => {
-                const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                data.sort((a, b) => b.createdAt - a.createdAt);
-                window.appState.services = data;
-                localStorage.setItem('master_mec_v9_data', JSON.stringify(data));
-                window.renderUI();
-            }, (err) => {
-                console.warn("Firestore Sync Error (Mec):", err);
-            });
-        }
-
-        window.dbActions = {
-            save: async (data) => {
-                if (window.appState.isOffline) {
-                    alert("Modo offline: Los datos se guardan solo localmente.");
-                    return;
-                }
-                const ref = collection(db, 'artifacts', appId, 'public', 'data', 'services');
-                try {
-                    if (data.id) {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'services', data.id), { ...data, updatedAt: Date.now() });
-                    } else {
-                        await addDoc(ref, { ...data, createdAt: Date.now(), status: 'pending' });
-                    }
-                } catch (e) { console.error(e); }
-            },
-            delete: async (id) => {
-                if(confirm("¿Eliminar registro permanentemente?")) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'services', id));
-                }
-            },
-            status: async (id, next) => {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'services', id), { status: next });
-            },
-            logout: async () => {
-                if(confirm("¿Cerrar sesión? Se borrará el caché local.")) {
-                    localStorage.removeItem('master_mec_v9_data');
-                    if (auth) await signOut(auth);
-                    location.reload();
-                }
-            }
-        };
-    </script>
-
-    <!-- Pantalla de Carga -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center text-white">
-        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p class="logo-font text-[10px] tracking-widest text-blue-400">INICIANDO SISTEMA...</p>
+    <!-- PANTALLA DE CARGA -->
+    <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 p-6">
+        <div class="bg-white rounded-[3rem] p-10 max-w-sm w-full shadow-2xl text-center">
+            <div class="w-24 h-24 mx-auto mb-6 bg-slate-900 hex-icon flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                <i data-lucide="gauge" class="w-10 h-10 text-blue-500"></i>
+            </div>
+            <h1 class="logo-font text-xl text-slate-900 mb-2 uppercase tracking-tighter">MASTER-MEC V8.6</h1>
+            <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-8">Kilometraje & Control</p>
+            <button onclick="startApp()" class="w-full bg-blue-600 text-white font-extrabold py-5 rounded-2xl flex items-center justify-center gap-3 btn-hover shadow-xl uppercase text-xs tracking-widest">
+                ABRIR SISTEMA <i data-lucide="chevron-right"></i>
+            </button>
+        </div>
     </div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar w-[280px] text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
-        <div class="p-8 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                    <i data-lucide="wrench" class="w-6 h-6"></i>
+    <!-- APP PRINCIPAL -->
+    <div id="app-content" class="hidden">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 p-4">
+            <div class="max-w-3xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-900 hex-icon flex items-center justify-center">
+                        <i data-lucide="wrench" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <div>
+                        <h2 class="logo-font text-sm leading-none">MEC-V8.6</h2>
+                        <span class="text-[8px] font-black text-blue-600 uppercase">Parque 7</span>
+                    </div>
                 </div>
-                <h1 class="logo-font text-white text-base">MASTER-MEC</h1>
-            </div>
-            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-
-        <nav class="px-6 space-y-2">
-            <button onclick="switchTab('dashboard')" class="nav-btn active w-full flex items-center gap-4 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm">
-                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Inicio
-            </button>
-            <button onclick="switchTab('services')" class="nav-btn w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-sm font-medium text-slate-400">
-                <i data-lucide="clipboard-list" class="w-4 h-4"></i> Órdenes
-            </button>
-            <button onclick="switchTab('customers')" class="nav-btn w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-sm font-medium text-slate-400">
-                <i data-lucide="users" class="w-4 h-4"></i> Clientes
-            </button>
-        </nav>
-
-        <div class="mt-auto p-6 space-y-4 border-t border-slate-800/50">
-            <div class="p-3 bg-slate-800/40 rounded-xl flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-[10px]">ID</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-[9px] font-black text-white uppercase">Operador</p>
-                    <p id="user-id-display" class="text-[8px] text-slate-500 truncate">Sincronizando...</p>
+                <div class="flex gap-2">
+                    <button onclick="toggleView('settings')" class="p-2.5 bg-slate-100 text-slate-500 rounded-xl btn-hover">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="openForm()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-extrabold text-[10px] uppercase tracking-widest flex items-center gap-2 btn-hover shadow-lg">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> ENTRADA
+                    </button>
                 </div>
             </div>
-            <button onclick="window.dbActions.logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">
-                Cerrar Sesión
-            </button>
-        </div>
-    </aside>
-
-    <!-- Main -->
-    <main class="flex-1 h-screen overflow-y-auto">
-        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-lg"><i data-lucide="menu" class="w-5 h-5"></i></button>
-                <h2 id="page-title" class="text-lg font-extrabold text-slate-800">Resumen General</h2>
-            </div>
-            <button onclick="openForm()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <i data-lucide="plus" class="w-4 h-4"></i> Nueva Orden
-            </button>
         </header>
 
-        <div class="p-6 max-w-6xl mx-auto space-y-8">
-            <!-- Vistas -->
-            <section id="view-dashboard" class="animate__animated animate__fadeIn">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <div class="p-6 bg-white border border-slate-100 rounded-2xl">
-                        <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Entregados</p>
-                        <p id="stat-paid" class="text-2xl font-black text-emerald-600">$0</p>
+        <main class="max-w-3xl mx-auto p-4 space-y-6">
+            <!-- BUSCADOR -->
+            <div class="relative">
+                <input type="text" id="searchBox" onkeyup="renderData()" placeholder="Buscar por Nombre, Placa o Teléfono..." 
+                    class="w-full p-5 pl-14 rounded-3xl border-2 border-transparent bg-white shadow-xl shadow-slate-200/50 outline-none focus:border-blue-500 transition-all font-bold text-slate-700">
+                <i data-lucide="search" class="absolute left-5 top-5 text-slate-300"></i>
+            </div>
+
+            <!-- FILTROS -->
+            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="setFilter('all')" id="filter-all" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">Todos</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-red-500">Pendientes</button>
+                <button onclick="setFilter('paid')" id="filter-paid" class="px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm text-green-600">Pagados</button>
+            </div>
+
+            <div id="cards-list" class="space-y-6"></div>
+        </main>
+    </div>
+
+    <!-- FORMULARIO REGISTRO / EDICIÓN -->
+    <div id="form-overlay" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-2">
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
+                <h3 id="form-title" class="font-black text-slate-800 uppercase text-[10px] tracking-widest flex items-center gap-2"><i data-lucide="clipboard-list" class="text-blue-600"></i> Registro de Ingreso</h3>
+                <button onclick="closeForm()" class="p-2 bg-white rounded-full shadow-sm"><i data-lucide="x"></i></button>
+            </div>
+            
+            <form id="mechanicForm" class="p-6 overflow-y-auto space-y-5 flex-1 bg-white">
+                <input type="hidden" id="f-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Dueño del Carro</label>
+                        <input type="text" id="f-name" required placeholder="Nombre del Cliente" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
                     </div>
-                    <div class="p-6 bg-white border border-slate-100 rounded-2xl">
-                        <p class="text-[9px] font-black text-slate-400 uppercase mb-1">En Taller</p>
-                        <p id="stat-pending" class="text-2xl font-black text-amber-600">0</p>
-                    </div>
-                    <div class="p-6 bg-white border border-slate-100 rounded-2xl">
-                        <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Servicios</p>
-                        <p id="stat-total" class="text-2xl font-black text-slate-900">0</p>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2">Teléfono de Contacto</label>
+                        <input type="tel" id="f-phone" required placeholder="300 000 0000" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
                     </div>
                 </div>
-                <div class="bg-slate-900 p-8 rounded-[2rem] text-white flex justify-between items-center">
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Marca/Modelo</label>
+                        <input type="text" id="f-car" required placeholder="Ej: Spark GT" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Placa</label>
+                        <input type="text" id="f-plate" required placeholder="ABC-123" class="w-full p-4 bg-slate-100 rounded-2xl font-mono uppercase font-bold text-center">
+                    </div>
+                    <div class="space-y-1 col-span-2 md:col-span-1">
+                        <label class="text-[9px] font-black text-blue-600 ml-2 uppercase flex items-center gap-1"><i data-lucide="gauge" class="w-3 h-3"></i> Kilometraje</label>
+                        <input type="number" id="f-km" placeholder="000.000" class="w-full p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl font-bold text-blue-700 outline-none focus:border-blue-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Tipo de Servicio</label>
+                        <select id="f-service" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Particular">Particular</option>
+                            <option value="Público">Público</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 ml-2">Prioridad</label>
+                        <select id="f-priority" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">Urgente 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-amber-600 uppercase ml-2 tracking-widest">Reparaciones Pasadas (Historial)</label>
+                        <textarea id="f-past" placeholder="¿Qué se le arregló anteriormente?" rows="2" class="w-full p-4 bg-amber-50/50 rounded-2xl border border-amber-100 outline-none font-semibold text-sm"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-black text-blue-600 uppercase ml-2 tracking-widest">Trabajo a realizar hoy</label>
+                        <textarea id="f-work" required placeholder="Detalle la falla y el trabajo actual..." rows="3" class="w-full p-4 bg-slate-100 rounded-2xl outline-none font-semibold text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-3xl flex items-center justify-between">
                     <div>
-                        <h3 class="text-xl font-bold mb-1">Sistema Master-Mec</h3>
-                        <p class="text-slate-400 text-sm">Versión 9.5 Pro - Estable.</p>
+                        <p class="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Precio Estimado</p>
+                        <p class="text-xs text-slate-500 font-bold">Mano de obra + repuestos</p>
                     </div>
-                    <i data-lucide="activity" class="text-blue-500 w-12 h-12 opacity-50"></i>
+                    <div class="flex items-center gap-2">
+                        <span class="text-blue-500 font-black text-xl">$</span>
+                        <input type="number" id="f-price" required class="w-32 bg-transparent text-white font-black text-2xl outline-none border-b-2 border-slate-700 focus:border-blue-500">
+                    </div>
                 </div>
-            </section>
 
-            <section id="view-services" class="hidden animate__animated animate__fadeIn">
-                <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </section>
-
-            <section id="view-customers" class="hidden animate__animated animate__fadeIn">
-                <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase">
-                            <tr><th class="p-5">Nombre</th><th class="p-5">Vehículo</th><th class="p-5">Placa</th></tr>
-                        </thead>
-                        <tbody id="customers-list" class="text-sm"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <!-- Modal Formulario -->
-    <div id="modal-form" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-md hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
-            <div class="flex-1 p-8 overflow-y-auto">
-                <h3 class="text-2xl font-black mb-6">Registro de Servicio</h3>
-                <form id="master-form" class="space-y-4">
-                    <input type="hidden" id="f-id">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input type="text" id="f-name" required placeholder="Nombre del Cliente" class="w-full p-4 bg-slate-50 rounded-xl border-none font-bold outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="tel" id="f-phone" required placeholder="Teléfono" class="w-full p-4 bg-slate-50 rounded-xl border-none font-bold outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <input type="text" id="f-car" required placeholder="Marca/Modelo" class="w-full p-4 bg-slate-50 rounded-xl border-none outline-none">
-                        <input type="text" id="f-plate" required oninput="searchVehicleHistory(this.value)" placeholder="PLACA" class="w-full p-4 bg-slate-900 text-blue-400 rounded-xl font-black text-center text-xl uppercase outline-none">
-                        <input type="number" id="f-km" required placeholder="Kilometraje" class="w-full p-4 bg-slate-50 rounded-xl border-none outline-none">
-                    </div>
-                    <textarea id="f-work" required rows="3" placeholder="Descripción del trabajo..." class="w-full p-4 bg-blue-50/50 border-2 border-dashed border-blue-100 rounded-xl outline-none focus:border-blue-500"></textarea>
-                    <div class="p-6 bg-slate-950 rounded-2xl flex justify-between items-center text-white">
-                        <span class="text-[10px] font-black uppercase text-blue-500">Costo Estimado</span>
-                        <input type="number" id="f-price" required class="bg-transparent text-white font-black text-3xl text-right w-40 outline-none">
-                    </div>
-                    <div class="flex gap-3 pt-4">
-                        <button type="button" onclick="closeForm()" class="flex-1 py-4 bg-slate-100 rounded-xl font-black uppercase text-[10px]">Cerrar</button>
-                        <button type="submit" class="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px]">Guardar Orden</button>
-                    </div>
-                </form>
-            </div>
-            <div class="hidden md:flex flex-col w-72 bg-slate-50 p-6 overflow-y-auto border-l">
-                <h4 class="text-[10px] font-black uppercase text-slate-400 mb-4 flex items-center gap-2">
-                    <i data-lucide="history" class="w-3 h-3"></i> Historial Pasado
-                </h4>
-                <div id="history-container" class="space-y-3">
-                    <p class="text-[10px] text-slate-300 italic text-center py-10">Ingresa una placa...</p>
-                </div>
-            </div>
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl shadow-xl flex items-center justify-center gap-3 text-lg uppercase btn-hover">
+                    <i data-lucide="save"></i> Guardar Ficha
+                </button>
+            </form>
         </div>
     </div>
 
-    <!-- Modal Recibo -->
-    <div id="modal-receipt" class="fixed inset-0 z-[70] bg-slate-950/90 hidden items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full">
-            <div id="receipt-body" class="text-center"></div>
-            <div class="mt-6 flex gap-2">
-                <button onclick="window.print()" class="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black text-[10px] uppercase">PDF</button>
-                <button onclick="document.getElementById('modal-receipt').classList.replace('flex', 'hidden')" class="flex-1 bg-slate-100 py-3 rounded-xl font-black text-[10px] uppercase">Cerrar</button>
+    <!-- PANEL CONFIGURACIÓN / PARCHES -->
+    <div id="settings-panel" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden p-8 text-center space-y-6">
+            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full mx-auto flex items-center justify-center">
+                <i data-lucide="cpu" class="w-10 h-10"></i>
             </div>
+            <div>
+                <h3 class="logo-font text-lg text-slate-800">MASTER-MEC V8.6</h3>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Parque 7 - Revisión Km</p>
+            </div>
+            <div class="text-left bg-slate-50 p-5 rounded-2xl space-y-2 border border-slate-100">
+                <p class="text-[9px] font-black text-blue-600 uppercase">Cambios Recientes:</p>
+                <ul class="text-[10px] font-bold text-slate-600 space-y-1">
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Nuevo campo de Kilometraje</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Función de Edición mejorada</li>
+                    <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Historial de trabajos anteriores</li>
+                    <li class="flex items-center gap-2"><i data-lucide="minus-circle" class="w-3 h-3 text-red-400"></i> Eliminado: Importar fotos</li>
+                </ul>
+            </div>
+            <button onclick="toggleView('settings')" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest btn-hover">Cerrar</button>
         </div>
     </div>
 
     <script>
-        const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+        let DB = JSON.parse(localStorage.getItem('MEC_V86_DB')) || [];
+        let currentFilter = 'all';
 
-        function switchTab(tab) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(`view-${tab}`).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('bg-blue-600', 'text-white', 'active');
-                b.classList.add('hover:bg-white/5', 'text-slate-400');
-            });
-            const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(tab));
-            if (activeBtn) {
-                activeBtn.classList.add('bg-blue-600', 'text-white', 'active');
-                activeBtn.classList.remove('hover:bg-white/5', 'text-slate-400');
-            }
-            if (window.innerWidth < 1024) toggleSidebar();
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
-
-        function searchVehicleHistory(plate) {
-            const p = plate.toUpperCase().trim();
-            const container = document.getElementById('history-container');
-            
-            if (p.length < 3) {
-                container.innerHTML = '<p class="text-[10px] text-slate-300 italic text-center py-10">Ingresa una placa...</p>';
-                return;
-            }
-
-            const past = (window.appState.services || []).filter(s => s.plate === p);
-            if (past.length === 0) {
-                container.innerHTML = '<p class="text-[10px] text-slate-400 font-bold text-center py-10">SIN REGISTROS PREVIOS</p>';
-                return;
-            }
-
-            if (!document.getElementById('f-id').value) {
-                document.getElementById('f-name').value = past[0].name;
-                document.getElementById('f-phone').value = past[0].phone;
-                document.getElementById('f-car').value = past[0].car;
-            }
-
-            container.innerHTML = past.map(w => `
-                <div class="history-item">
-                    <p class="font-black text-blue-600 mb-1">${new Date(w.createdAt).toLocaleDateString()}</p>
-                    <p class="text-slate-700 leading-tight">${w.work}</p>
-                    <div class="flex justify-between mt-2 text-[9px] font-bold text-slate-400">
-                        <span>${w.km.toLocaleString()} KM</span>
-                        <span>${currency.format(w.price)}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        window.renderUI = () => {
-            const s = window.appState.services || [];
-            
-            document.getElementById('stat-paid').innerText = currency.format(s.reduce((a, c) => a + (c.status === 'paid' ? c.price : 0), 0));
-            document.getElementById('stat-pending').innerText = s.filter(i => i.status === 'pending').length;
-            document.getElementById('stat-total').innerText = s.length;
-
-            const grid = document.getElementById('services-grid');
-            grid.innerHTML = '';
-            s.forEach(item => {
-                const badge = { pending: 'text-amber-500 bg-amber-50', completed: 'text-blue-500 bg-blue-50', paid: 'text-emerald-500 bg-emerald-50' }[item.status];
-                const card = document.createElement('div');
-                card.className = "card-service p-6 rounded-2xl";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="bg-slate-900 text-blue-400 px-3 py-1 rounded-lg font-black text-[10px]">${item.plate}</span>
-                        <span class="text-[8px] font-black uppercase px-2 py-1 rounded-full ${badge}">${item.status}</span>
-                    </div>
-                    <h4 class="font-black text-slate-800">${item.name}</h4>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-4">${item.car} • ${item.km.toLocaleString()} KM</p>
-                    <div class="bg-slate-50 p-3 rounded-xl mb-4 text-[11px] text-slate-600 italic line-clamp-2">"${item.work}"</div>
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-50">
-                        <p class="font-black text-lg">${currency.format(item.price)}</p>
-                        <div class="flex gap-1">
-                            <button onclick="showReceipt('${item.id}')" class="p-2 text-slate-400 hover:text-blue-500"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                            <button onclick="advanceStatus('${item.id}', '${item.status}')" class="p-2 bg-slate-900 text-white rounded-lg"><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
-                            <button onclick="window.dbActions.delete('${item.id}')" class="p-2 text-red-300 hover:text-red-500"><i data-lucide="trash" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-
-            const list = document.getElementById('customers-list');
-            list.innerHTML = '';
-            const unique = [];
-            s.forEach(x => { if(!unique.find(u => u.phone === x.phone)) unique.push(x); });
-            unique.forEach(c => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-5 font-bold">${c.name}</td><td class="p-5 text-slate-500">${c.car}</td><td class="p-5 font-mono text-blue-600">${c.plate}</td>`;
-                list.appendChild(tr);
-            });
-
+        function startApp() {
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
             lucide.createIcons();
-        };
-
-        function advanceStatus(id, current) {
-            const flow = { pending: 'completed', completed: 'paid', paid: 'pending' };
-            window.dbActions.status(id, flow[current]);
+            setFilter('all');
         }
 
-        function openForm() { 
-            document.getElementById('master-form').reset(); 
+        function toggleView(id) { document.getElementById(id + '-panel').classList.toggle('hidden'); }
+        
+        function openForm(editId = null) {
+            const form = document.getElementById('mechanicForm');
+            form.reset();
             document.getElementById('f-id').value = '';
-            document.getElementById('history-container').innerHTML = '<p class="text-[10px] text-slate-300 italic text-center py-10">Ingresa una placa...</p>';
-            document.getElementById('modal-form').classList.replace('hidden', 'flex'); 
+            document.getElementById('form-title').innerText = "Nueva Recepción";
+            
+            if (editId) {
+                const item = DB.find(i => i.id === editId);
+                if (item) {
+                    document.getElementById('f-id').value = item.id;
+                    document.getElementById('f-name').value = item.name;
+                    document.getElementById('f-phone').value = item.phone;
+                    document.getElementById('f-car').value = item.car;
+                    document.getElementById('f-plate').value = item.plate;
+                    document.getElementById('f-km').value = item.km || '';
+                    document.getElementById('f-service').value = item.service;
+                    document.getElementById('f-priority').value = item.priority;
+                    document.getElementById('f-work').value = item.work;
+                    document.getElementById('f-past').value = item.past || '';
+                    document.getElementById('f-price').value = item.price;
+                    document.getElementById('form-title').innerText = "Editar Ficha #" + item.plate;
+                }
+            }
+            document.getElementById('form-overlay').classList.remove('hidden');
+            lucide.createIcons();
         }
 
-        function closeForm() { document.getElementById('modal-form').classList.replace('flex', 'hidden'); }
+        function closeForm() { document.getElementById('form-overlay').classList.add('hidden'); }
 
-        document.getElementById('master-form').onsubmit = async (e) => {
+        document.getElementById('mechanicForm').onsubmit = function(e) {
             e.preventDefault();
-            const data = {
-                id: document.getElementById('f-id').value || null,
+            const id = document.getElementById('f-id').value;
+            const entry = {
+                id: id ? parseInt(id) : Date.now(),
                 name: document.getElementById('f-name').value,
                 phone: document.getElementById('f-phone').value,
                 car: document.getElementById('f-car').value,
-                plate: document.getElementById('f-plate').value.toUpperCase().trim(),
-                km: parseInt(document.getElementById('f-km').value),
+                plate: document.getElementById('f-plate').value.toUpperCase(),
+                km: document.getElementById('f-km').value,
+                service: document.getElementById('f-service').value,
+                priority: document.getElementById('f-priority').value,
                 work: document.getElementById('f-work').value,
-                price: parseFloat(document.getElementById('f-price').value)
+                past: document.getElementById('f-past').value,
+                price: parseFloat(document.getElementById('f-price').value) || 0,
+                status: id ? DB.find(i => i.id === parseInt(id)).status : 'pending',
+                date: id ? DB.find(i => i.id === parseInt(id)).date : new Date().toLocaleDateString()
             };
-            await window.dbActions.save(data);
+
+            if (id) {
+                const idx = DB.findIndex(i => i.id === parseInt(id));
+                DB[idx] = entry;
+            } else {
+                DB.unshift(entry);
+            }
+
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
             closeForm();
+            renderData();
         };
 
-        function showReceipt(id) {
-            const s = window.appState.services.find(x => x.id === id);
-            if (!s) return;
-            document.getElementById('receipt-body').innerHTML = `
-                <h3 class="logo-font text-xl mb-1">MASTER-MEC</h3>
-                <p class="text-[8px] font-bold text-blue-500 uppercase tracking-widest mb-6">Comprobante de Servicio</p>
-                <div class="text-left text-xs space-y-2 border-t pt-4">
-                    <p><b>FECHA:</b> ${new Date(s.createdAt).toLocaleDateString()}</p>
-                    <p><b>CLIENTE:</b> ${s.name.toUpperCase()}</p>
-                    <p><b>VEHÍCULO:</b> ${s.car.toUpperCase()} [${s.plate}]</p>
-                    <p><b>KM:</b> ${s.km.toLocaleString()}</p>
-                    <div class="bg-slate-50 p-3 rounded-lg mt-4">
-                        <p class="text-[9px] font-black text-slate-400 mb-1 uppercase">Trabajo Realizado</p>
-                        <p class="italic text-slate-600">${s.work}</p>
-                    </div>
-                    <div class="pt-4 flex justify-between items-center">
-                        <span class="font-black text-base">TOTAL PAGADO</span>
-                        <span class="font-black text-lg text-blue-600">${currency.format(s.price)}</span>
-                    </div>
-                </div>
-            `;
-            document.getElementById('modal-receipt').classList.replace('hidden', 'flex');
+        function setFilter(type) {
+            currentFilter = type;
+            ['all', 'pending', 'paid'].forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                btn.className = "px-6 py-2.5 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm transition-all";
+                if(f === type) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-blue-200', 'shadow-lg');
+                }
+            });
+            renderData();
         }
 
-        // Ejecutar inmediatamente para asegurar iconos iniciales si carga lento
-        window.addEventListener('DOMContentLoaded', () => {
+        function toggleStatus(id) {
+            const idx = DB.findIndex(i => i.id === id);
+            DB[idx].status = DB[idx].status === 'paid' ? 'pending' : 'paid';
+            localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
+            renderData();
+        }
+
+        function deleteEntry(id) {
+            if(confirm("¿Seguro que desea eliminar esta ficha? No se podrá recuperar.")) {
+                DB = DB.filter(i => i.id !== id);
+                localStorage.setItem('MEC_V86_DB', JSON.stringify(DB));
+                renderData();
+            }
+        }
+
+        function renderData() {
+            const container = document.getElementById('cards-list');
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            container.innerHTML = '';
+
+            let filtered = DB.filter(i => 
+                i.name.toLowerCase().includes(search) || 
+                i.plate.toLowerCase().includes(search) ||
+                i.phone.toLowerCase().includes(search)
+            );
+
+            if(currentFilter === 'pending') filtered = filtered.filter(i => i.status === 'pending');
+            if(currentFilter === 'paid') filtered = filtered.filter(i => i.status === 'paid');
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-black uppercase text-[10px] tracking-[0.4em]">Sin Registros</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isPaid = item.status === 'paid';
+                const isUrgent = item.priority === 'Urgente';
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col relative overflow-hidden";
+                card.innerHTML = `
+                    ${isUrgent ? '<div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>' : ''}
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex-1">
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <span class="text-[8px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-tighter">${item.date}</span>
+                                <span class="text-[8px] font-black bg-slate-900 text-white px-3 py-1 rounded-lg uppercase tracking-tighter">${item.service}</span>
+                                ${item.km ? `<span class="text-[8px] font-black bg-blue-600 text-white px-3 py-1 rounded-lg uppercase tracking-tighter flex items-center gap-1"><i data-lucide="gauge" class="w-2.5 h-2.5"></i> ${parseInt(item.km).toLocaleString()} KM</span>` : ''}
+                            </div>
+                            <h4 class="text-lg font-black text-slate-800 leading-tight uppercase">${item.name}</h4>
+                            <p class="text-xs font-bold text-blue-600 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${item.phone}</p>
+                            <p class="text-[10px] font-black text-slate-400 mt-1 uppercase">${item.car} • <span class="text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-mono border border-slate-200">${item.plate}</span></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Total</p>
+                            <p class="text-2xl font-black ${isPaid ? 'text-green-600' : 'text-blue-600'}">$${item.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-3 mb-6">
+                        ${item.past ? `
+                            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                                <p class="text-[8px] font-black text-amber-600 uppercase mb-1 flex items-center gap-1"><i data-lucide="history" class="w-2.5 h-2.5"></i> Historial Pasado</p>
+                                <p class="text-xs text-slate-600 font-semibold leading-relaxed">${item.past}</p>
+                            </div>
+                        ` : ''}
+                        <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                            <p class="text-[8px] font-black text-blue-500 uppercase mb-1 flex items-center gap-1"><i data-lucide="wrench" class="w-2.5 h-2.5"></i> Trabajo Realizado</p>
+                            <p class="text-xs text-slate-700 font-bold leading-relaxed italic">"${item.work}"</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="toggleStatus(${item.id})" class="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 ${isPaid ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-red-50 text-red-600 border border-red-100'} transition-all">
+                            <i data-lucide="${isPaid ? 'check-circle' : 'clock'}"></i>
+                            ${isPaid ? 'PAGADO' : 'POR PAGAR'}
+                        </button>
+                        <button onclick="openForm(${item.id})" class="p-4 bg-slate-100 text-blue-600 rounded-2xl border border-slate-200 btn-hover">
+                            <i data-lucide="edit-3" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="deleteEntry(${item.id})" class="p-4 bg-slate-50 text-slate-400 rounded-2xl border border-slate-100 btn-hover">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
             lucide.createIcons();
-            window.renderUI(); // Renderizar datos locales de inmediato
-        });
+        }
     </script>
 </body>
 </html>
+
